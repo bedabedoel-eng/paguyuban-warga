@@ -24,7 +24,7 @@ export default function Login({ mode = 'warga' }) {
     e.preventDefault();
     const er = {};
     if (!normalizeHp(hp)) er.hp = 'Masukkan nomor HP yang valid, contoh 81234567890';
-    if (password.length < 8) er.password = 'Kata sandi minimal 8 karakter';
+    if (!/^\d{6,}$/.test(password)) er.password = 'PIN harus berupa angka minimal 6 digit';
     setErrors(er);
     if (Object.keys(er).length) return;
     setLoading(true); setErr('');
@@ -52,13 +52,23 @@ export default function Login({ mode = 'warga' }) {
       <form onSubmit={submit} className="stack" noValidate>
         <div>
           <h1 className="auth-title">{admin ? 'Masuk Admin' : 'Masuk ke Akun Anda'}</h1>
-          <p className="auth-sub">{admin ? 'Gunakan akun yang telah diberikan' : 'Gunakan nomor HP dan kata sandi untuk melanjutkan'}</p>
+          <p className="auth-sub">{admin ? 'Gunakan akun yang telah diberikan' : 'Gunakan nomor HP dan PIN untuk melanjutkan'}</p>
         </div>
         {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
         <PhoneInput label={admin ? 'Nomor HP' : undefined} placeholder="Nomor HP" value={hp} onChange={(e) => setHp(e.target.value)} error={errors.hp} autoFocus />
-        <PasswordInput label={admin ? 'Password' : undefined} placeholder="Kata sandi" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} autoComplete="current-password" />
+        <PasswordInput
+          label={admin ? 'PIN' : undefined}
+          placeholder="PIN (minimal 6 angka)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value.replace(/\D/g, ''))}
+          error={errors.password}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          autoComplete="current-password"
+        />
         <Button type="submit" block loading={loading}>{admin ? 'Masuk' : 'Masuk'}</Button>
-        <button type="button" className="link-sm center" style={{ alignSelf: 'center' }} onClick={() => setLupa(true)}>Lupa kata sandi?</button>
+        <button type="button" className="link-sm center" style={{ alignSelf: 'center' }} onClick={() => setLupa(true)}>Lupa PIN?</button>
         {!admin && <GoogleButton />}
         {!admin ? (
           <p className="auth-foot">Belum punya akun? <Link to="/daftar" className="bold">Daftar di sini</Link></p>
@@ -66,8 +76,8 @@ export default function Login({ mode = 'warga' }) {
           <p className="auth-foot"><Link to="/masuk">Masuk sebagai warga</Link></p>
         )}
       </form>
-      <Modal open={lupa} onClose={() => setLupa(false)} title="Lupa kata sandi">
-        <p className="text-2">Demi keamanan, aplikasi ini tidak mengirim SMS atau email. Hubungi <b>admin paguyuban</b> untuk mengatur ulang kata sandi Anda. Setelah itu, masuk dengan kata sandi sementara dan segera ganti di menu Pengaturan &gt; Keamanan.</p>
+      <Modal open={lupa} onClose={() => setLupa(false)} title="Lupa PIN">
+        <p className="text-2">Demi keamanan, aplikasi ini tidak mengirim SMS atau email. Hubungi <b>admin paguyuban</b> untuk mengatur ulang PIN Anda. Setelah itu, masuk dengan PIN sementara dan segera ganti di menu Pengaturan &gt; Keamanan.</p>
       </Modal>
     </AuthLayout>
   );
