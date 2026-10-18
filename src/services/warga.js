@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { unwrap } from './_util';
-import { AUTH_EMAIL_DOMAIN } from '../lib/supabase';
+// Domain email internal untuk login nomor HP (harus sama dengan yang dipakai saat pendaftaran)
+const AUTH_EMAIL_DOMAIN = (import.meta.env.VITE_AUTH_EMAIL_DOMAIN || 'akun.paguyuban.local').trim().toLowerCase();
 
 export const KOLOM_WARGA = 'id,nama,blok,no_rumah,rumah_id,kepala_keluarga,pekerjaan,hobi,tentang,keluarga,foto_path,role,status,alasan_status,bergabung_at,created_at,pref_notifikasi,wajib_ganti_pin';
 
