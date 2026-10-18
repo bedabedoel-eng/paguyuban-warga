@@ -7,9 +7,9 @@
 update public.pengaturan set
   nama_paguyuban  = 'Paguyuban Warga Digital',
   tagline         = 'Bersama Membangun Lingkungan yang Lebih Baik',
-  nama_lingkungan = 'Perumahan Green Residence',
-  rt = '01', rw = '05',
-  alamat = 'Jl. Melati No. 12, Kel. Harapan Jaya',
+  nama_lingkungan = 'Perumahan Vila Gading Royal',
+  rt = '', rw = '',                            -- isi RT/RW di menu Pengaturan paguyuban bila ada
+  alamat = 'Desa Pamegarsari, Kec. Parung, Kab. Bogor',
   luas_wilayah = '2,5 Ha',
   latitude = -6.4310, longitude = 106.7290,   -- untuk widget cuaca
   tarif_ipl = 70000,

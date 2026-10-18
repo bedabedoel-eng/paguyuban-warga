@@ -7,7 +7,7 @@ const ROLES = {
   wakil: { uid: 'u-wakil', hak: { pengurus: true, pimpinan: true, peran: ['wakil_ketua'], kelola_anggota: true, kelola_info: true, kelola_laporan: true, kelola_dokumen: true, lihat_kas_detail: true } },
   sekretaris: { uid: 'u-sekretaris', hak: { pengurus: true, sekretaris: true, peran: ['sekretaris'], kelola_anggota: true, kelola_info: true, kelola_dokumen: true } },
   bendahara: { uid: 'u-bendahara', hak: { pengurus: true, bendahara: true, peran: ['bendahara'], lihat_kas_detail: true } },
-  humas: { uid: 'u-humas', hak: { pengurus: true, humas: true, wilayah: ['A'], peran: ['humas'], kelola_info: true, kelola_laporan: true } },
+  humas: { uid: 'u-humas', hak: { pengurus: true, humas: true, wilayah: ['g-zamrud'], peran: ['humas'], kelola_info: true, kelola_laporan: true } },
   admin: { uid: 'u-admin', hak: { pengurus: true, admin: true, ketua: true, bendahara: true, pimpinan: true, kelola_anggota: true, kelola_info: true, kelola_laporan: true, kelola_dokumen: true, kelola_pengurus: true, setujui_kas: true, lihat_kas_detail: true } },
 };
 const qs = new URLSearchParams(location.search);
@@ -19,7 +19,7 @@ const uid = () => role()?.uid;
 const me = () => F.WARGA.find((w) => w.id === uid());
 
 const TABLES = {
-  pengaturan: [F.PENGATURAN], blok: F.BLOK, warga: F.WARGA, warga_kontak: F.KONTAK, pengurus: F.PENGURUS, rumah: F.RUMAH,
+  pengaturan: [F.PENGATURAN], blok: F.BLOK, gang: F.GANG, warga: F.WARGA, warga_kontak: F.KONTAK, pengurus: F.PENGURUS, rumah: F.RUMAH,
   tagihan_ipl: F.TAGIHAN, pembayaran_ipl: F.PEMBAYARAN, transaksi_kas: F.KAS, pengumuman: F.PENGUMUMAN, kegiatan: F.KEGIATAN,
   laporan: F.LAPORAN, notifikasi: F.NOTIF, aktivitas: F.AKTIVITAS, dokumen: F.DOKUMEN, kontak_darurat: F.DARURAT,
 };
@@ -28,12 +28,12 @@ const delay = (v) => new Promise((r) => setTimeout(() => r(v), 60));
 // Pembatasan baris sederhana meniru RLS untuk tampilan per peran
 function rls(table, rows) {
   const r = roleName(); const h = role()?.hak || {}; const m = me();
-  if (table === 'warga' && !h.kelola_anggota) return rows.filter((w) => w.status === 'aktif' || (h.humas && h.wilayah.includes(w.blok)) || w.id === uid());
-  if (table === 'laporan') return h.pimpinan ? rows : h.humas ? rows.filter((l) => h.wilayah.includes(l.pelapor.blok)) : rows.filter((l) => l.pelapor_id === uid());
+  if (table === 'warga' && !h.kelola_anggota) return rows.filter((w) => w.status === 'aktif' || (h.humas && h.wilayah.includes(w.gang_id)) || w.id === uid());
+  if (table === 'laporan') return h.pimpinan ? rows : h.humas ? rows.filter((l) => h.wilayah.includes(l.pelapor.gang_id) || l.pelapor_id === uid()) : rows.filter((l) => l.pelapor_id === uid());
   if (table === 'tagihan_ipl' && !h.bendahara) return rows.filter((t) => t.rumah_id === m?.rumah_id);
   if (table === 'transaksi_kas' && !h.lihat_kas_detail) return rows.filter((t) => t.status === 'disetujui');
   if (table === 'dokumen' && !h.pengurus) return rows.filter((d) => d.publik);
-  if ((table === 'pengumuman' || table === 'kegiatan') && !h.kelola_anggota) return rows.filter((x) => !x.blok || x.blok === m?.blok || h.wilayah?.includes(x.blok));
+  if ((table === 'pengumuman' || table === 'kegiatan') && !h.kelola_anggota) return rows.filter((x) => ((!x.blok || x.blok === m?.blok) && (!x.gang_id || x.gang_id === m?.gang_id)) || h.wilayah?.includes(x.gang_id));
   if (table === 'pembayaran_ipl' && !h.bendahara) return [];
   void r;
   return rows;
@@ -94,7 +94,7 @@ function rpc(name, params) {
       pengeluaran_menunggu: h.lihat_kas_detail ? menunggu.length : null,
       pengeluaran_menunggu_nominal: h.lihat_kas_detail ? menunggu.reduce((a, k) => a + k.jumlah, 0) : null,
       dokumen_bulan_ini: h.kelola_dokumen ? 2 : null,
-      wilayah: h.humas ? h.wilayah.map((b) => ({ blok: b, warga: aktif.filter((w) => w.blok === b).length, rumah: F.RUMAH.filter((r) => r.blok === b).length, menunggu: 1, laporan_aktif: 2, ipl_lunas: 2, ipl_belum: 3 })) : null,
+      wilayah: h.humas ? h.wilayah.map((id) => { const g = F.GANG.find((x) => x.id === id); return { gang: id, nama: g.nama, blok: g.blok, warga: aktif.filter((w) => w.gang_id === id).length, rumah: aktif.filter((w) => w.gang_id === id).length, menunggu: 1, laporan_aktif: 2, ipl_lunas: 2, ipl_belum: 3 }; }) : null,
     }),
     statistik_ipl_bulanan: () => Array.from({ length: 12 }, (_, i) => ({ bulan: i + 1, lunas: i <= new Date().getMonth() ? 9 + (i % 4) : 0, belum: i <= new Date().getMonth() ? 4 - (i % 3) : 0 })),
     arus_kas_bulanan: () => Array.from({ length: 12 }, (_, i) => ({ bulan: i + 1, pemasukan: i <= new Date().getMonth() ? 900000 + (i % 3) * 250000 : 0, pengeluaran: i <= new Date().getMonth() ? 650000 + (i % 4) * 300000 : 0 })),
@@ -126,7 +126,15 @@ const auth = {
 };
 
 const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#dfe8e3"/><text x="300" y="210" font-family="sans-serif" font-size="28" fill="#5b7064" text-anchor="middle">Bukti transfer</text></svg>');
-const storage = { from: () => ({ createSignedUrl: async () => ({ data: { signedUrl: PH }, error: null }), getPublicUrl: () => ({ data: { publicUrl: PH } }), upload: async () => ({ error: null }), remove: async () => ({ error: null }) }) };
+// Foto potret 3:4 palsu untuk path contoh/foto-N.jpg
+const potret = (path) => {
+  const n = Number((path.match(/foto-(\d+)/) || [])[1] || 0);
+  const bg = ['#cfe3d8', '#e6d9bd', '#c9d6ea', '#e3cfd9', '#d5e0c6', '#d9d2ea'][n % 6];
+  const kulit = ['#e0b690', '#c68d62', '#f0c8a4', '#a8714a'][n % 4];
+  const baju = ['#127a55', '#1d5fa8', '#8a6413', '#6a3dbd', '#a8460b', '#0e7490'][n % 6];
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="${bg}"/><ellipse cx="300" cy="840" rx="250" ry="330" fill="${baju}"/><circle cx="300" cy="330" r="118" fill="${kulit}"/><path d="M178 320 Q190 190 300 190 Q410 190 422 320 Q380 250 300 250 Q220 250 178 320Z" fill="#2b2118"/></svg>`);
+};
+const storage = { from: () => ({ createSignedUrl: async (path) => ({ data: { signedUrl: /foto-\d+/.test(path || '') ? potret(path) : PH }, error: null }), getPublicUrl: () => ({ data: { publicUrl: PH } }), upload: async () => ({ error: null }), remove: async () => ({ error: null }) }) };
 
 export function createClient() {
   return {

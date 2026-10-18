@@ -2,7 +2,7 @@
 
 Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supabase** (Auth, PostgreSQL, Storage) dan di-hosting di **Cloudflare Pages**. Seluruhnya memakai paket gratis.
 
-**Fitur:** login nomor HP + PIN 6 angka (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga per gang, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas transparan dengan **persetujuan Ketua untuk pengeluaran besar**, pengumuman dan kegiatan (bisa untuk semua warga atau satu gang), aspirasi & laporan, **arsip surat & notulen**, notifikasi realtime, struktur pengurus dengan **hak akses per jabatan**, dashboard sesuai peran untuk desktop dan HP.
+**Fitur:** login nomor HP + PIN 6 angka (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga per blok dan gang/jalan, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas transparan dengan **persetujuan Ketua untuk pengeluaran besar**, pengumuman dan kegiatan (untuk semua warga, satu blok, atau satu gang/jalan), aspirasi & laporan, **arsip surat & notulen**, notifikasi realtime, struktur pengurus dengan **hak akses per jabatan**, dashboard sesuai peran untuk desktop dan HP.
 
 Tampilan memakai **Plus Jakarta Sans** (judul) dan **Inter** (teks), ikon **Lucide**, dan dimuat dari paket npm (tanpa Google Fonts, sehingga CSP tetap ketat).
 
@@ -26,7 +26,9 @@ Tampilan memakai **Plus Jakarta Sans** (judul) dan **Inter** (teks), ikon **Luci
 
 ## 1. Peran dan hak akses
 
-Setiap pengurus punya **jabatan** (teks bebas, mis. "Humas Gang Melati") dan **peran** yang menentukan hak aksesnya. Peran diatur Ketua/Admin di **Pengurus > Atur pengurus**.
+**Wilayah:** perumahan dibagi menjadi **blok** (mis. Blok C), dan setiap blok dapat berisi beberapa **gang / jalan** (mis. Jl. Zamrud, Jl. Safir). Alamat warga ditulis lengkap, misalnya **Blok C 3/5 · Jl. Zamrud**. Nomor rumah boleh memakai garis miring, titik, atau huruf (3/5, 12A, C.3). Daftar gang diatur Ketua, Wakil, Sekretaris, atau Admin di menu **Blok & gang**. Jalan yang melintasi beberapa blok dapat dibuat sebagai gang "lintas blok".
+
+Setiap pengurus punya **jabatan** (teks bebas, mis. "Humas Jl. Zamrud") dan **peran** yang menentukan hak aksesnya. Peran diatur Ketua/Admin di **Pengurus > Atur pengurus**.
 
 | Peran | Fokus | Bisa |
 |---|---|---|
@@ -35,7 +37,7 @@ Setiap pengurus punya **jabatan** (teks bebas, mis. "Humas Gang Melati") dan **p
 | **Wakil Ketua** | Membantu Ketua | Memantau semua modul (termasuk pengeluaran yang menunggu), verifikasi anggota, pengumuman, kegiatan, aspirasi, arsip. **Tidak** mencatat kas atau menyetujui pengeluaran |
 | **Sekretaris** | Administrasi | Verifikasi & ubah data anggota, pengumuman, agenda kegiatan, **surat masuk/keluar dan notulen** |
 | **Bendahara** | Keuangan | Tagihan IPL, verifikasi bukti transfer, data rumah, catat pemasukan/pengeluaran, laporan kas. Pengeluaran ≥ batas persetujuan (default Rp 1.000.000) menunggu keputusan Ketua dan belum mengurangi saldo |
-| **Humas Gang** | Satu gang (= blok) | Verifikasi pendaftar, ubah data warga, tanggapi aspirasi, dan buat pengumuman/kegiatan **khusus gangnya** |
+| **Humas Gang** | Satu gang / jalan | Verifikasi pendaftar, ubah data warga, tanggapi aspirasi, dan buat pengumuman/kegiatan **khusus gang/jalan yang dipegang**. Warga gang lain di blok yang sama tidak termasuk |
 | **Seksi / anggota** | Tampil di struktur | Seperti warga, ditambah ringkasan pengurus |
 | **Admin** | Teknis | Semua hak + pengaturan paguyuban, import warga, ubah peran/nomor HP, atur ulang PIN |
 
@@ -44,6 +46,7 @@ Ringkasan matriks (✓ = penuh, ◐ = terbatas):
 | Modul | Ketua | Wakil | Sekretaris | Bendahara | Humas Gang |
 |---|---|---|---|---|---|
 | Verifikasi & data anggota | ✓ | ✓ | ✓ | – | ◐ gangnya |
+| Daftar blok & gang | ✓ | ✓ | ✓ | – | – |
 | Pengumuman & kegiatan | ✓ | ✓ | ✓ | – | ◐ gangnya |
 | Aspirasi warga | ✓ | ✓ | lihat | – | ◐ gangnya |
 | IPL & kas | lihat + setujui | lihat | – | ✓ | – |
@@ -54,6 +57,14 @@ Matriks yang sama tampil di **Ringkasan pengurus** sebagai rujukan. Catatan peru
 
 Semua aturan ini ditegakkan **di database (RLS)**, bukan hanya di tampilan. Kunci yang ada di frontend hanyalah kunci publik (anon/publishable).
 
+### Menu cepat, direktori foto, ekspor & impor
+
+- **Menu cepat 8 kotak** di Beranda (warga) dan Ringkasan pengurus. Kotak ke-8 selalu **Semua menu** (`/menu`), halaman berisi seluruh fitur sesuai jabatan dan bisa dicari. Menu cepat pengurus mengikuti kewenangan dan menampilkan lencana jumlah tugas.
+- **Direktori warga** tampil sebagai kartu foto rasio **3:4** (ada pilihan tampilan Daftar), dengan filter blok/gang/pekerjaan, pencarian, dan urutan (per blok & gang, nama, nomor rumah, tanggal bergabung). Foto profil yang diunggah otomatis dipotong 3:4. Tombol **Direktori** ada di navigasi bawah HP.
+- **Sortir tabel**: klik judul kolom pada tabel (di HP lewat pilihan *Urutkan*). Daftar pengumuman, kegiatan, arsip, kas, dan aspirasi punya pilihan urutan.
+- **Ekspor CSV** (pengurus): Direktori warga dan Data anggota (sesuai filter yang aktif), serta Blok & gang. Berkas memakai pemisah titik koma dan terbuka langsung di Excel/Google Sheets; kolom awalnya sama dengan berkas impor.
+- **Impor CSV**: warga lewat *Import warga* (admin), blok & gang lewat tombol **Impor CSV** di menu Blok & gang (kolom `blok`, `nama_blok`, `gang`). Gang yang sudah ada dilewati; blok baru hanya dapat dibuat admin.
+
 ## 2. Struktur folder
 
 ```
@@ -63,7 +74,8 @@ paguyuban-warga/
 │  ├─ 02-data-awal.sql    # profil paguyuban, blok, kontak darurat (sesuaikan)
 │  ├─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
 │  ├─ 04-import-warga.sql # import warga massal + wajib ganti PIN (setelah 03)
-│  └─ 05-struktur-pengurus.sql # peran pengurus, hak per jabatan, persetujuan kas, arsip surat (setelah 04)
+│  ├─ 05-struktur-pengurus.sql # peran pengurus, hak per jabatan, persetujuan kas, arsip surat (setelah 04)
+│  └─ 06-nama-perumahan.sql    # nama & alamat perumahan (database yang sudah berjalan)
 ├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
@@ -98,7 +110,8 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
    - Tempel isi `supabase/01-skema.sql` lalu **Run**. Aman dijalankan ulang.
    - Tempel isi `supabase/03-pin-angka.sql` lalu **Run** (mengubah aturan sandi menjadi PIN 6 angka; **wajib** dijalankan setelah `01`).
    - Tempel isi `supabase/04-import-warga.sql` lalu **Run** (import warga massal dan kewajiban ganti PIN). **Jalankan sebelum men-deploy versi aplikasi yang memakainya.**
-   - Tempel isi `supabase/05-struktur-pengurus.sql` lalu **Run** (peran pengurus, hak akses per jabatan, persetujuan pengeluaran, arsip surat & notulen, pengumuman per gang). Aman dijalankan ulang dan **tidak menghapus data**; jabatan lama dipetakan otomatis ke peran (mis. "Humas Gang A" → Humas untuk blok A). **Wajib** sebelum men-deploy versi ini. Bila suatu saat Anda menjalankan ulang `01`, jalankan ulang `05` sesudahnya.
+   - Tempel isi `supabase/05-struktur-pengurus.sql` lalu **Run** (peran pengurus, hak akses per jabatan, persetujuan pengeluaran, arsip surat & notulen, gang/jalan di dalam blok, pengumuman per blok/gang, nomor rumah format 3/5). Aman dijalankan ulang dan **tidak menghapus data**; jabatan lama dipetakan otomatis ke peran (mis. "Bendahara" → peran Bendahara). Setelah itu buka menu **Blok & gang**, isi daftar gang/jalan tiap blok, lalu lengkapi gang warga lama di **Data anggota** (filter per blok menunjukkan warga yang belum memilih gang). **Wajib** sebelum men-deploy versi ini. Bila suatu saat Anda menjalankan ulang `01`, jalankan ulang `05` sesudahnya.
+   - Tempel isi `supabase/06-nama-perumahan.sql` lalu **Run** (hanya untuk database yang sudah berjalan: mengganti nama lingkungan menjadi *Perumahan Vila Gading Royal* dan alamat *Desa Pamegarsari, Kec. Parung, Kab. Bogor*; RT/RW dan pengaturan lain tidak disentuh). Instalasi baru tidak perlu karena `01`/`02` sudah memakainya.
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)
@@ -138,11 +151,11 @@ Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil 
    ```
    Hasilnya `Berhasil: akun sekarang Admin aktif.`
 3. Di aplikasi tekan **Periksa status** atau muat ulang. Anda masuk sebagai admin dan melihat menu **Panel Admin**.
-4. Mulai sekarang pendaftar baru muncul di **Admin > Verifikasi Anggota**. Susun pengurus lewat **Pengurus > Atur pengurus**: pilih warga, tulis jabatan, pilih peran, dan untuk Humas pilih gangnya.
+4. Mulai sekarang pendaftar baru muncul di **Admin > Verifikasi Anggota**. Susun pengurus lewat **Pengurus > Atur pengurus**: pilih warga, tulis jabatan, pilih peran, dan untuk Humas pilih gang/jalan yang dipegang. Buat dulu daftar gang di menu **Blok & gang**.
 
 Fungsi `jadikan_admin` tidak dapat dipanggil dari aplikasi, hanya dari SQL Editor.
 
-**Import warga massal:** masuk sebagai admin > **Warga > Import Warga**. Unduh contoh CSV, isi kolom `nama, hp, blok, no_rumah` (opsional `pekerjaan`, `kepala_keluarga` ya/tidak), unggah, periksa pratinjau, lalu **Buat Akun**. Semua akun langsung aktif dengan PIN awal `123456`, dan warga otomatis diminta membuat PIN baru saat pertama masuk (layar *Buat PIN Baru*). Warga yang belum mengganti PIN ditandai di **Data Warga** (filter *Belum ganti PIN*). Satu nomor HP hanya untuk satu akun; baris dengan nomor ganda atau blok tak dikenal dilewati dan dilaporkan. Uji dulu dengan 2-3 baris.
+**Import warga massal:** masuk sebagai admin > **Warga > Import Warga**. Unduh contoh CSV, isi kolom `nama, hp, blok, no_rumah` (nomor boleh 3/5; opsional `gang` berisi nama gang/jalan persis seperti di menu Blok & gang, `pekerjaan`, `kepala_keluarga` ya/tidak), unggah, periksa pratinjau, lalu **Buat Akun**. Semua akun langsung aktif dengan PIN awal `123456`, dan warga otomatis diminta membuat PIN baru saat pertama masuk (layar *Buat PIN Baru*). Warga yang belum mengganti PIN ditandai di **Data Warga** (filter *Belum ganti PIN*). Satu nomor HP hanya untuk satu akun; baris dengan nomor ganda atau blok tak dikenal dilewati dan dilaporkan. Uji dulu dengan 2-3 baris.
 
 **Lupa PIN:** karena tidak memakai SMS/email, warga menghubungi admin. Admin membuka **Data Warga > Ubah > Atur Ulang PIN**, mengisi PIN sementara (6 angka). Warga otomatis diminta membuat PIN baru saat masuk.
 
@@ -153,7 +166,7 @@ Fungsi `jadikan_admin` tidak dapat dipanggil dari aplikasi, hanya dari SQL Edito
 3. Salin *Client ID* dan *Client Secret* ke form Google di Supabase, aktifkan, simpan. (Secret hanya diisi di dashboard Supabase, bukan di aplikasi.)
 4. Set `VITE_GOOGLE_LOGIN=true` (lokal dan di Cloudflare), lalu build ulang.
 
-Pendaftar Google diminta melengkapi **nomor HP, blok, dan nomor rumah**, lalu tetap menunggu persetujuan pengurus.
+Pendaftar Google diminta melengkapi **nomor HP, blok, gang/jalan, dan nomor rumah**, lalu tetap menunggu persetujuan pengurus.
 
 ## 7. GitHub
 
@@ -191,7 +204,7 @@ Yang sudah diuji pada pengembangan (stack Postgres + GoTrue + PostgREST asli, de
 
 - **67 pemeriksaan database**: warga menunggu tidak melihat data, tidak bisa menaikkan peran sendiri, privasi nomor HP, isolasi tagihan antar rumah, bukti transfer hanya terbaca pemilik/bendahara, unggah ke folder orang lain ditolak, verifikasi → lunas → kas otomatis, kuota kegiatan, laporan hanya terlihat pelapor/pengurus, admin terakhir tidak bisa diturunkan, anon tidak bisa membaca data pribadi.
 - **60 pemeriksaan halaman** (30 rute × desktop & HP): tanpa galat dan tanpa scroll horizontal.
-- **Pembaruan tampilan & hak akses (migrasi 05):** 66 pemeriksaan database pada PGlite (Postgres) dengan RLS: peningkatan dari data jabatan lama, migrasi dijalankan dua kali, hak tiap peran, pendaftar dan aspirasi dibatasi per gang untuk Humas, notifikasi pengumuman per gang, alur persetujuan pengeluaran dan saldo, dokumen publik/internal, pengelolaan pengurus oleh Ketua. Ditambah 546 tangkapan layar (39 rute × 7 peran × desktop & HP) tanpa galat konsol dan tanpa scroll horizontal, serta uji alur: login, tolak pengeluaran, pencarian, form kas di HP, keluar.
+- **Pembaruan tampilan & hak akses (migrasi 05):** 90 pemeriksaan database pada PGlite (Postgres) dengan RLS: peningkatan dari data jabatan lama dan dari versi awal migrasi 05, migrasi dijalankan dua kali, hak tiap peran, daftar gang (siapa boleh mengubah, nama ganda ditolak, terbaca formulir pendaftaran), pendaftar/data/aspirasi dibatasi per gang untuk Humas (gang lain di blok yang sama tidak terlihat), pengumuman untuk semua/satu blok/satu gang beserta notifikasinya, nomor rumah 3/5, pendaftaran & lengkapi data & import dengan gang, alur persetujuan pengeluaran dan saldo, dokumen publik/internal, pengelolaan pengurus oleh Ketua. Ditambah tangkapan layar seluruh rute untuk 7 peran (desktop & HP) tanpa galat konsol dan tanpa scroll horizontal, serta uji alur: login, tolak pengeluaran, pencarian, form kas di HP, keluar.
 - **21 pemeriksaan alur browser**: daftar → menunggu → disetujui → tagihan terbit → bayar + unggah bukti → verifikasi → kas bertambah → pembatasan rute per peran → laporan dengan foto.
 
 **Batasan pengujian yang jujur:** pengujian di atas memakai Postgres, GoTrue (Supabase Auth), dan PostgREST asli, tetapi **Supabase Storage dan Realtime diganti stub sederhana** yang menjalankan kebijakan RLS `storage.objects` dari SQL yang sama. Aplikasi belum dicoba langsung di proyek Supabase Anda sendiri. Karena itu lakukan pengujian manual berikut sebagai penerimaan, terutama unggah foto, ubah PIN, dan notifikasi realtime.
@@ -202,7 +215,7 @@ Pengujian manual setelah deploy (disarankan):
 3. Warga: IPL > Bayar Sekarang > unggah foto > Kirim. Bendahara: Terima → cek menu Keuangan.
 4. Coba buka `/admin` dengan akun warga biasa: muncul keterangan "Halaman ini khusus pengurus berwenang".
 8. Bendahara mencatat pengeluaran Rp 1.500.000 → Ketua menerima notifikasi → setujui di **Kas paguyuban > Persetujuan** → saldo berkurang.
-9. Humas Gang membuat pengumuman "Khusus gang" → hanya warga gang itu yang menerima notifikasi.
+9. Humas Jl. Zamrud membuat pengumuman "Hanya Jl. Zamrud" → hanya warga Jl. Zamrud yang menerima notifikasi, warga Jl. Safir di blok yang sama tidak.
 5. Pengaturan > Keamanan: ubah PIN, keluar, masuk lagi dengan PIN baru.
 6. Ubah Profil: unggah foto profil dan pastikan tampil.
 7. Buat pengumuman dari akun admin; akun warga harus menerima notifikasi.
