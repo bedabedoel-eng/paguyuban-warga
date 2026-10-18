@@ -9,6 +9,18 @@ export const simpanPengaturan = async (data) => {
 export const daftarBlok = async () => unwrap(await supabase.from('blok').select('*').order('urutan').order('kode'));
 export const simpanBlok = async (b) => unwrap(await supabase.from('blok').upsert(b).select().single());
 export const hapusBlok = async (kode) => unwrap(await supabase.from('blok').delete().eq('kode', kode));
+// Gang / jalan di dalam blok. Mengembalikan [] bila migrasi 05 belum dijalankan.
+export async function daftarGang() {
+  const { data, error } = await supabase.from('gang').select('*').order('urutan').order('nama');
+  return error ? [] : data || [];
+}
+export async function simpanGang(g) {
+  const { id, created_at, ...data } = g;
+  return unwrap(id
+    ? await supabase.from('gang').update(data).eq('id', id).select().single()
+    : await supabase.from('gang').insert(data).select().single());
+}
+export const hapusGang = async (id) => unwrap(await supabase.from('gang').delete().eq('id', id));
 export const daftarKontakDarurat = async () => unwrap(await supabase.from('kontak_darurat').select('*').order('urutan').order('nama'));
 export async function simpanKontakDarurat(k) {
   const { id, ...data } = k;

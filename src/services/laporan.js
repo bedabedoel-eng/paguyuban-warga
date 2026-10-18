@@ -7,7 +7,7 @@ export async function laporanSaya(uid) {
 }
 /** Semua laporan yang boleh dilihat (RLS: pimpinan semua, humas gangnya). */
 export async function semuaLaporan({ status = '' } = {}) {
-  let q = supabase.from('laporan').select('*, pelapor:pelapor_id(nama,blok,no_rumah,foto_path)').order('created_at', { ascending: false }).limit(300);
+  let q = supabase.from('laporan').select('*, pelapor:pelapor_id(nama,blok,no_rumah,gang_id,foto_path)').order('created_at', { ascending: false }).limit(300);
   if (status) q = q.eq('status', status);
   return unwrap(await q);
 }

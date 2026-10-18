@@ -1,6 +1,6 @@
 /** Pembaca CSV sederhana: mendukung tanda kutip, pemisah koma / titik koma / tab, dan BOM. */
 export function parseCsv(text) {
-  const src = String(text || '').replace(/^﻿/, '');
+  const src = String(text || '').replace(/^﻿/, '').replace(/^sep=.\r?\n/i, '');
   const firstLine = src.split(/\r?\n/, 1)[0] || '';
   const delim = [';', '\t', ','].map((d) => [d, firstLine.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
   const rows = [];
@@ -28,7 +28,37 @@ export function parseCsv(text) {
 }
 
 /** Contoh berkas untuk diunduh admin. */
-export const CONTOH_CSV = 'nama,hp,blok,no_rumah,pekerjaan,kepala_keluarga\n'
-  + 'Budi Santoso,081234567890,A,12,Guru,ya\n'
-  + 'Siti Aminah,081298765432,A,12,Ibu Rumah Tangga,tidak\n'
-  + 'Agus Wijaya,085611112222,B,3,Wiraswasta,ya\n';
+export const CONTOH_CSV = 'nama,hp,blok,no_rumah,gang,pekerjaan,kepala_keluarga\n'
+  + 'Budi Santoso,081234567890,C,3/5,Jl. Zamrud,Guru,ya\n'
+  + 'Siti Aminah,081298765432,C,3/5,Jl. Zamrud,Ibu Rumah Tangga,tidak\n'
+  + 'Agus Wijaya,085611112222,A,12,,Wiraswasta,ya\n';
+
+/** Cegah rumus tersembunyi saat berkas dibuka di Excel / Sheets (CSV injection). */
+const aman = (v) => {
+  const s = v == null ? '' : String(v);
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+};
+
+/**
+ * Susun CSV yang langsung terbaca Excel (BOM UTF-8, pemisah titik koma untuk Excel Indonesia).
+ * kolom: [{ key, label, nilai?(row) }]
+ */
+export function toCsv(rows, kolom, pemisah = ';') {
+  const esc = (v) => {
+    const s = aman(v);
+    return /["\n\r;,]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const baris = [kolom.map((k) => esc(k.label || k.key)).join(pemisah)];
+  for (const r of rows) baris.push(kolom.map((k) => esc(k.nilai ? k.nilai(r) : r[k.key])).join(pemisah));
+  return '\ufeff' + baris.join('\r\n') + '\r\n';
+}
+
+/** Unduh teks sebagai berkas di peramban. */
+export function unduhBerkas(nama, isi, tipe = 'text/csv;charset=utf-8') {
+  const url = URL.createObjectURL(new Blob([isi], { type: tipe }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nama; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export const stempelTanggal = () => new Date().toISOString().slice(0, 10);

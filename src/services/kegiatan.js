@@ -14,7 +14,7 @@ export async function daftarKegiatan({ selesai = false, dari, sampai, limit = 10
   else q = q.gte('selesai', now).order('mulai');
   return unwrap(await q);
 }
-export const detailKegiatan = async (id) => unwrap(await supabase.from('kegiatan').select('*, peserta:kegiatan_peserta(warga_id, warga:warga_id(nama,foto_path,blok,no_rumah))').eq('id', id).single());
+export const detailKegiatan = async (id) => unwrap(await supabase.from('kegiatan').select('*, peserta:kegiatan_peserta(warga_id, warga:warga_id(nama,foto_path,blok,no_rumah,gang_id))').eq('id', id).single());
 export async function simpanKegiatan(k) {
   const { id, peserta, created_at, dibuat_oleh, ...data } = k;
   return unwrap(id

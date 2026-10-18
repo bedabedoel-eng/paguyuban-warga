@@ -10,13 +10,13 @@ export async function masukDenganHp(hpInput, password) {
   return data;
 }
 
-export async function daftar({ nama, hp: hpInput, blok, noRumah, password }) {
+export async function daftar({ nama, hp: hpInput, blok, noRumah, gang, password }) {
   const hp = normalizeHp(hpInput);
   if (!hp) throw new Error('Nomor HP tidak valid');
   const { data, error } = await supabase.auth.signUp({
     email: hpToEmail(hp),
     password,
-    options: { data: { nama: nama.trim(), nomor_hp: hp, blok, no_rumah: noRumah.trim().toUpperCase() } },
+    options: { data: { nama: nama.trim(), nomor_hp: hp, blok, no_rumah: noRumah.trim().toUpperCase(), gang_id: gang || null } },
   });
   if (error) throw error;
   // Bila "Confirm email" masih aktif di Supabase, session kosong & user tidak bisa masuk.
@@ -37,8 +37,8 @@ export async function masukGoogle() {
 
 export const keluar = () => supabase.auth.signOut();
 
-export async function lengkapiPendaftaran({ nama, hp, blok, noRumah }) {
-  return unwrap(await supabase.rpc('lengkapi_pendaftaran', { p_nama: nama, p_hp: hp, p_blok: blok, p_no_rumah: noRumah }));
+export async function lengkapiPendaftaran({ nama, hp, blok, noRumah, gang }) {
+  return unwrap(await supabase.rpc('lengkapi_pendaftaran', { p_nama: nama, p_hp: hp, p_blok: blok, p_no_rumah: noRumah, p_gang: gang || null }));
 }
 
 export async function ubahSandi(lama, baru) {

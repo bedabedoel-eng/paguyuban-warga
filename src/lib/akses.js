@@ -8,7 +8,7 @@ export const PERAN_PENGURUS = {
   wakil_ketua: { label: 'Wakil Ketua', urut: 2, inti: true, ringkas: 'Membantu ketua: anggota, informasi, aspirasi' },
   sekretaris: { label: 'Sekretaris', urut: 3, inti: true, ringkas: 'Data anggota, surat, agenda, notulen' },
   bendahara: { label: 'Bendahara', urut: 4, inti: true, ringkas: 'Iuran, pemasukan, pengeluaran, laporan kas' },
-  humas: { label: 'Humas Gang', urut: 5, inti: false, ringkas: 'Informasi, anggota, dan aspirasi di gangnya' },
+  humas: { label: 'Humas Gang', urut: 5, inti: false, ringkas: 'Informasi, anggota, dan aspirasi di gang/jalan yang dipegang' },
   seksi: { label: 'Seksi / Anggota Pengurus', urut: 6, inti: false, ringkas: 'Membantu kegiatan sesuai bidang' },
 };
 
@@ -30,26 +30,50 @@ export function normalHak(h) {
   return x;
 }
 
-/** Label peran utama untuk ditampilkan (mis. "Ketua", "Humas Gang A", "Warga"). */
-export function labelPeran(hak, jabatan) {
+/** Label peran utama untuk ditampilkan (mis. "Ketua", "Humas Jl. Zamrud", "Warga"). */
+export function labelPeran(hak, jabatan, gang = []) {
   if (jabatan) return jabatan;
   const p = [...(hak?.peran || [])].sort((a, b) => (PERAN_PENGURUS[a]?.urut ?? 9) - (PERAN_PENGURUS[b]?.urut ?? 9))[0];
-  if (p === 'humas' && hak.wilayah?.length) return `Humas Gang ${hak.wilayah.join(', ')}`;
+  if (p === 'humas' && hak.wilayah?.length) {
+    const nama = hak.wilayah.map((id) => gang.find((g) => g.id === id)?.nama).filter(Boolean);
+    return nama.length ? `Humas ${nama.join(', ')}` : PERAN_PENGURUS.humas.label;
+  }
   if (p) return PERAN_PENGURUS[p].label;
   if (hak?.admin) return 'Admin';
   return 'Warga';
 }
 
-/** Apakah pengguna boleh mengelola data di gang tertentu. */
-export function kelolaWilayah(hak, blok) {
-  return hak.kelola_anggota || (!!blok && hak.wilayah.includes(blok));
+/** Nama gang/jalan yang dipegang humas, mis. "Jl. Zamrud, Jl. Safir". */
+export function namaWilayah(hak, gang = []) {
+  return (hak?.wilayah || []).map((id) => gang.find((g) => g.id === id)?.nama).filter(Boolean).join(', ') || 'gang Anda';
 }
 
-/** Gang yang bisa dipilih sebagai sasaran informasi. null = semua warga. */
-export function opsiSasaran(hak, blok = []) {
+/** Apakah pengguna boleh mengelola data warga / informasi di gang tertentu (null = tanpa gang/semua). */
+export function kelolaWilayah(hak, gangId) {
+  return hak.kelola_anggota || (!!gangId && hak.wilayah.includes(gangId));
+}
+
+/**
+ * Pilihan sasaran pengumuman/kegiatan.
+ * Nilai: '' = semua warga, 'b:C' = satu blok, 'g:<id>' = satu gang/jalan.
+ * Humas hanya bisa memilih gangnya sendiri.
+ */
+export function opsiSasaran(hak, blok = [], gang = []) {
   const semua = hak.kelola_anggota;
-  const daftar = blok.filter((b) => semua || hak.wilayah.includes(b.kode)).map((b) => ({ value: b.kode, label: `Hanya ${b.nama}` }));
-  return semua ? [{ value: '', label: 'Semua warga' }, ...daftar] : daftar;
+  const opsiGang = gang.filter((g) => semua || hak.wilayah.includes(g.id))
+    .map((g) => ({ value: `g:${g.id}`, label: `Hanya ${g.nama}${g.blok ? ` (Blok ${g.blok})` : ''}` }));
+  if (!semua) return opsiGang;
+  return [{ value: '', label: 'Semua warga' }, ...blok.map((b) => ({ value: `b:${b.kode}`, label: `Hanya Blok ${b.kode}${b.nama && b.nama !== b.kode && !/^blok\s/i.test(b.nama) ? ` (${b.nama})` : ''}` })), ...opsiGang];
+}
+
+/** Nilai pilihan sasaran dari baris pengumuman/kegiatan. */
+export const nilaiSasaran = (x) => (x?.gang_id ? `g:${x.gang_id}` : x?.blok ? `b:${x.blok}` : '');
+
+/** Kolom database dari nilai pilihan sasaran. */
+export function kolomSasaran(v) {
+  if (v?.startsWith('g:')) return { gang_id: v.slice(2), blok: null };
+  if (v?.startsWith('b:')) return { blok: v.slice(2), gang_id: null };
+  return { blok: null, gang_id: null };
 }
 
 /** Ringkasan matriks hak (ditampilkan di halaman Pengurus). */
@@ -63,3 +87,10 @@ export const MATRIKS = [
   { aksi: 'Setujui pengeluaran besar', ketua: true, wakil_ketua: false, sekretaris: false, bendahara: false, humas: false },
   { aksi: 'Angkat & atur pengurus', ketua: true, wakil_ketua: false, sekretaris: false, bendahara: false, humas: false },
 ];
+
+/** "Humas" + gang yang dipegang bila belum tertulis di jabatan, mis. "Humas · Jl. Zamrud". */
+export function labelJabatan(p, namaGang = () => null) {
+  const g = p?.peran === 'humas' && p.wilayah_gang ? namaGang(p.wilayah_gang) : null;
+  if (!g || p.jabatan.toLowerCase().includes(g.toLowerCase())) return p.jabatan;
+  return `${p.jabatan} · ${g}`;
+}

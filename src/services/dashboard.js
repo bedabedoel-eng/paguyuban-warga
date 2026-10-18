@@ -33,7 +33,7 @@ export function labelCuaca(kode) {
 export async function cariGlobal(q) {
   const s = `%${q.replace(/[%_,()]/g, ' ')}%`;
   const [w, p, k] = await Promise.all([
-    supabase.from('warga').select('id,nama,blok,no_rumah').eq('status', 'aktif').ilike('nama', s).limit(5),
+    supabase.from('warga').select('id,nama,blok,no_rumah,gang_id').eq('status', 'aktif').ilike('nama', s).limit(5),
     supabase.from('pengumuman').select('id,judul,created_at').ilike('judul', s).limit(5),
     supabase.from('kegiatan').select('id,judul,mulai').ilike('judul', s).limit(5),
   ]);

@@ -46,6 +46,7 @@ const Notifikasi = lazy(() => import('./features/notifikasi/Notifikasi'));
 const DashboardAdmin = lazy(() => import('./features/admin/DashboardAdmin'));
 const VerifikasiAnggota = lazy(() => import('./features/admin/VerifikasiAnggota'));
 const DataWarga = lazy(() => import('./features/admin/DataWarga'));
+const WilayahGang = lazy(() => import('./features/admin/WilayahGang'));
 const DataRumah = lazy(() => import('./features/admin/DataRumah'));
 const KelolaIpl = lazy(() => import('./features/admin/KelolaIpl'));
 const KelolaLaporan = lazy(() => import('./features/admin/KelolaLaporan'));
@@ -108,6 +109,9 @@ export default function App() {
                     <Route element={<RequireHak hak={['kelola_anggota', 'humas']} />}>
                       <Route path="admin/verifikasi" element={<VerifikasiAnggota />} />
                       <Route path="admin/warga" element={<DataWarga />} />
+                    </Route>
+                    <Route element={<RequireHak hak="kelola_anggota" />}>
+                      <Route path="admin/wilayah" element={<WilayahGang />} />
                     </Route>
                     <Route element={<RequireHak hak="kelola_laporan" />}>
                       <Route path="admin/laporan" element={<KelolaLaporan />} />
