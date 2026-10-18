@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Input, PhoneInput, Select, Callout } from '../../components/ui';
+import { Button, Input, PhoneInput, Callout } from '../../components/ui';
+import AlamatFields from './AlamatFields';
 import AuthLayout from './AuthLayout';
 import { lengkapiPendaftaran } from '../../services/auth';
 import { pesanError } from '../../lib/errors';
@@ -11,9 +12,9 @@ import { validasiDaftar } from './Daftar';
 /** Untuk pendaftar lewat Google: lengkapi nomor HP dan rumah. */
 export default function LengkapiData() {
   const nav = useNavigate();
-  const { blok } = useSettings();
+  const { gang } = useSettings();
   const { warga, refreshProfil, signOut } = useAuth();
-  const [f, setF] = useState({ nama: warga?.nama || '', hp: '', blok: warga?.blok || '', noRumah: warga?.no_rumah || '' });
+  const [f, setF] = useState({ nama: warga?.nama || '', hp: '', blok: warga?.blok || '', gang: warga?.gang_id || '', noRumah: warga?.no_rumah || '' });
   const [errors, setErrors] = useState({});
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function LengkapiData() {
 
   async function submit(e) {
     e.preventDefault();
-    const er = validasiDaftar(f, { butuhSandi: false });
+    const er = validasiDaftar(f, { butuhSandi: false, gang });
     setErrors(er);
     if (Object.keys(er).length) return;
     setLoading(true); setErr('');
@@ -42,10 +43,7 @@ export default function LengkapiData() {
         {err && <Callout tone="bad">{err}</Callout>}
         <Input label="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} maxLength={80} />
         <PhoneInput label="Nomor HP" value={f.hp} onChange={set('hp')} error={errors.hp} />
-        <div className="form-grid">
-          <Select label="Gang / blok" placeholder="Pilih" value={f.blok} onChange={set('blok')} error={errors.blok} options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
-          <Input label="Nomor rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
-        </div>
+        <AlamatFields f={f} setF={setF} errors={errors} />
         <Button type="submit" block size="lg" loading={loading}>Kirim untuk diverifikasi</Button>
       </form>
       <p className="auth-foot"><button type="button" className="link" onClick={signOut}>Keluar</button></p>

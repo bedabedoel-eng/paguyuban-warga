@@ -6,9 +6,11 @@ import { useAsync } from '../../hooks/useAsync';
 import { detailWarga, kontakWarga } from '../../services/warga';
 import { tanggal } from '../../lib/format';
 import { formatHp, waLink } from '../../lib/phone';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function DetailWarga() {
   const { id } = useParams();
+  const { alamat } = useSettings();
   const s = useAsync(async () => {
     const [w, k] = await Promise.all([detailWarga(id), kontakWarga(id)]);
     return { w, k };
@@ -17,7 +19,7 @@ export default function DetailWarga() {
   if (s.error && !s.data) return <div className="page narrow"><PageHeader back title="Profil warga" /><ErrorState error={s.error} onRetry={s.reload} /></div>;
   const { w, k } = s.data;
   const facts = [
-    [House, 'Alamat', `Blok ${w.blok} No. ${w.no_rumah}`],
+    [House, 'Alamat', alamat(w)],
     [Briefcase, 'Pekerjaan', w.pekerjaan],
     [Users, 'Keluarga', w.keluarga],
     [Heart, 'Hobi', w.hobi],
@@ -33,7 +35,7 @@ export default function DetailWarga() {
           <Avatar nama={w.nama} path={w.foto_path} size={88} />
           <div className="t">
             <h2>{w.nama}</h2>
-            <p>Blok {w.blok} No. {w.no_rumah}{w.pekerjaan ? ` · ${w.pekerjaan}` : ''}</p>
+            <p>{alamat(w)}{w.pekerjaan ? ` · ${w.pekerjaan}` : ''}</p>
             <div className="tags">
               {w.kepala_keluarga && <Badge tone="brand">Kepala keluarga</Badge>}
               {w.role !== 'warga' && <Badge tone="gold">{w.role === 'admin' ? 'Admin' : 'Pengurus'}</Badge>}

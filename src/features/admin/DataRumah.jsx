@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { daftarRumah, simpanRumah, hapusRumah } from '../../services/rumah';
 import { rupiah } from '../../lib/format';
+import { POLA_NOMOR_RUMAH } from '../../lib/alamat';
 
 export default function DataRumah() {
   const { blok, pengaturan } = useSettings();
@@ -20,8 +21,8 @@ export default function DataRumah() {
   const baru = () => setF({ blok: fb || '', nomor: '', status: 'dihuni', tarif_ipl: '' });
 
   async function simpan() {
-    if (!f.blok) return toast.error('Pilih gang/blok');
-    if (!/^[0-9A-Za-z-]{1,6}$/.test(f.nomor || '')) return toast.error('Nomor rumah tidak valid');
+    if (!f.blok) return toast.error('Pilih blok');
+    if (!POLA_NOMOR_RUMAH.test((f.nomor || '').trim())) return toast.error('Nomor rumah: angka/huruf, boleh dengan / . - (mis. 3/5)');
     setLoading(true);
     try {
       await simpanRumah({ id: f.id, blok: f.blok, nomor: f.nomor.toUpperCase(), status: f.status, tarif_ipl: f.tarif_ipl === '' || f.tarif_ipl == null ? null : Number(f.tarif_ipl), catatan: f.catatan || null });
@@ -33,9 +34,9 @@ export default function DataRumah() {
     try { await hapusRumah(r.id); toast.success('Rumah dihapus'); s.reload(); } catch (e) { toast.error(e); }
   }
   const cols = [
-    { key: 'kode', label: 'Rumah', render: (r) => <span className="cell-main">{r.kode}</span> },
-    { key: 'status', label: 'Status', render: (r) => <Badge tone={r.status === 'dihuni' ? 'ok' : ''} dot>{r.status === 'dihuni' ? 'Dihuni' : 'Kosong'}</Badge> },
-    { key: 'tarif', label: 'Tarif IPL', className: 'right', render: (r) => (r.tarif_ipl != null ? <span className="money">{rupiah(r.tarif_ipl)}</span> : <span className="muted">Standar {rupiah(pengaturan.tarif_ipl)}</span>) },
+    { key: 'kode', label: 'Rumah', sort: (r) => r.kode, render: (r) => <span className="cell-main">{r.kode}</span> },
+    { key: 'status', label: 'Status', sort: (r) => r.status, render: (r) => <Badge tone={r.status === 'dihuni' ? 'ok' : ''} dot>{r.status === 'dihuni' ? 'Dihuni' : 'Kosong'}</Badge> },
+    { key: 'tarif', label: 'Tarif IPL', className: 'right', sort: (r) => r.tarif_ipl ?? pengaturan.tarif_ipl, render: (r) => (r.tarif_ipl != null ? <span className="money">{rupiah(r.tarif_ipl)}</span> : <span className="muted">Standar {rupiah(pengaturan.tarif_ipl)}</span>) },
     { key: 'aksi', label: '', className: 'actions', render: (r) => <><IconButton small icon={Pencil} size={16} label={`Ubah ${r.kode}`} onClick={() => setF({ ...r, tarif_ipl: r.tarif_ipl ?? '' })} /><IconButton small danger icon={Trash2} size={16} label={`Hapus ${r.kode}`} onClick={() => hapus(r)} /></> },
   ];
   const dihuni = rows.filter((r) => r.status === 'dihuni').length;
@@ -57,8 +58,8 @@ export default function DataRumah() {
         {f && (
           <div className="stack">
             <div className="form-grid">
-              <Select label="Gang / blok" value={f.blok} onChange={(e) => setF({ ...f, blok: e.target.value })} placeholder="Pilih" options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
-              <Input label="Nomor" value={f.nomor} onChange={(e) => setF({ ...f, nomor: e.target.value })} maxLength={6} />
+              <Select label="Blok" value={f.blok} onChange={(e) => setF({ ...f, blok: e.target.value })} placeholder="Pilih" options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
+              <Input label="Nomor" value={f.nomor} onChange={(e) => setF({ ...f, nomor: e.target.value })} maxLength={10} placeholder="Contoh: 3/5" />
             </div>
             <Select label="Status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} options={[{ value: 'dihuni', label: 'Dihuni (ditagih IPL)' }, { value: 'kosong', label: 'Kosong (tidak ditagih)' }]} />
             <Input label="Tarif IPL khusus" optional type="number" min="0" value={f.tarif_ipl} onChange={(e) => setF({ ...f, tarif_ipl: e.target.value })} hint={`Kosongkan untuk memakai tarif standar ${rupiah(pengaturan.tarif_ipl)}`} />

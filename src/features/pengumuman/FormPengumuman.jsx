@@ -9,7 +9,8 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { detailPengumuman, simpanPengumuman } from '../../services/pengumuman';
 import { uploadFile, removeFile } from '../../lib/storage';
-import { opsiSasaran } from '../../lib/akses';
+import { opsiSasaran, nilaiSasaran, kolomSasaran } from '../../lib/akses';
+import { labelSasaran } from '../../lib/alamat';
 import { KATEGORI_PENGUMUMAN } from '../../lib/constants';
 
 export default function FormPengumuman() {
@@ -22,11 +23,11 @@ export default function FormPengumuman() {
 
 function Isi({ awal, id }) {
   const { hak } = useAuth();
-  const { blok } = useSettings();
+  const { blok, gang } = useSettings();
   const toast = useToast();
   const nav = useNavigate();
-  const sasaran = opsiSasaran(hak, blok);
-  const [f, setF] = useState({ judul: awal?.judul || '', ringkasan: awal?.ringkasan || '', isi: awal?.isi || '', kategori: awal?.kategori || 'umum', disematkan: awal?.disematkan || false, blok: awal ? awal.blok || '' : sasaran[0]?.value ?? '' });
+  const sasaran = opsiSasaran(hak, blok, gang);
+  const [f, setF] = useState({ judul: awal?.judul || '', ringkasan: awal?.ringkasan || '', isi: awal?.isi || '', kategori: awal?.kategori || 'umum', disematkan: awal?.disematkan || false, sasaran: awal ? nilaiSasaran(awal) : sasaran[0]?.value ?? '' });
   const [foto, setFoto] = useState(null);
   const [hapusFoto, setHapusFoto] = useState(false);
   const [err, setErr] = useState({});
@@ -45,9 +46,10 @@ function Isi({ awal, id }) {
       let gambar_path = awal?.gambar_path || null;
       if (foto) gambar_path = await uploadFile('konten', 'pengumuman', foto);
       else if (hapusFoto) gambar_path = null;
-      const row = await simpanPengumuman({ id, judul: f.judul.trim(), ringkasan: f.ringkasan.trim() || null, isi: f.isi.trim(), kategori: f.kategori, disematkan: f.disematkan, gambar_path, blok: f.blok || null });
+      const row = await simpanPengumuman({ id, judul: f.judul.trim(), ringkasan: f.ringkasan.trim() || null, isi: f.isi.trim(), kategori: f.kategori, disematkan: f.disematkan, gambar_path, ...kolomSasaran(f.sasaran) });
       if (awal?.gambar_path && gambar_path !== awal.gambar_path) removeFile('konten', awal.gambar_path).catch(() => {});
-      toast.success(id ? 'Pengumuman diperbarui' : f.blok ? `Diterbitkan untuk warga Gang ${f.blok}` : 'Diterbitkan. Semua warga menerima notifikasi.');
+      const target = labelSasaran(kolomSasaran(f.sasaran), gang);
+      toast.success(id ? 'Pengumuman diperbarui' : target ? `Diterbitkan untuk warga ${target}` : 'Diterbitkan. Semua warga menerima notifikasi.');
       nav(`/pengumuman/${row.id}`, { replace: true });
     } catch (e2) { toast.error(e2); } finally { setLoading(false); }
   }
@@ -65,7 +67,7 @@ function Isi({ awal, id }) {
           </div>
           <div className="form-section">
             <div className="form-grid">
-              <Select label="Ditujukan untuk" value={f.blok} onChange={set('blok')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
+              <Select label="Ditujukan untuk" value={f.sasaran} onChange={set('sasaran')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
               <div style={{ alignSelf: 'end', paddingBottom: 10 }}><Checkbox checked={f.disematkan} onChange={(v) => setF((s) => ({ ...s, disematkan: v }))}>Sematkan di urutan teratas</Checkbox></div>
             </div>
             {!hak.kelola_anggota && <Callout tone="neutral">Sebagai Humas Gang, pengumuman Anda hanya tampil untuk warga gang yang Anda pegang.</Callout>}

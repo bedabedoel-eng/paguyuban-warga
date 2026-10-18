@@ -10,10 +10,13 @@ import { removeFile } from '../../lib/storage';
 import { KATEGORI_PENGUMUMAN } from '../../lib/constants';
 import { kelolaWilayah } from '../../lib/akses';
 import { tanggalJam } from '../../lib/format';
+import { labelSasaran } from '../../lib/alamat';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function DetailPengumuman() {
   const { id } = useParams();
   const { hak } = useAuth();
+  const { gang } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
   const nav = useNavigate();
@@ -22,7 +25,8 @@ export default function DetailPengumuman() {
   if (s.error && !s.data) return <div className="page narrow"><PageHeader back title="Pengumuman" /><ErrorState error={s.error} onRetry={s.reload} /></div>;
   const p = s.data;
   const k = KATEGORI_PENGUMUMAN[p.kategori] || KATEGORI_PENGUMUMAN.umum;
-  const boleh = p.blok ? kelolaWilayah(hak, p.blok) : hak.kelola_anggota;
+  const boleh = kelolaWilayah(hak, p.gang_id);
+  const target = labelSasaran(p, gang);
   async function hapus() {
     if (!(await confirm({ title: 'Hapus pengumuman?', text: 'Pengumuman ini akan hilang dari daftar semua warga.', okLabel: 'Hapus', danger: true }))) return;
     try { await hapusPengumuman(id); if (p.gambar_path) removeFile('konten', p.gambar_path).catch(() => {}); toast.success('Pengumuman dihapus'); nav('/pengumuman', { replace: true }); } catch (e) { toast.error(e); }
@@ -35,7 +39,7 @@ export default function DetailPengumuman() {
       <Card pad className="stack">
         <div className="post-meta">
           <Badge tone={k.tone}>{k.label}</Badge>
-          {p.blok && <Badge tone="gold">Khusus Gang {p.blok}</Badge>}
+          {target && <Badge tone="gold">Khusus {target}</Badge>}
           <span>{tanggalJam(p.created_at)}</span>
         </div>
         <h1 className="post-title">{p.judul}</h1>

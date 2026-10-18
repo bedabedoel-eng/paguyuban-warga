@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Pencil, FileUp, Users, KeyRound, Trash2 } from 'lucide-react';
+import { Pencil, FileUp, Users, KeyRound, Trash2, Download } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Badge, Button, Card, EmptyState, ErrorState, SkeletonRows, Input, Modal, PinInput, PhoneInput, Select, SearchInput, Checkbox, Callout, DataTable, useConfirm } from '../../components/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorState, SkeletonRows, Input, Modal, PinInput, PhoneInput, Select, SearchInput, Checkbox, Callout, DataTable, IconButton, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,30 +12,37 @@ import { semuaWarga, ubahWargaAdmin, ubahKontakAdmin, resetSandiWarga, hapusWarg
 import { daftarPengurus } from '../../services/pengurus';
 import { formatHp, normalizeHp } from '../../lib/phone';
 import { STATUS_WARGA } from '../../lib/constants';
-import { kelolaWilayah } from '../../lib/akses';
+import { tanggal } from '../../lib/format';
+import { kelolaWilayah, namaWilayah, labelJabatan } from '../../lib/akses';
+import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
+import { eksporWarga } from '../../lib/eksporWarga';
 
 function EditWarga({ w, onClose, onSaved }) {
   const { hak, user } = useAuth();
-  const { blok } = useSettings();
+  const { blok, gang, namaGang } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
   const admin = hak.admin;
-  const [f, setF] = useState({ nama: w.nama, blok: w.blok || '', no_rumah: w.no_rumah || '', status: w.status, role: w.role === 'admin' ? 'admin' : 'warga', kepala_keluarga: w.kepala_keluarga, pekerjaan: w.pekerjaan || '', hp: w.kontak?.nomor_hp ? w.kontak.nomor_hp.replace(/^62/, '') : '' });
+  const [f, setF] = useState({ nama: w.nama, blok: w.blok || '', gang_id: w.gang_id || '', no_rumah: w.no_rumah || '', status: w.status, role: w.role === 'admin' ? 'admin' : 'warga', kepala_keluarga: w.kepala_keluarga, pekerjaan: w.pekerjaan || '', hp: w.kontak?.nomor_hp ? w.kontak.nomor_hp.replace(/^62/, '') : '' });
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const jab = useAsync(async () => (await daftarPengurus()).filter((p) => p.warga_id === w.id), [w.id]);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const diriSendiri = w.id === user.id;
   const terkunci = w.role === 'admin' && !admin;
-  const opsiBlok = blok.filter((b) => hak.kelola_anggota || hak.wilayah.includes(b.kode)).map((b) => ({ value: b.kode, label: b.nama }));
+  const opsiBlok = blok.map((b) => ({ value: b.kode, label: b.nama }));
+  const opsiGang = gangDiBlok(gang, f.blok).filter((g) => hak.kelola_anggota || hak.wilayah.includes(g.id)).map((g) => ({ value: g.id, label: g.nama }));
+  const gantiBlok = (e) => { const b = e.target.value; setF((s) => ({ ...s, blok: b, gang_id: gangDiBlok(gang, b).some((g) => g.id === s.gang_id) ? s.gang_id : '' })); };
 
   async function simpan() {
     const hp = f.hp ? normalizeHp(f.hp) : null;
     if (admin && f.hp && !hp) return toast.error('Nomor HP tidak valid');
     if (f.nama.trim().length < 2) return toast.error('Nama minimal 2 huruf');
+    if (f.no_rumah.trim() && !POLA_NOMOR_RUMAH.test(f.no_rumah.trim())) return toast.error('Nomor rumah: angka/huruf, boleh dengan / . - (mis. 3/5)');
+    if (!hak.kelola_anggota && !f.gang_id) return toast.error('Pilih gang/jalan');
     setLoading(true);
     try {
-      const data = { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, blok: f.blok || null, no_rumah: f.no_rumah.trim().toUpperCase() || null, kepala_keluarga: !!f.kepala_keluarga };
+      const data = { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, blok: f.blok || null, gang_id: f.gang_id || null, no_rumah: f.no_rumah.trim().toUpperCase() || null, kepala_keluarga: !!f.kepala_keluarga };
       if (!diriSendiri) data.status = f.status;
       if (admin && !diriSendiri && w.role !== 'pengurus') data.role = f.role;
       await ubahWargaAdmin(w.id, data);
@@ -60,8 +67,14 @@ function EditWarga({ w, onClose, onSaved }) {
         <div className="form-section">
           <div className="form-grid">
             <Input fieldClass="span-2" label="Nama lengkap" value={f.nama} onChange={set('nama')} maxLength={80} disabled={terkunci} />
-            <Select label="Gang / blok" value={f.blok} onChange={set('blok')} placeholder="Pilih" options={opsiBlok} disabled={terkunci} />
-            <Input label="Nomor rumah" value={f.no_rumah} onChange={set('no_rumah')} maxLength={6} disabled={terkunci} />
+            <Select label="Blok" value={f.blok} onChange={gantiBlok} placeholder="Pilih" options={opsiBlok} disabled={terkunci || !hak.kelola_anggota} />
+            <Input label="Nomor rumah" value={f.no_rumah} onChange={set('no_rumah')} maxLength={10} placeholder="Contoh: 3/5" disabled={terkunci} />
+            {(opsiGang.length > 0 || f.gang_id) && (
+              <Select fieldClass="span-2" label="Gang / jalan" value={f.gang_id} onChange={set('gang_id')}
+                placeholder={hak.kelola_anggota ? 'Belum dipilih' : undefined}
+                options={opsiGang.some((o) => o.value === f.gang_id) || !f.gang_id ? opsiGang : [{ value: f.gang_id, label: namaGang(f.gang_id) || 'Gang lain' }, ...opsiGang]}
+                disabled={terkunci} hint="Menentukan humas yang mendampingi warga ini." />
+            )}
             <Input label="Pekerjaan" optional value={f.pekerjaan} onChange={set('pekerjaan')} maxLength={60} disabled={terkunci} />
             <Select label="Status keanggotaan" value={f.status} onChange={set('status')} options={['menunggu', 'aktif', 'ditolak', 'nonaktif'].map((x) => ({ value: x, label: STATUS_WARGA[x].label }))} disabled={terkunci || diriSendiri} />
             <div className="span-2"><Checkbox checked={f.kepala_keluarga} onChange={(v) => setF((s) => ({ ...s, kepala_keluarga: v }))} disabled={terkunci}>Kepala keluarga</Checkbox></div>
@@ -74,7 +87,7 @@ function EditWarga({ w, onClose, onSaved }) {
             {admin && !diriSendiri && w.role !== 'pengurus' && <Select label="Peran sistem" value={f.role} onChange={set('role')} options={[{ value: 'warga', label: 'Warga' }, { value: 'admin', label: 'Admin (akses penuh)' }]} />}
           </div>
           <div className="row wrap">
-            {jab.data?.length ? jab.data.map((j) => <Badge key={j.id} tone="brand">{j.jabatan}{j.wilayah_blok ? ` · Gang ${j.wilayah_blok}` : ''}</Badge>) : <span className="text-sm muted">Tidak memegang jabatan pengurus.</span>}
+            {jab.data?.length ? jab.data.map((j) => <Badge key={j.id} tone="brand">{labelJabatan(j, namaGang)}</Badge>) : <span className="text-sm muted">Tidak memegang jabatan pengurus.</span>}
             {hak.kelola_pengurus && <Link to="/pengurus/kelola" className="link">Atur jabatan</Link>}
           </div>
         </div>
@@ -95,44 +108,61 @@ function EditWarga({ w, onClose, onSaved }) {
 
 export default function DataWarga() {
   const { hak } = useAuth();
-  const { blok } = useSettings();
+  const { blok, gang, alamatPendek } = useSettings();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
-  const fb = params.get('blok') || (hak.kelola_anggota ? '' : hak.wilayah[0] || '');
+  // Filter wilayah: ?blok=C atau ?gang=<id>. Humas otomatis melihat gangnya.
+  const fg = params.get('gang') || (hak.kelola_anggota ? '' : hak.wilayah[0] || '');
+  const fb = fg ? '' : params.get('blok') || '';
+  const fw = fg ? `g:${fg}` : fb ? `b:${fb}` : '';
   const dq = useDebounce(q.trim(), 300);
   const belumPin = status === 'belum_pin';
   const s = useAsync(async () => {
-    const rows = await semuaWarga({ status: belumPin ? '' : status, q: dq, blok: fb });
+    const rows = await semuaWarga({ status: belumPin ? '' : status, q: dq, blok: fb, gang: fg });
     return belumPin ? rows.filter((x) => x.wajib_ganti_pin) : rows;
-  }, [status, dq, fb]);
+  }, [status, dq, fb, fg]);
   const [edit, setEdit] = useState(null);
-  const opsiBlok = useMemo(() => blok.filter((b) => hak.kelola_anggota || hak.wilayah.includes(b.kode)), [blok, hak]);
+  const toast = useToast();
+  function ekspor() {
+    if (!s.data?.length) return toast.error('Tidak ada data untuk diekspor');
+    const n = eksporWarga(s.data, gang, 'data-anggota');
+    toast.success(`${n} anggota diekspor ke CSV (sesuai filter)`);
+  }
+  const opsiWilayah = useMemo(() => {
+    const g = gang.filter((x) => hak.kelola_anggota || hak.wilayah.includes(x.id));
+    if (!hak.kelola_anggota) return g.map((x) => ({ value: `g:${x.id}`, label: x.nama }));
+    return blok.flatMap((b) => [{ value: `b:${b.kode}`, label: b.nama }, ...g.filter((x) => x.blok === b.kode).map((x) => ({ value: `g:${x.id}`, label: `${b.nama} · ${x.nama}` }))])
+      .concat(g.filter((x) => !x.blok).map((x) => ({ value: `g:${x.id}`, label: x.nama })));
+  }, [blok, gang, hak]);
+  const gantiWilayah = (v) => setParams(v.startsWith('g:') ? { gang: v.slice(2) } : v.startsWith('b:') ? { blok: v.slice(2) } : {});
 
   const cols = [
-    { key: 'nama', label: 'Nama', mobileLabel: '', render: (w) => (
+    { key: 'nama', label: 'Nama', mobileLabel: '', sort: (w) => w.nama, render: (w) => (
       <div className="row"><Avatar nama={w.nama} path={w.foto_path} size={36} /><div className="grow" style={{ textAlign: 'left' }}><div className="cell-main">{w.nama}</div><div className="cell-sub">{w.pekerjaan || (w.kepala_keluarga ? 'Kepala keluarga' : 'Anggota keluarga')}</div></div></div>
     ) },
-    { key: 'rumah', label: 'Rumah', render: (w) => <span className="nowrap">{w.blok ? `${w.blok}-${w.no_rumah}` : '—'}</span> },
+    { key: 'rumah', label: 'Alamat', sort: (w) => (w.blok ? `${w.blok} ${w.no_rumah || ''}` : ''), render: (w) => <span>{w.blok ? alamatPendek(w) : '—'}</span> },
     { key: 'hp', label: 'Nomor HP', render: (w) => <span className="num nowrap">{w.kontak?.nomor_hp ? formatHp(w.kontak.nomor_hp) : '—'}</span> },
-    { key: 'status', label: 'Status', render: (w) => (
+    { key: 'bergabung', label: 'Bergabung', sort: (w) => w.bergabung_at, render: (w) => <span className="nowrap text-sm">{w.bergabung_at ? tanggal(w.bergabung_at, { pendek: true }) : '—'}</span> },
+    { key: 'status', label: 'Status', sort: (w) => STATUS_WARGA[w.status]?.label, render: (w) => (
       <span className="row wrap" style={{ gap: 6, justifyContent: 'inherit' }}>
         <Badge tone={STATUS_WARGA[w.status].tone} dot>{STATUS_WARGA[w.status].label}</Badge>
         {w.role === 'admin' && <Badge tone="violet">Admin</Badge>}
         {w.wajib_ganti_pin && <Badge tone="warn">Belum ganti PIN</Badge>}
       </span>
     ) },
-    { key: 'aksi', label: '', className: 'actions', render: (w) => kelolaWilayah(hak, w.blok) || hak.admin
+    { key: 'aksi', label: '', className: 'actions', render: (w) => kelolaWilayah(hak, w.gang_id) || hak.admin
       ? <Button size="xs" variant="secondary" icon={Pencil} onClick={() => setEdit(w)}>Ubah</Button> : null },
   ];
 
   return (
     <div className="page">
-      <PageHeader back title="Data anggota" desc={hak.kelola_anggota ? 'Seluruh anggota paguyuban. Ubah data rumah, status, dan kepala keluarga.' : `Anggota di Gang ${hak.wilayah.join(', ')}.`}
-        actions={hak.admin ? <Button size="sm" variant="secondary" icon={FileUp} to="/admin/import">Import dari CSV</Button> : undefined} />
+      <PageHeader back title="Data anggota" desc={hak.kelola_anggota ? 'Seluruh anggota paguyuban. Ubah data rumah, status, dan kepala keluarga.' : `Anggota di ${namaWilayah(hak, gang)}.`}
+        actions={<><Button size="sm" variant="secondary" icon={Download} onClick={ekspor}>Ekspor CSV</Button>{hak.admin && <Button size="sm" variant="secondary" icon={FileUp} to="/admin/import">Import dari CSV</Button>}</>}
+        mobileActions={<><IconButton icon={Download} label="Ekspor CSV" onClick={ekspor} />{hak.admin && <IconButton icon={FileUp} label="Import dari CSV" to="/admin/import" />}</>} />
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Cari nama anggota" />
-        <Select className="sm" value={fb} onChange={(e) => setParams(e.target.value ? { blok: e.target.value } : {})} placeholder={hak.kelola_anggota ? 'Semua gang' : undefined} options={opsiBlok.map((b) => ({ value: b.kode, label: b.nama }))} aria-label="Filter gang" />
+        <Select className="sm" value={fw} onChange={(e) => gantiWilayah(e.target.value)} placeholder={hak.kelola_anggota ? 'Semua blok & gang' : undefined} options={opsiWilayah} aria-label="Filter blok atau gang" />
         <Select className="sm" value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Semua status" options={[...Object.entries(STATUS_WARGA).map(([k, v]) => ({ value: k, label: v.label })), { value: 'belum_pin', label: 'Belum ganti PIN' }]} aria-label="Filter status" />
       </div>
       <Card className="flush">

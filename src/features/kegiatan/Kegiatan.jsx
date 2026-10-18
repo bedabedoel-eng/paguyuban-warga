@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, MapPin, Plus, Clock, Users } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, EmptyState, ErrorState, SegTabs, SkeletonRows } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, ErrorState, SegTabs, SkeletonRows, SortSelect } from '../../components/ui';
 import Kalender from './Kalender';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -10,6 +10,9 @@ import { useAsync } from '../../hooks/useAsync';
 import { daftarKegiatan, daftarIkut, batalIkut } from '../../services/kegiatan';
 import { statusAgenda } from '../beranda/widgets';
 import { isoDate, jam, tanggal, parseDate, BULAN_PENDEK } from '../../lib/format';
+import { useSettings } from '../../context/SettingsContext';
+import { labelSasaran } from '../../lib/alamat';
+import { urutkan } from '../../lib/sort';
 
 export function KegiatanCard({ k, uid, onChanged }) {
   const toast = useToast();
@@ -19,6 +22,8 @@ export function KegiatanCard({ k, uid, onChanged }) {
   const penuh = k.kuota && k.peserta?.length >= k.kuota;
   const m = parseDate(k.mulai);
   const st = statusAgenda(k);
+  const { gang } = useSettings();
+  const target = labelSasaran(k, gang);
   async function toggle() {
     setBusy(true);
     try { if (ikut) await batalIkut(k.id, uid); else await daftarIkut(k.id); toast.success(ikut ? 'Pendaftaran dibatalkan' : `Terdaftar di ${k.judul}`); onChanged?.(); }
@@ -30,7 +35,7 @@ export function KegiatanCard({ k, uid, onChanged }) {
       <div className="t">
         <div className="row wrap" style={{ gap: 6 }}>
           {st && <Badge tone={st.tone}>{st.label}</Badge>}
-          {k.blok && <Badge tone="gold">Gang {k.blok}</Badge>}
+          {target && <Badge tone="gold">{target}</Badge>}
           {ikut && <Badge tone="ok" dot>Anda terdaftar</Badge>}
         </div>
         <Link to={`/kegiatan/${k.id}`} className="ttl">{k.judul}</Link>
@@ -60,7 +65,10 @@ export default function Kegiatan() {
   const bln = useAsync(() => daftarKegiatan({ dari, sampai }), [dari, sampai]);
   const list = useAsync(() => daftarKegiatan({ selesai: tab === 'selesai' }), [tab]);
   const adaSet = useMemo(() => new Set((bln.data || []).map((k) => isoDate(parseDate(k.mulai)))), [bln.data]);
-  const tampil = hari ? (bln.data || []).filter((k) => isoDate(parseDate(k.mulai)) === hari) : list.data;
+  const [urut, setUrut] = useState('');
+  const mode = urut || (tab === 'selesai' ? 'terjauh' : 'terdekat');
+  const mentah = hari ? (bln.data || []).filter((k) => isoDate(parseDate(k.mulai)) === hari) : list.data;
+  const tampil = useMemo(() => (mentah ? (mode === 'judul' ? urutkan(mentah, (k) => k.judul) : urutkan(mentah, (k) => k.mulai, mode === 'terjauh' ? 'desc' : 'asc')) : mentah), [mentah, mode]);
   const state = hari ? bln : list;
   const refresh = () => { bln.reload(); list.reload(); };
   return (
@@ -73,6 +81,7 @@ export default function Kegiatan() {
           <Kalender bulan={bulan} onBulan={(b) => { setBulan(b); setHari(null); }} terpilih={hari} onPilih={setHari} adaKegiatan={adaSet} />
         </div>
         <div className="stack">
+          {!hari && <div className="row end"><SortSelect value={mode} onChange={setUrut} options={[{ value: 'terdekat', label: 'Tanggal terdekat' }, { value: 'terjauh', label: 'Tanggal terjauh' }, { value: 'judul', label: 'Judul A–Z' }]} /></div>}
           {hari && <div className="row between"><h2>{tanggal(hari, { hari: true })}</h2><button type="button" className="link" onClick={() => setHari(null)}>Tampilkan semua</button></div>}
           {state.loading && !state.data ? <Card pad><SkeletonRows n={3} /></Card> : state.error ? <ErrorState error={state.error} onRetry={state.reload} /> : !tampil?.length ? (
             <Card><EmptyState icon={CalendarDays} title={hari ? 'Tidak ada kegiatan di tanggal ini' : tab === 'selesai' ? 'Belum ada kegiatan yang lewat' : 'Belum ada kegiatan terjadwal'}

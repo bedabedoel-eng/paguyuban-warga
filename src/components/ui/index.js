@@ -1,5 +1,5 @@
 export { default as Button, IconButton } from './Button';
-export { Field, Input, SearchInput, PasswordInput, PinInput, PhoneInput, Select, Textarea, Toggle, Checkbox, ChoiceGroup } from './Field';
+export { Field, Input, SearchInput, PasswordInput, PinInput, PhoneInput, Select, SortSelect, Textarea, Toggle, Checkbox, ChoiceGroup } from './Field';
 export { Card, CardHead, CardBody, SectionHead } from './Card';
 export { default as Badge } from './Badge';
 export { default as Avatar } from './Avatar';
@@ -11,3 +11,4 @@ export { default as ImagePicker } from './ImagePicker';
 export { default as Stat } from './Stat';
 export { default as DataTable } from './DataTable';
 export { ConfirmProvider, useConfirm } from './Confirm';
+export { default as FotoWarga } from './FotoWarga';

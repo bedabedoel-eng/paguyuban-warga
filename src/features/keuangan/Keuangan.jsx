@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, TrendingDown, TrendingUp, Trash2, Pencil, Wallet, Check, X, BadgeCheck, Clock } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, CardHead, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, LineTabs, SegTabs, Select, Input, Textarea, Chips, Callout, IconButton, useConfirm } from '../../components/ui';
+import { Badge, Button, Card, CardHead, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, LineTabs, SegTabs, Select, Input, Textarea, Chips, Callout, IconButton, SortSelect, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -12,6 +12,7 @@ import { ringkasanKas, daftarTransaksi, simpanTransaksi, hapusTransaksi, putuska
 import BarChart12 from '../beranda/IplChart';
 import { rupiah, tanggal, awalBulan, isoDate, periode, relatif } from '../../lib/format';
 import { KATEGORI_KAS, STATUS_KAS } from '../../lib/constants';
+import { urutkan } from '../../lib/sort';
 
 function FormKas({ awal, onClose, onSaved }) {
   const toast = useToast();
@@ -111,7 +112,14 @@ function Transaksi({ hak, onEdit, onHapus, reloadKey }) {
   const sampai = bulan ? isoDate(new Date(Number(bulan.slice(0, 4)), Number(bulan.slice(5, 7)), 0)) : undefined;
   const trx = useAsync(() => daftarTransaksi({ jenis, dari, sampai }), [jenis, bulan, reloadKey]);
   const opsiBulan = useMemo(() => Array.from({ length: 12 }, (_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); return { value: awalBulan(d), label: periode(d) }; }), []);
-  const rows = trx.data || [];
+  const [urut, setUrut] = useState('baru');
+  const rows = useMemo(() => {
+    const d = trx.data || [];
+    if (urut === 'lama') return urutkan(d, (t) => `${t.tanggal} ${t.created_at}`, 'asc');
+    if (urut === 'besar') return urutkan(d, (t) => Number(t.jumlah), 'desc');
+    if (urut === 'kecil') return urutkan(d, (t) => Number(t.jumlah), 'asc');
+    return urutkan(d, (t) => `${t.tanggal} ${t.created_at}`, 'desc');
+  }, [trx.data, urut]);
   const tot = (j) => rows.filter((t) => t.jenis === j && (t.status || 'disetujui') === 'disetujui').reduce((a, t) => a + Number(t.jumlah), 0);
   return (
     <div className="stack">
@@ -119,6 +127,7 @@ function Transaksi({ hak, onEdit, onHapus, reloadKey }) {
         <Chips value={jenis} onChange={setJenis} tabs={[{ value: '', label: 'Semua' }, { value: 'pemasukan', label: 'Pemasukan' }, { value: 'pengeluaran', label: 'Pengeluaran' }]} />
         <span className="grow" />
         <Select className="sm" value={bulan} onChange={(e) => setBulan(e.target.value)} placeholder="Semua bulan" options={opsiBulan} aria-label="Bulan" />
+        <SortSelect value={urut} onChange={setUrut} options={[{ value: 'baru', label: 'Terbaru' }, { value: 'lama', label: 'Terlama' }, { value: 'besar', label: 'Nominal terbesar' }, { value: 'kecil', label: 'Nominal terkecil' }]} />
       </div>
       <Card>
         <CardBody>

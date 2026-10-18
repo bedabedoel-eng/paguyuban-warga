@@ -7,6 +7,7 @@ import { useNotif } from '../../context/NotifContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { cariGlobal } from '../../services/dashboard';
 import { tanggal } from '../../lib/format';
+import { useSettings } from '../../context/SettingsContext';
 
 function useClickAway(ref, fn) {
   useEffect(() => {
@@ -18,6 +19,7 @@ function useClickAway(ref, fn) {
 
 export default function Topbar() {
   const { warga, hak, peranLabel, signOut } = useAuth();
+  const { alamat, alamatPendek } = useSettings();
   const { unread } = useNotif();
   const nav = useNavigate();
   const [q, setQ] = useState('');
@@ -57,7 +59,7 @@ export default function Topbar() {
           <div className="menu-pop search-pop" role="listbox">
             {total === 0 && <div className="muted text-sm" style={{ padding: 12 }}>Tidak ada hasil untuk “{dq}”.</div>}
             {hasil.warga.length > 0 && <div className="grp">Warga</div>}
-            {hasil.warga.map((w) => <button key={w.id} onClick={() => go(`/warga/${w.id}`)}><User size={16} />{w.nama}<span className="sub">{w.blok}-{w.no_rumah}</span></button>)}
+            {hasil.warga.map((w) => <button key={w.id} onClick={() => go(`/warga/${w.id}`)}><User size={16} />{w.nama}<span className="sub">{alamatPendek(w)}</span></button>)}
             {hasil.pengumuman.length > 0 && <div className="grp">Pengumuman</div>}
             {hasil.pengumuman.map((p) => <button key={p.id} onClick={() => go(`/pengumuman/${p.id}`)}><Megaphone size={16} /><span className="ellipsis">{p.judul}</span><span className="sub">{tanggal(p.created_at, { pendek: true })}</span></button>)}
             {hasil.kegiatan.length > 0 && <div className="grp">Kegiatan</div>}
@@ -83,7 +85,7 @@ export default function Topbar() {
             <div className="menu-pop" role="menu" onClick={() => setMenu(false)}>
               <div className="menu-head">
                 <div className="strong">{warga?.nama}</div>
-                <div className="text-xs muted">{peranLabel}{warga?.blok ? ` · Blok ${warga.blok} No. ${warga.no_rumah}` : ''}</div>
+                <div className="text-xs muted">{peranLabel}{warga?.blok ? ` · ${alamat(warga)}` : ''}</div>
               </div>
               <Link to="/profil" role="menuitem"><User size={16} />Profil saya</Link>
               {hak.pengurus && <Link to="/admin" role="menuitem"><LayoutDashboard size={16} />Ringkasan pengurus</Link>}

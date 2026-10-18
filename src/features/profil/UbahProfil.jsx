@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, Input, Textarea, ImagePicker, Avatar, Callout } from '../../components/ui';
+import { Button, Card, Input, Textarea, ImagePicker, Callout } from '../../components/ui';
+import FotoWarga from '../../components/ui/FotoWarga';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ubahProfil, ubahKontak } from '../../services/warga';
@@ -29,7 +30,7 @@ export default function UbahProfil() {
     try {
       let foto_path = warga.foto_path;
       if (foto) {
-        foto_path = await uploadFile('konten', `avatar/${user.id}`, foto, { maxSize: 600, quality: 0.82 });
+        foto_path = await uploadFile('konten', `avatar/${user.id}`, foto, { maxSize: 960, quality: 0.82, aspect: 3 / 4 });
         if (warga.foto_path) removeFile('konten', warga.foto_path).catch(() => {});
       }
       const w = await ubahProfil(user.id, { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, hobi: f.hobi.trim() || null, keluarga: f.keluarga.trim() || null, tentang: f.tentang.trim() || null, foto_path });
@@ -46,8 +47,10 @@ export default function UbahProfil() {
       <Card pad>
         <form className="stack" onSubmit={simpan} noValidate>
           <div className="row row-top wrap" style={{ gap: 16 }}>
-            <Avatar nama={f.nama} path={warga.foto_path} size={72} />
-            <div className="grow" style={{ minWidth: 220 }}><ImagePicker file={foto} onChange={setFoto} label="Ganti foto profil" /></div>
+            <FotoWarga nama={f.nama} path={warga.foto_path} className="foto-edit" />
+            <div className="grow" style={{ minWidth: 220 }}>
+              <ImagePicker file={foto} onChange={setFoto} label="Ganti foto profil" ratio="3 / 4" hint="Foto berdiri/setengah badan, rasio 3:4. JPG, PNG, atau WEBP · maks. 5 MB" />
+            </div>
           </div>
           <div className="form-grid">
             <Input fieldClass="span-2" label="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} maxLength={80} />

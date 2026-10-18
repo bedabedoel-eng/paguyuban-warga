@@ -35,7 +35,7 @@ export function RiwayatList({ items, limit }) {
 
 export default function TagihanIpl() {
   const { warga } = useAuth();
-  const { pengaturan } = useSettings();
+  const { pengaturan, alamat } = useSettings();
   const s = useAsync(() => tagihanRumah(warga.rumah_id), [warga.rumah_id]);
   const data = s.data || [];
   const belum = data.filter((t) => t.status === 'belum_bayar');
@@ -44,7 +44,7 @@ export default function TagihanIpl() {
 
   return (
     <div className="page narrow">
-      <PageHeader title="Tagihan IPL" desc={`Iuran pengelolaan lingkungan rumah Blok ${warga.blok} No. ${warga.no_rumah}.`}
+      <PageHeader title="Tagihan IPL" desc={`Iuran pengelolaan lingkungan rumah ${alamat(warga)}.`}
         actions={<Button size="sm" variant="secondary" icon={History} to="/ipl/riwayat">Riwayat</Button>} />
       {s.loading && !s.data ? <Card pad><SkeletonRows n={3} avatar={false} /></Card> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !warga.rumah_id ? (
         <Card><EmptyState icon={House} title="Akun belum terhubung ke rumah" text="Hubungi sekretaris atau humas gang untuk menghubungkan akun Anda dengan data rumah." /></Card>

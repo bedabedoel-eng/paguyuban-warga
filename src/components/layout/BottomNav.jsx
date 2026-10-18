@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { House, Receipt, CalendarDays, LayoutDashboard, MessageSquareText, LayoutGrid } from 'lucide-react';
+import { House, Receipt, CalendarDays, LayoutDashboard, Users, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTugas } from '../../context/TugasContext';
 
@@ -9,11 +9,11 @@ export default function BottomNav() {
   const items = [
     { to: '/', label: 'Beranda', icon: House, end: true },
     { to: '/ipl', label: 'Tagihan', icon: Receipt },
-    { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays },
+    { to: '/warga', label: 'Direktori', icon: Users },
     hak.pengurus
       ? { to: '/admin', label: 'Kelola', icon: LayoutDashboard, n: total }
-      : { to: '/aspirasi', label: 'Aspirasi', icon: MessageSquareText },
-    { to: '/menu', label: 'Lainnya', icon: LayoutGrid },
+      : { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays },
+    { to: '/menu', label: 'Menu', icon: LayoutGrid },
   ];
   return (
     <nav className="bottom-nav" aria-label="Navigasi bawah">

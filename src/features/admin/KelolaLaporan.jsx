@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Inbox, MessageSquareReply } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, Chips, StorageImage, Textarea, Callout, ChoiceGroup } from '../../components/ui';
+import { Avatar, Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, Chips, StorageImage, Textarea, Callout, ChoiceGroup, SortSelect } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTugas } from '../../context/TugasContext';
@@ -9,9 +9,13 @@ import { useAsync } from '../../hooks/useAsync';
 import { semuaLaporan, tanggapiLaporan } from '../../services/laporan';
 import { KATEGORI_LAPORAN, STATUS_LAPORAN } from '../../lib/constants';
 import { relatif } from '../../lib/format';
+import { urutkan } from '../../lib/sort';
+import { useSettings } from '../../context/SettingsContext';
+import { namaWilayah } from '../../lib/akses';
 
 export default function KelolaLaporan() {
   const { hak } = useAuth();
+  const { gang, alamatPendek } = useSettings();
   const toast = useToast();
   const { refresh } = useTugas();
   const [status, setStatus] = useState('aktif');
@@ -22,7 +26,14 @@ export default function KelolaLaporan() {
   const [busy, setBusy] = useState(false);
   const all = s.data || [];
   const n = (k) => all.filter((l) => (k === 'aktif' ? ['baru', 'diproses'].includes(l.status) : l.status === k)).length;
-  const rows = useMemo(() => all.filter((l) => (status === 'aktif' ? ['baru', 'diproses'].includes(l.status) : !status || l.status === status)), [all, status]);
+  const [urut, setUrut] = useState('baru');
+  const rows = useMemo(() => {
+    const f = all.filter((l) => (status === 'aktif' ? ['baru', 'diproses'].includes(l.status) : !status || l.status === status));
+    if (urut === 'lama') return urutkan(f, (l) => l.created_at, 'asc');
+    if (urut === 'kategori') return urutkan(f, (l) => `${KATEGORI_LAPORAN[l.kategori]?.label || ''} ${l.created_at}`);
+    if (urut === 'pelapor') return urutkan(f, (l) => l.pelapor?.nama);
+    return urutkan(f, (l) => l.created_at, 'desc');
+  }, [all, status, urut]);
   const buka = (l) => { setSel(l); setSt(l.status === 'baru' ? 'diproses' : l.status); setTg(l.tanggapan || ''); };
   async function simpan() {
     if (['selesai', 'ditolak'].includes(st) && tg.trim().length < 3) return toast.error('Tuliskan tanggapan agar pelapor tahu hasilnya');
@@ -31,7 +42,8 @@ export default function KelolaLaporan() {
   }
   return (
     <div className="page medium">
-      <PageHeader back title="Aspirasi masuk" desc={hak.pimpinan ? 'Laporan dan usulan dari seluruh warga.' : `Laporan dari warga Gang ${hak.wilayah.join(', ')}.`} />
+      <PageHeader back title="Aspirasi masuk" desc={hak.pimpinan ? 'Laporan dan usulan dari seluruh warga.' : `Laporan dari warga ${namaWilayah(hak, gang)}.`} />
+      <div className="toolbar">
       <Chips value={status} onChange={setStatus} tabs={[
         { value: 'aktif', label: 'Perlu ditangani', n: n('aktif') },
         { value: 'baru', label: 'Baru', n: n('baru') },
@@ -40,6 +52,8 @@ export default function KelolaLaporan() {
         { value: 'ditolak', label: 'Tidak ditindaklanjuti', n: n('ditolak') },
         { value: '', label: 'Semua', n: all.length },
       ]} />
+      <span className="toolbar-end"><SortSelect value={urut} onChange={setUrut} options={[{ value: 'baru', label: 'Terbaru' }, { value: 'lama', label: 'Terlama' }, { value: 'kategori', label: 'Jenis aspirasi' }, { value: 'pelapor', label: 'Nama pelapor' }]} /></span>
+      </div>
       {s.loading && !s.data ? <Card pad><SkeletonRows n={4} /></Card> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !rows.length ? (
         <Card><EmptyState icon={Inbox} title={status === 'aktif' ? 'Tidak ada aspirasi yang menunggu' : 'Tidak ada aspirasi'} text="Aspirasi baru dari warga akan muncul di sini dan Anda menerima notifikasi." /></Card>
       ) : rows.map((l) => {
@@ -57,7 +71,7 @@ export default function KelolaLaporan() {
               {l.tanggapan && <Callout tone="neutral" icon={MessageSquareReply}><b>Tanggapan:</b> {l.tanggapan}</Callout>}
               <div className="row wrap" style={{ marginTop: 4 }}>
                 <Avatar nama={l.pelapor?.nama} path={l.pelapor?.foto_path} size={28} />
-                <span className="text-sm grow">{l.pelapor?.nama} <span className="muted">· {l.pelapor?.blok}-{l.pelapor?.no_rumah} · {relatif(l.created_at)}</span></span>
+                <span className="text-sm grow">{l.pelapor?.nama} <span className="muted">· {alamatPendek(l.pelapor)} · {relatif(l.created_at)}</span></span>
                 <Button size="sm" variant={l.status === 'baru' ? 'primary' : 'secondary'} icon={MessageSquareReply} onClick={() => buka(l)}>{l.status === 'baru' ? 'Tanggapi' : 'Perbarui'}</Button>
               </div>
             </CardBody>

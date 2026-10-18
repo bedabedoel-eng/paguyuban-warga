@@ -1,7 +1,8 @@
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useAsync } from '../../hooks/useAsync';
-import { cuaca } from '../../services/dashboard';
+import { cuaca, statistikIplBulanan, arusKas } from '../../services/dashboard';
+import { daftarWarga } from '../../services/warga';
 import { tagihanRumah } from '../../services/ipl';
 import { daftarPengumuman } from '../../services/pengumuman';
 import { daftarKegiatan } from '../../services/kegiatan';
@@ -36,6 +37,16 @@ export function useBerandaData() {
   const notif = useAsync(() => daftarNotifikasi({ limit: 5 }), []);
   const kontak = useAsync(daftarKontakDarurat, []);
   const kas = useAsync(() => ringkasanKas(awalBulan()), []);
+  const tahun = new Date().getFullYear();
+  const grafikIpl = useAsync(() => statistikIplBulanan(tahun), [tahun]);
+  const grafikKas = useAsync(() => arusKas(tahun), [tahun]);
+  // Tetangga: gang yang sama, atau blok yang sama bila gang belum dipilih
+  const tetangga = useAsync(async () => {
+    if (!warga?.gang_id && !warga?.blok) return [];
+    const rows = await daftarWarga({ gang: warga.gang_id || '', blok: warga.gang_id ? '' : warga.blok, limit: 40 });
+    return rows.filter((x) => x.id !== warga.id).slice(0, 14);
+  }, [warga?.id, warga?.gang_id, warga?.blok]);
+  const baru = useAsync(async () => (await daftarWarga({ urut: 'baru', limit: 14 })).filter((x) => x.id !== warga?.id), [warga?.id]);
   const weather = useAsync(() => cuaca(pengaturan.latitude, pengaturan.longitude), [pengaturan.latitude, pengaturan.longitude]);
-  return { ipl, pengumuman, agenda, notif, kontak, kas, weather };
+  return { ipl, pengumuman, agenda, notif, kontak, kas, weather, grafikIpl, grafikKas, tetangga, baru, tahun };
 }

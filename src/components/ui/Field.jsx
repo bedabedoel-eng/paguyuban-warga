@@ -74,6 +74,11 @@ export function PhoneInput({ label, error, hint, fieldClass, ...rest }) {
   );
 }
 
+/** Pilihan urutan untuk daftar. options: [{ value, label }] */
+export function SortSelect({ value, onChange, options, label = 'Urutkan', className = 'sm' }) {
+  return <Select className={className} value={value} onChange={(e) => onChange(e.target.value)} options={options.map((o) => ({ value: o.value, label: `Urutkan: ${o.label}` }))} aria-label={label} />;
+}
+
 export function Select({ label, error, hint, optional, options = [], placeholder, className = '', fieldClass, ...rest }) {
   const id = useId();
   const el = (

@@ -10,10 +10,13 @@ import { detailKegiatan, hapusKegiatan, daftarIkut, batalIkut } from '../../serv
 import { removeFile } from '../../lib/storage';
 import { kelolaWilayah } from '../../lib/akses';
 import { jam, tanggal, parseDate } from '../../lib/format';
+import { labelSasaran } from '../../lib/alamat';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function DetailKegiatan() {
   const { id } = useParams();
   const { user, hak } = useAuth();
+  const { gang, alamat } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
   const nav = useNavigate();
@@ -25,7 +28,8 @@ export default function DetailKegiatan() {
   const ikut = k.peserta.some((p) => p.warga_id === user.id);
   const selesai = parseDate(k.selesai) < new Date();
   const penuh = k.kuota && k.peserta.length >= k.kuota;
-  const boleh = k.blok ? kelolaWilayah(hak, k.blok) : hak.kelola_anggota;
+  const boleh = kelolaWilayah(hak, k.gang_id);
+  const target = labelSasaran(k, gang);
   async function toggle() {
     setBusy(true);
     try { if (ikut) await batalIkut(id, user.id); else await daftarIkut(id); toast.success(ikut ? 'Pendaftaran dibatalkan' : 'Anda terdaftar sebagai peserta'); s.reload(); } catch (e) { toast.error(e); } finally { setBusy(false); }
@@ -43,7 +47,7 @@ export default function DetailKegiatan() {
         {k.gambar_path && <StorageImage path={k.gambar_path} className="cover" alt="" />}
         <div className="post-meta">
           {selesai ? <Badge>Sudah lewat</Badge> : <Badge tone="brand">Akan datang</Badge>}
-          {k.blok && <Badge tone="gold">Khusus Gang {k.blok}</Badge>}
+          {target && <Badge tone="gold">Khusus {target}</Badge>}
         </div>
         <h1 className="post-title">{k.judul}</h1>
         <div className="facts">
@@ -61,7 +65,7 @@ export default function DetailKegiatan() {
           <CardBody>
             {k.peserta.length === 0 ? <EmptyState compact icon={Users} title="Belum ada peserta" /> : (
               <div className="rows">{k.peserta.map((p) => (
-                <div className="rowi" key={p.warga_id}><Avatar nama={p.warga?.nama} path={p.warga?.foto_path} size={36} /><span className="rowi-main"><span className="rowi-title">{p.warga?.nama}</span><span className="rowi-sub">Blok {p.warga?.blok} No. {p.warga?.no_rumah}</span></span></div>
+                <div className="rowi" key={p.warga_id}><Avatar nama={p.warga?.nama} path={p.warga?.foto_path} size={36} /><span className="rowi-main"><span className="rowi-title">{p.warga?.nama}</span><span className="rowi-sub">{alamat(p.warga)}</span></span></div>
               ))}</div>
             )}
           </CardBody>

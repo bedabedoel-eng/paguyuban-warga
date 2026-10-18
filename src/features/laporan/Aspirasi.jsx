@@ -9,9 +9,11 @@ import { buatLaporan, laporanSaya } from '../../services/laporan';
 import { uploadFile, removeFile } from '../../lib/storage';
 import { KATEGORI_LAPORAN, STATUS_LAPORAN } from '../../lib/constants';
 import { relatif } from '../../lib/format';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function Aspirasi() {
   const { user, warga } = useAuth();
+  const { namaGang } = useSettings();
   const toast = useToast();
   const riwayat = useAsync(() => laporanSaya(user.id), [user.id]);
   const [tab, setTab] = useState('buat');
@@ -44,7 +46,7 @@ export default function Aspirasi() {
 
   return (
     <div className="page form">
-      <PageHeader title="Aspirasi & laporan" desc={`Sampaikan masalah atau usulan. Diteruskan ke humas Gang ${warga?.blok || ''} serta ketua dan wakil ketua.`} />
+      <PageHeader title="Aspirasi & laporan" desc={`Sampaikan masalah atau usulan. Diteruskan ke ${namaGang(warga?.gang_id) ? `humas ${namaGang(warga.gang_id)}, ` : ''}ketua, dan wakil ketua.`} />
       <LineTabs value={tab} onChange={setTab} tabs={[{ value: 'buat', label: 'Sampaikan' }, { value: 'riwayat', label: 'Aspirasi saya', count: aktif }]} />
       {tab === 'buat' ? (
         <Card pad>

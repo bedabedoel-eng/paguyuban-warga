@@ -5,14 +5,16 @@ import { Avatar, Button, Card, CardHead, CardBody, Badge, IconButton } from '../
 import { useAuth } from '../../context/AuthContext';
 import { formatHp } from '../../lib/phone';
 import { tanggal } from '../../lib/format';
+import { useSettings } from '../../context/SettingsContext';
 
 export default function ProfilSaya() {
   const { warga, kontak, jabatan, peranLabel, user, signOut } = useAuth();
+  const { alamat } = useSettings();
   const google = user?.app_metadata?.provider === 'google';
   const facts = [
     [Phone, 'Nomor HP (untuk masuk)', kontak?.nomor_hp && formatHp(kontak.nomor_hp)],
     [Mail, 'Email', kontak?.email],
-    [House, 'Rumah', warga.blok && `Blok ${warga.blok} No. ${warga.no_rumah}${warga.kepala_keluarga ? ' · kepala keluarga' : ''}`],
+    [House, 'Rumah', warga.blok && `${alamat(warga)}${warga.kepala_keluarga ? ' · kepala keluarga' : ''}`],
     [Briefcase, 'Pekerjaan', warga.pekerjaan],
     [Users, 'Keluarga', warga.keluarga],
     [Heart, 'Hobi', warga.hobi],

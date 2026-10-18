@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { detailKegiatan, simpanKegiatan } from '../../services/kegiatan';
 import { uploadFile, removeFile } from '../../lib/storage';
-import { opsiSasaran } from '../../lib/akses';
+import { opsiSasaran, nilaiSasaran, kolomSasaran } from '../../lib/akses';
 import { toLocalInput } from '../../lib/format';
 
 export default function FormKegiatan() {
@@ -22,14 +22,14 @@ export default function FormKegiatan() {
 
 function Isi({ awal, id }) {
   const { hak } = useAuth();
-  const { blok } = useSettings();
+  const { blok, gang } = useSettings();
   const toast = useToast();
   const nav = useNavigate();
-  const sasaran = opsiSasaran(hak, blok);
+  const sasaran = opsiSasaran(hak, blok, gang);
   const [f, setF] = useState({
     judul: awal?.judul || '', lokasi: awal?.lokasi || '', deskripsi: awal?.deskripsi || '',
     mulai: toLocalInput(awal?.mulai), selesai: toLocalInput(awal?.selesai),
-    perlu_daftar: awal?.perlu_daftar ?? true, kuota: awal?.kuota || '', blok: awal ? awal.blok || '' : sasaran[0]?.value ?? '',
+    perlu_daftar: awal?.perlu_daftar ?? true, kuota: awal?.kuota || '', sasaran: awal ? nilaiSasaran(awal) : sasaran[0]?.value ?? '',
   });
   const [foto, setFoto] = useState(null);
   const [err, setErr] = useState({});
@@ -54,7 +54,7 @@ function Isi({ awal, id }) {
       const row = await simpanKegiatan({
         id, judul: f.judul.trim(), lokasi: f.lokasi.trim(), deskripsi: f.deskripsi.trim() || null,
         mulai: new Date(f.mulai).toISOString(), selesai: new Date(f.selesai).toISOString(),
-        perlu_daftar: f.perlu_daftar, kuota: f.perlu_daftar && f.kuota ? Number(f.kuota) : null, gambar_path, blok: f.blok || null,
+        perlu_daftar: f.perlu_daftar, kuota: f.perlu_daftar && f.kuota ? Number(f.kuota) : null, gambar_path, ...kolomSasaran(f.sasaran),
       });
       if (awal?.gambar_path && gambar_path !== awal.gambar_path) removeFile('konten', awal.gambar_path).catch(() => {});
       toast.success(id ? 'Kegiatan diperbarui' : 'Kegiatan dijadwalkan. Warga sasaran menerima notifikasi.');
@@ -77,7 +77,7 @@ function Isi({ awal, id }) {
             <Textarea label="Deskripsi" optional value={f.deskripsi} onChange={set('deskripsi')} maxLength={3000} placeholder="Apa yang perlu dibawa, siapa penanggung jawab, dll." />
           </div>
           <div className="form-section">
-            <Select label="Ditujukan untuk" value={f.blok} onChange={set('blok')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
+            <Select label="Ditujukan untuk" value={f.sasaran} onChange={set('sasaran')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
             <Checkbox checked={f.perlu_daftar} onChange={(v) => setF((s) => ({ ...s, perlu_daftar: v }))} hint="Warga menekan tombol Ikut kegiatan, dan panitia melihat daftar peserta.">Warga perlu mendaftar</Checkbox>
             {f.perlu_daftar && <Input label="Kuota peserta" optional type="number" min="1" value={f.kuota} onChange={set('kuota')} error={err.kuota} hint="Kosongkan bila tanpa batas" />}
             <Field label="Gambar" optional><ImagePicker file={foto} onChange={setFoto} />

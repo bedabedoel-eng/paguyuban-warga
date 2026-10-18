@@ -1,33 +1,19 @@
 import { Link } from 'react-router-dom';
-import {
-  Megaphone, CalendarPlus, FilePlus2, Wallet, FolderPlus, UserCheck, Network, ShieldCheck, Check, Minus, ChevronRight,
-} from 'lucide-react';
+import { ShieldCheck, Check, Minus, Users, House, Receipt, Wallet, UserRound } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Card, CardHead, CardBody, SkeletonRows, EmptyState, Badge } from '../../components/ui';
+import { Avatar, Card, CardHead, CardBody, SkeletonRows, EmptyState, Badge, Stat } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useTugas } from '../../context/TugasContext';
 import { useAsync } from '../../hooks/useAsync';
 import { statistikIplBulanan, aktivitasTerbaru, arusKas } from '../../services/dashboard';
-import { TugasGrid, WilayahCards, AktivitasRow } from '../beranda/widgets';
+import { TugasGrid, WilayahCards, AktivitasRow, Sebaran } from '../beranda/widgets';
+import MenuCepat from '../beranda/MenuCepat';
+import { menuCepatPengurus } from '../../components/layout/navConfig';
+import { sebaranWarga, daftarWarga } from '../../services/warga';
 import BarChart12 from '../beranda/IplChart';
-import { PERAN_PENGURUS, MATRIKS } from '../../lib/akses';
-import { rupiah, periode, angka } from '../../lib/format';
-
-function aksiCepat(hak) {
-  const a = [];
-  if (hak.kelola_info) {
-    a.push({ to: '/pengumuman/baru', icon: Megaphone, l: hak.kelola_anggota ? 'Buat pengumuman' : 'Info untuk gang' });
-    a.push({ to: '/kegiatan/baru', icon: CalendarPlus, l: 'Jadwalkan kegiatan' });
-  }
-  if (hak.kelola_anggota || hak.humas) a.push({ to: '/admin/verifikasi', icon: UserCheck, l: 'Verifikasi pendaftar' });
-  if (hak.bendahara) {
-    a.push({ to: '/admin/ipl', icon: FilePlus2, l: 'Terbitkan tagihan IPL' });
-    a.push({ to: '/keuangan?catat=1', icon: Wallet, l: 'Catat transaksi kas' });
-  }
-  if (hak.kelola_dokumen) a.push({ to: '/administrasi/baru', icon: FolderPlus, l: 'Arsipkan surat / notulen' });
-  if (hak.kelola_pengurus) a.push({ to: '/pengurus/kelola', icon: Network, l: 'Atur jabatan pengurus' });
-  return a;
-}
+import { PERAN_PENGURUS, MATRIKS, labelJabatan } from '../../lib/akses';
+import { useSettings } from '../../context/SettingsContext';
+import { rupiah, periode, angka, tanggal } from '../../lib/format';
 
 function Sel({ v }) {
   if (v === true) return <Check size={16} className="yes" aria-label="Ya" />;
@@ -37,14 +23,27 @@ function Sel({ v }) {
 
 export default function DashboardAdmin() {
   const { hak, jabatan, peranLabel } = useAuth();
+  const { namaGang, blok, gang, alamatPendek } = useSettings();
   const { stat, refresh } = useTugas();
   const tahun = new Date().getFullYear();
   const lihatKeuangan = hak.bendahara || hak.pimpinan;
   const chart = useAsync(() => (lihatKeuangan ? statistikIplBulanan(tahun) : Promise.resolve(null)), [lihatKeuangan]);
   const arus = useAsync(() => (lihatKeuangan ? arusKas(tahun) : Promise.resolve(null)), [lihatKeuangan]);
   const akt = useAsync(() => aktivitasTerbaru(8), []);
+  const sebar = useAsync(sebaranWarga, []);
+  const baru = useAsync(() => daftarWarga({ urut: 'baru', limit: 6 }), []);
   const s = stat || {};
-  const aksi = aksiCepat(hak);
+  const totalIpl = (s.ipl_lunas || 0) + (s.ipl_belum || 0);
+  const persen = totalIpl ? Math.round((s.ipl_lunas / totalIpl) * 100) : 0;
+  const statLoading = !stat;
+  const bisaLihatWarga = hak.kelola_anggota || hak.humas;
+  const barisBlok = blok.map((b) => ({
+    key: b.kode,
+    label: b.nama,
+    sub: [`${gang.filter((g) => g.blok === b.kode).length} gang/jalan`, sebar.data?.tanpaGang[b.kode] ? `${sebar.data.tanpaGang[b.kode]} belum pilih gang` : null].filter(Boolean).join(' · '),
+    value: sebar.data?.blok[b.kode] || 0,
+    to: bisaLihatWarga ? `/admin/warga?blok=${b.kode}` : undefined,
+  }));
   const perans = [...new Set(jabatan.map((j) => j.peran).filter(Boolean))];
 
   return (
@@ -59,9 +58,11 @@ export default function DashboardAdmin() {
                 {perans.length ? perans.map((p) => PERAN_PENGURUS[p]?.ringkas).filter(Boolean).join('. ') : hak.admin ? 'Admin sistem: akses penuh, termasuk pengaturan & import data.' : 'Pengurus'}
               </div>
             </div>
-            {jabatan.map((j) => <Badge key={j.id} tone="brand">{j.jabatan}{j.wilayah_blok ? ` · Gang ${j.wilayah_blok}` : ''}</Badge>)}
+            {jabatan.map((j) => <Badge key={j.id} tone="brand">{labelJabatan(j, namaGang)}</Badge>)}
           </div>
         </Card>
+
+        <MenuCepat items={menuCepatPengurus(hak)} judul="Menu cepat pengurus" />
 
         <section className="stack-sm">
           <div className="section-head"><h2>Perlu tindakan</h2><button type="button" className="link" onClick={refresh}>Perbarui</button></div>
@@ -71,18 +72,14 @@ export default function DashboardAdmin() {
           )}
         </section>
 
-        {hak.humas && <section className="stack-sm"><h2>Gang yang Anda pegang</h2><WilayahCards wilayah={s.wilayah} /></section>}
+        {hak.humas && <section className="stack-sm"><h2>Gang / jalan yang Anda pegang</h2><WilayahCards wilayah={s.wilayah} /></section>}
 
-        {aksi.length > 0 && (
-          <section className="stack-sm">
-            <h2>Aksi cepat</h2>
-            <div className="tasks">
-              {aksi.map(({ to, icon: Icon, l }) => (
-                <Link key={to} to={to} className="task"><span className="ico"><Icon size={18} /></span><span className="t"><span className="l">{l}</span></span><ChevronRight size={16} className="muted" /></Link>
-              ))}
-            </div>
-          </section>
-        )}
+        <section className="stats" aria-label="Ringkasan lingkungan">
+          <Stat icon={Users} label="Warga aktif" value={angka(s.total_warga)} sub={`${angka(s.kepala_keluarga)} kepala keluarga`} loading={statLoading} to="/warga" />
+          <Stat icon={House} label="Rumah dihuni" value={angka(s.rumah_dihuni)} sub={`Dari ${angka(s.total_rumah)} rumah terdata`} loading={statLoading} />
+          <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />
+          <Stat icon={Wallet} tone="gold" label="Saldo kas" value={rupiah(s.saldo_kas)} sub="Terbuka untuk semua warga" loading={statLoading} to="/keuangan" />
+        </section>
 
         {lihatKeuangan && (
           <div className="grid-2">
@@ -96,6 +93,31 @@ export default function DashboardAdmin() {
             </Card>
           </div>
         )}
+
+        <div className="grid-2">
+          <Card>
+            <CardHead title="Sebaran warga per blok" desc="Warga aktif di tiap blok" to={hak.kelola_anggota ? '/admin/wilayah' : undefined} actionLabel="Blok & gang" />
+            <CardBody>
+              {!blok.length ? <EmptyState compact icon={Users} title="Belum ada blok" /> : sebar.loading && !sebar.data ? <SkeletonRows n={4} avatar={false} /> : <Sebaran rows={barisBlok} />}
+            </CardBody>
+          </Card>
+          <Card>
+            <CardHead title="Anggota terbaru" desc="Warga yang baru bergabung" to="/warga" actionLabel="Direktori" />
+            <CardBody>
+              {baru.loading && !baru.data ? <SkeletonRows n={4} />
+                : baru.data?.length ? (
+                  <div className="rows">
+                    {baru.data.map((w) => (
+                      <Link key={w.id} to={`/warga/${w.id}`} className="rowi">
+                        <Avatar nama={w.nama} path={w.foto_path} size={36} />
+                        <span className="rowi-main"><span className="rowi-title">{w.nama}</span><span className="rowi-sub">{alamatPendek(w)}{w.bergabung_at ? ` · ${tanggal(w.bergabung_at, { pendek: true })}` : ''}</span></span>
+                      </Link>
+                    ))}
+                  </div>
+                ) : <EmptyState compact icon={UserRound} title="Belum ada anggota" />}
+            </CardBody>
+          </Card>
+        </div>
 
         <div className="split">
           <Card>

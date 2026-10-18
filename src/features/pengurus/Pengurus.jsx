@@ -5,11 +5,12 @@ import { Avatar, Button, Card, EmptyState, ErrorState, SkeletonRows } from '../.
 import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import { daftarPengurus } from '../../services/pengurus';
-import { PERAN_PENGURUS } from '../../lib/akses';
+import { PERAN_PENGURUS, labelJabatan } from '../../lib/akses';
+import { useSettings } from '../../context/SettingsContext';
 
 export function kelompokkan(rows) {
   const urut = (p) => PERAN_PENGURUS[p.peran]?.urut ?? 9;
-  const sorted = [...rows].sort((a, b) => urut(a) - urut(b) || (a.wilayah_blok || '').localeCompare(b.wilayah_blok || '') || a.urutan - b.urutan);
+  const sorted = [...rows].sort((a, b) => urut(a) - urut(b) || (a.warga?.blok || '').localeCompare(b.warga?.blok || '') || a.urutan - b.urutan);
   return {
     inti: sorted.filter((p) => PERAN_PENGURUS[p.peran]?.inti ?? p.inti),
     humas: sorted.filter((p) => p.peran === 'humas'),
@@ -19,13 +20,14 @@ export function kelompokkan(rows) {
 
 function OrgCard({ p }) {
   const lead = p.peran === 'ketua';
+  const { namaGang, alamatPendek } = useSettings();
   return (
     <Link to={`/warga/${p.warga_id}`} className={`card org-card ${lead ? 'lead' : ''}`}>
       <Avatar nama={p.warga?.nama} path={p.warga?.foto_path} size={48} />
       <span className="grow" style={{ minWidth: 0 }}>
-        <span className="jab" style={{ display: 'block' }}>{p.jabatan}{p.peran === 'humas' && p.wilayah_blok && !/gang|blok/i.test(p.jabatan) ? ` · Gang ${p.wilayah_blok}` : ''}</span>
+        <span className="jab" style={{ display: 'block' }}>{labelJabatan(p, namaGang)}</span>
         <span className="nm ellipsis" style={{ display: 'block' }}>{p.warga?.nama}</span>
-        <span className="mt" style={{ display: 'block' }}>Blok {p.warga?.blok}-{p.warga?.no_rumah}{p.periode_mulai ? ` · ${p.periode_mulai}–${p.periode_selesai || 'sekarang'}` : ''}</span>
+        <span className="mt" style={{ display: 'block' }}>{alamatPendek(p.warga)}{p.periode_mulai ? ` · ${p.periode_mulai}–${p.periode_selesai || 'sekarang'}` : ''}</span>
       </span>
     </Link>
   );

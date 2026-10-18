@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
-  Sun, CloudSun, Cloud, CloudRain, CalendarDays, Megaphone, Bell, Phone, Users, Receipt, MessageSquareText,
-  Wallet, ShieldCheck, CircleCheck, Clock, CircleAlert, ChevronRight, House, PhoneCall,
+  Sun, CloudSun, Cloud, CloudRain, CalendarDays, Megaphone, Bell, Phone, Users, Receipt,
+  Wallet, ShieldCheck, CircleCheck, Clock, CircleAlert, ChevronRight, House, MapPin,
 } from 'lucide-react';
 import { Card, CardHead, CardBody, Button, Stat, SkeletonRows, EmptyState, Skeleton } from '../../components/ui';
 import { Roofline } from '../../components/illustrations/Logo';
@@ -10,9 +10,13 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTugas } from '../../context/TugasContext';
 import { useNotif } from '../../context/NotifContext';
 import { useBerandaData, ringkasIpl } from './useBerandaData';
-import { PengumumanRow, AgendaRow, NotifRow, TugasGrid, WilayahCards } from './widgets';
+import { PengumumanRow, AgendaRow, NotifRow, TugasGrid, WilayahCards, FotoStrip } from './widgets';
+import MenuCepat from './MenuCepat';
+import BarChart12 from './IplChart';
+import { menuCepatWarga } from '../../components/layout/navConfig';
 import { labelCuaca } from '../../services/dashboard';
 import { rupiah, angka, tanggal, periode, salam } from '../../lib/format';
+import { kodeRumah } from '../../lib/alamat';
 
 function IkonCuaca({ kode, size = 24 }) {
   if (kode == null || kode === 0) return <Sun size={size} color="#e6c67a" />;
@@ -20,13 +24,6 @@ function IkonCuaca({ kode, size = 24 }) {
   if (kode <= 48) return <Cloud size={size} color="#cfe0d7" />;
   return <CloudRain size={size} color="#9cc3ff" />;
 }
-
-const PINTASAN = [
-  { to: '/warga', label: 'Kenali tetangga', icon: Users, tone: '' },
-  { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone, tone: 'info' },
-  { to: '/aspirasi', label: 'Sampaikan aspirasi', icon: MessageSquareText, tone: 'warn' },
-  { to: '/kontak-darurat', label: 'Kontak darurat', icon: PhoneCall, tone: 'bad' },
-];
 
 function KartuTagihan({ ipl, rumahId }) {
   const r = ringkasIpl(ipl.data);
@@ -58,7 +55,7 @@ function KartuTagihan({ ipl, rumahId }) {
 
 export default function Beranda() {
   const { warga, hak, peranLabel } = useAuth();
-  const { pengaturan } = useSettings();
+  const { pengaturan, alamat } = useSettings();
   const { stat, refresh } = useTugas();
   const { refresh: refreshNotif } = useNotif();
   const d = useBerandaData();
@@ -72,10 +69,14 @@ export default function Beranda() {
     <div className="page">
       <section className="greet">
         <div className="t">
+          <div className="estate">
+            <MapPin size={15} aria-hidden="true" />
+            <span><b>{pengaturan.nama_lingkungan || pengaturan.nama_paguyuban}</b>{pengaturan.alamat && <span>{pengaturan.alamat}</span>}</span>
+          </div>
           <div className="hello"><span>{salam()}</span><span aria-hidden="true">·</span><span>{tanggal(new Date(), { hari: true })}</span></div>
           <h1>{warga?.nama}</h1>
           <span className="role">
-            <ShieldCheck size={14} />{peranLabel}{warga?.blok ? ` · Blok ${warga.blok} No. ${warga.no_rumah}` : ''}
+            <ShieldCheck size={14} />{peranLabel}{warga?.blok ? ` · ${alamat(warga)}` : ''}
           </span>
         </div>
         <div className="side">
@@ -90,11 +91,7 @@ export default function Beranda() {
         <Roofline />
       </section>
 
-      <nav className="card shortcuts only-mobile" style={{ padding: 6 }} aria-label="Pintasan">
-        {PINTASAN.map(({ to, label, icon: Icon, tone }) => (
-          <Link key={to} to={to} className="shortcut"><span className={`ico round ${tone}`}><Icon size={18} /></span>{label}</Link>
-        ))}
-      </nav>
+      <MenuCepat items={menuCepatWarga()} />
 
       {hak.pengurus && (
         <section className="stack-sm" aria-labelledby="tugas-h">
@@ -113,6 +110,25 @@ export default function Beranda() {
         <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />
         <Stat icon={Wallet} tone="gold" label="Saldo kas" value={rupiah(s.saldo_kas)} sub="Terbuka untuk semua warga" loading={statLoading} to="/keuangan" />
       </section>
+
+ 
+      {(d.tetangga.data?.length > 0) && (
+        <section className="stack-sm" aria-labelledby="tetangga-h">
+          <div className="section-head"><h2 id="tetangga-h">Kenali tetangga</h2><Link to="/warga" className="link">Direktori warga<ChevronRight size={14} /></Link></div>
+          <FotoStrip rows={d.tetangga.data} />
+        </section>
+      )}
+
+      <div className="grid-2">
+        <Card>
+          <CardHead title={`Pembayaran IPL ${d.tahun}`} desc={s.periode_ipl ? `${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas · ${periode(s.periode_ipl)}` : 'Belum ada tagihan'} />
+          <CardBody>{d.grafikIpl.loading && !d.grafikIpl.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikIpl.data || []} />}</CardBody>
+        </Card>
+        <Card>
+          <CardHead title={`Arus kas ${d.tahun}`} desc={`Saldo ${rupiah(s.saldo_kas)}`} to="/keuangan" actionLabel="Laporan" />
+          <CardBody>{d.grafikKas.loading && !d.grafikKas.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikKas.data || []} mode="kas" />}</CardBody>
+        </Card>
+      </div>
 
       <div className="split">
         <div className="stack">
@@ -173,11 +189,15 @@ export default function Beranda() {
               ) : <EmptyState compact icon={Phone} title="Belum ada kontak darurat" />}
             </CardBody>
           </Card>
-          {pengaturan.alamat && (
-            <p className="text-xs muted" style={{ padding: '0 4px' }}>{pengaturan.nama_lingkungan} · {pengaturan.alamat}</p>
-          )}
         </div>
       </div>
+
+      {(d.baru.data?.length > 0) && (
+        <section className="stack-sm" aria-labelledby="baru-h">
+          <div className="section-head"><h2 id="baru-h">Baru bergabung</h2><Link to="/warga" className="link">Lihat semua<ChevronRight size={14} /></Link></div>
+          <FotoStrip rows={d.baru.data} sub={(w) => (w.bergabung_at ? `Sejak ${tanggal(w.bergabung_at, { pendek: true })}` : kodeRumah(w))} />
+        </section>
+      )}
     </div>
   );
 }

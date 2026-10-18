@@ -5,6 +5,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTugas } from '../../context/TugasContext';
 import { navGroups } from './navConfig';
+import { kodeRumah } from '../../lib/alamat';
 
 export default function Sidebar() {
   const { pengaturan } = useSettings();
@@ -24,7 +25,7 @@ export default function Sidebar() {
         <Logo size={40} tile />
         <span className="t">
           <span className="name">{pengaturan.nama_paguyuban}</span>
-          {lingkungan && <span className="sub" style={{ display: 'block' }}>{pengaturan.nama_lingkungan ? `${pengaturan.nama_lingkungan} · ` : ''}{lingkungan}</span>}
+          {(pengaturan.nama_lingkungan || lingkungan) && <span className="sub" style={{ display: 'block' }}>{[pengaturan.nama_lingkungan, lingkungan].filter(Boolean).join(' · ')}</span>}
         </span>
       </Link>
       <nav className="sb-scroll">
@@ -52,7 +53,7 @@ export default function Sidebar() {
           <Avatar nama={warga?.nama} path={warga?.foto_path} size={36} ring={hak.pengurus} />
           <span className="who">
             <span className="nm" style={{ display: 'block' }}>{warga?.nama}</span>
-            <span className="rl" style={{ display: 'block' }}>{peranLabel}{warga?.blok ? ` · ${warga.blok}-${warga.no_rumah}` : ''}</span>
+            <span className="rl" style={{ display: 'block' }}>{peranLabel}{warga?.blok ? ` · ${kodeRumah(warga)}` : ''}</span>
           </span>
         </Link>
       </div>

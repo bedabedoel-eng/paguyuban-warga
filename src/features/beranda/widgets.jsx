@@ -1,11 +1,15 @@
 import { Link } from 'react-router-dom';
 import {
-  CalendarDays, Megaphone, MessageSquareText, UserRound, Receipt, Wallet, Pin, FileText,
-  UserCheck, Inbox, FileCheck2, BadgeCheck, FolderArchive, ImageIcon, House,
+  Signpost, CalendarDays, Megaphone, MessageSquareText, UserRound, Receipt, Wallet, Pin, FileText,
+  UserCheck, Inbox, FileCheck2, BadgeCheck, FolderArchive, ImageIcon, Users,
 } from 'lucide-react';
-import { StorageImage, Badge } from '../../components/ui';
+import { StorageImage, Badge, FotoWarga } from '../../components/ui';
 import { tanggal, jam, relatif, BULAN_PENDEK, parseDate, rupiah } from '../../lib/format';
 import { KATEGORI_PENGUMUMAN } from '../../lib/constants';
+import { useSettings } from '../../context/SettingsContext';
+import { labelSasaran } from '../../lib/alamat';
+import { namaWilayah } from '../../lib/akses';
+import { kodeRumah } from '../../lib/alamat';
 
 export function Thumb({ path, size = 56 }) {
   const fb = <span className="thumb-fallback"><ImageIcon size={Math.round(size * 0.36)} /></span>;
@@ -18,12 +22,14 @@ export function Thumb({ path, size = 56 }) {
 
 export function PengumumanRow({ p, thumb = true }) {
   const kat = KATEGORI_PENGUMUMAN[p.kategori] || KATEGORI_PENGUMUMAN.umum;
+  const { gang } = useSettings();
+  const target = labelSasaran(p, gang);
   return (
     <Link to={`/pengumuman/${p.id}`} className="rowi">
       {thumb ? <Thumb path={p.gambar_path} size={52} /> : <span className={`ico ${kat.ico}`}><Megaphone size={18} /></span>}
       <span className="rowi-main">
         <span className="rowi-title clamp-2">{p.disematkan && <Pin size={13} className="t-warn" style={{ marginRight: 4, verticalAlign: '-1px' }} aria-label="Disematkan" />}{p.judul}</span>
-        <span className="rowi-sub">{tanggal(p.created_at, { pendek: true })}{p.blok ? ` · Khusus Gang ${p.blok}` : ''}</span>
+        <span className="rowi-sub">{tanggal(p.created_at, { pendek: true })}{target ? ` · Khusus ${target}` : ''}</span>
       </span>
       {p.kategori !== 'umum' && <Badge tone={kat.tone}>{kat.label}</Badge>}
     </Link>
@@ -112,9 +118,9 @@ export function AktivitasRow({ a }) {
 }
 
 /** Kartu pekerjaan yang menunggu, sesuai kewenangan. */
-export function daftarTugas(hak, s = {}) {
+export function daftarTugas(hak, s = {}, gang = []) {
   const t = [];
-  if (hak.kelola_anggota || hak.humas) t.push({ to: '/admin/verifikasi', icon: UserCheck, l: 'Pendaftar baru', s: hak.kelola_anggota ? 'Menunggu verifikasi' : `Di Gang ${hak.wilayah.join(', ')}`, n: s.anggota_menunggu });
+  if (hak.kelola_anggota || hak.humas) t.push({ to: '/admin/verifikasi', icon: UserCheck, l: 'Pendaftar baru', s: hak.kelola_anggota ? 'Menunggu verifikasi' : `Di ${namaWilayah(hak, gang)}`, n: s.anggota_menunggu });
   if (hak.kelola_laporan) t.push({ to: '/admin/laporan', icon: Inbox, l: 'Aspirasi warga', s: 'Belum selesai ditangani', n: s.laporan_baru });
   if (hak.bendahara) t.push({ to: '/admin/ipl', icon: FileCheck2, l: 'Bukti bayar IPL', s: 'Perlu diverifikasi', n: s.pembayaran_menunggu });
   if (hak.setujui_kas) t.push({ to: '/keuangan/persetujuan', icon: BadgeCheck, l: 'Persetujuan pengeluaran', s: s.pengeluaran_menunggu ? rupiah(s.pengeluaran_menunggu_nominal) : 'Menunggu keputusan Anda', n: s.pengeluaran_menunggu });
@@ -124,7 +130,8 @@ export function daftarTugas(hak, s = {}) {
 }
 
 export function TugasGrid({ hak, stat, loading }) {
-  const t = daftarTugas(hak, stat || {});
+  const { gang } = useSettings();
+  const t = daftarTugas(hak, stat || {}, gang);
   if (!t.length) return null;
   return (
     <div className="tasks">
@@ -143,7 +150,7 @@ export function TugasGrid({ hak, stat, loading }) {
   );
 }
 
-/** Ringkasan gang untuk humas. */
+/** Ringkasan gang/jalan untuk humas. */
 export function WilayahCards({ wilayah = [] }) {
   if (!wilayah?.length) return null;
   return (
@@ -151,8 +158,8 @@ export function WilayahCards({ wilayah = [] }) {
       {wilayah.map((w) => {
         const tot = (w.ipl_lunas || 0) + (w.ipl_belum || 0);
         return (
-          <div className="card" key={w.blok}>
-            <div className="head"><span className="ico"><House size={18} /></span><b>Gang {w.blok}</b><span className="grow" /><Link className="link" to={`/admin/warga?blok=${w.blok}`}>Data warga</Link></div>
+          <div className="card" key={w.gang}>
+            <div className="head"><span className="ico"><Signpost size={18} /></span><span className="grow" style={{ minWidth: 0 }}><b className="ellipsis" style={{ display: 'block' }}>{w.nama}</b>{w.blok && <span className="text-xs muted">Blok {w.blok}</span>}</span><Link className="link" to={`/admin/warga?gang=${w.gang}`}>Data warga</Link></div>
             <div className="nums">
               <div><b>{w.warga}</b><span>Warga aktif</span></div>
               <div><b>{w.menunggu}</b><span>Pendaftar</span></div>
@@ -169,3 +176,39 @@ export function WilayahCards({ wilayah = [] }) {
   );
 }
 
+
+/** Jajaran foto 3:4 bergulir ke samping, tautan ke profil warga. */
+export function FotoStrip({ rows = [], to = '/warga', moreLabel = 'Direktori', sub }) {
+  if (!rows.length) return null;
+  return (
+    <div className="strip">
+      {rows.map((w) => (
+        <Link key={w.id} to={`/warga/${w.id}`} className="strip-item">
+          <FotoWarga nama={w.nama} path={w.foto_path} />
+          <span className="nm">{w.nama}</span>
+          <span className="mt">{sub ? sub(w) : kodeRumah(w)}</span>
+        </Link>
+      ))}
+      <Link to={to} className="strip-more"><span className="ico round"><Users size={18} /></span>{moreLabel}</Link>
+    </div>
+  );
+}
+
+/** Batang sebaran jumlah (mis. warga per blok). rows: [{ key, label, sub?, value, to? }] */
+export function Sebaran({ rows = [] }) {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <div className="bars">
+      {rows.map((r) => {
+        const isi = (
+          <>
+            <span className="lb">{r.label}{r.sub && <small>{r.sub}</small>}</span>
+            <span className="meter" aria-hidden="true"><i style={{ width: `${(r.value / max) * 100}%` }} /></span>
+            <span className="v">{r.value}</span>
+          </>
+        );
+        return r.to ? <Link key={r.key} to={r.to} className="b" style={{ color: 'inherit', textDecoration: 'none' }}>{isi}</Link> : <div key={r.key} className="b">{isi}</div>;
+      })}
+    </div>
+  );
+}

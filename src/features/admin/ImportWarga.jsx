@@ -8,6 +8,7 @@ import { parseCsv, CONTOH_CSV } from '../../lib/csv';
 import { normalizeHp, formatHp } from '../../lib/phone';
 import { importWarga } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
+import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
 
 const PIN_AWAL = '123456';
 const ALIAS = {
@@ -16,6 +17,7 @@ const ALIAS = {
   blok: ['blok', 'block'],
   no_rumah: ['no_rumah', 'no rumah', 'nomor rumah', 'nomor_rumah', 'no', 'nomor'],
   rumah: ['rumah', 'blok_rumah', 'blok rumah', 'alamat'],
+  gang: ['gang', 'jalan', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
   pekerjaan: ['pekerjaan', 'keahlian', 'profesi'],
   kepala_keluarga: ['kepala_keluarga', 'kepala keluarga', 'kk'],
 };
@@ -28,7 +30,7 @@ function petaKolom(header) {
 }
 
 /** Ubah baris CSV menjadi objek, lalu validasi di sisi aplikasi (server memeriksa ulang). */
-function olahBaris(rows, blokKode) {
+function olahBaris(rows, blokKode, gang = []) {
   const [header, ...data] = rows;
   const idx = petaKolom(header);
   const wajib = ['nama', 'hp'];
@@ -42,25 +44,29 @@ function olahBaris(rows, blokKode) {
     let blok = ambil('blok').toUpperCase();
     let no = ambil('no_rumah').toUpperCase();
     if ((!blok || !no) && idx.rumah >= 0) {
-      const m = ambil('rumah').toUpperCase().replace(/\s+/g, '').match(/^([A-Z0-9]{1,5}?)[-/]?([0-9]{1,4}[A-Z]?)$/);
+      const r = ambil('rumah').toUpperCase().replace(/^BLOK/, '').replace(/\s+/g, '');
+      const m = r.match(/^([A-Z0-9]{1,5})-(.+)$/) || r.match(/^([A-Z]{1,5})([0-9].*)$/);
       if (m) { blok = blok || m[1]; no = no || m[2]; }
     }
     const hp = normalizeHp(ambil('hp'));
     const nama = ambil('nama');
+    const namaGang = ambil('gang');
+    const g = namaGang ? gangDiBlok(gang, blok).find((x) => x.nama.trim().toLowerCase() === namaGang.toLowerCase()) : null;
     let galat = '';
     if (nama.length < 2) galat = 'Nama kosong/terlalu pendek';
     else if (!hp) galat = 'Nomor HP tidak valid';
     else if (!blokKode.includes(blok)) galat = `Blok "${blok || '-'}" tidak dikenal`;
-    else if (!/^[0-9A-Z-]{1,6}$/.test(no)) galat = 'Nomor rumah tidak valid';
+    else if (!POLA_NOMOR_RUMAH.test(no)) galat = 'Nomor rumah tidak valid';
+    else if (namaGang && !g) galat = `Gang "${namaGang}" belum ada di Blok ${blok}`;
     else if (sudah.has(hp)) galat = 'Nomor HP ganda di berkas';
     if (hp) sudah.add(hp);
-    return { baris: n + 2, nama, hp, blok, no_rumah: no, pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), galat };
+    return { baris: n + 2, nama, hp, blok, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), galat };
   });
   return { kurang: [], list };
 }
 
 export default function ImportWarga() {
-  const { blok } = useSettings();
+  const { blok, gang } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
   const inputRef = useRef(null);
@@ -79,7 +85,7 @@ export default function ImportWarga() {
     const text = await file.text();
     const rows = parseCsv(text);
     if (rows.length < 2) { setData(null); return toast.error('Berkas kosong atau bukan CSV. Simpan dari Excel sebagai CSV.'); }
-    const out = olahBaris(rows, blokKode);
+    const out = olahBaris(rows, blokKode, gang);
     setNama(file.name);
     setData(out);
   }
@@ -103,7 +109,7 @@ export default function ImportWarga() {
     try {
       for (let i = 0; i < valid.length; i += 100) {
         const potong = valid.slice(i, i + 100);
-        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, pekerjaan, kepala_keluarga }) => ({ nama: n, hp, blok: b, no_rumah, pekerjaan, kepala_keluarga })), PIN_AWAL);
+        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga })), PIN_AWAL);
         dibuat.push(res.dibuat || 0);
         for (const s of res.dilewati || []) dilewati.push({ ...s, baris: potong[s.baris - 1]?.baris ?? s.baris });
       }
@@ -119,11 +125,11 @@ export default function ImportWarga() {
   }
 
   const cols = [
-    { key: 'baris', label: 'Baris', render: (x) => <span className="num muted">{x.baris}</span> },
-    { key: 'nama', label: 'Nama', render: (x) => <span className="cell-main">{x.nama || '—'}</span> },
+    { key: 'baris', label: 'Baris', sort: (x) => x.baris, render: (x) => <span className="num muted">{x.baris}</span> },
+    { key: 'nama', label: 'Nama', sort: (x) => x.nama, render: (x) => <span className="cell-main">{x.nama || '—'}</span> },
     { key: 'hp', label: 'Nomor HP', render: (x) => <span className="num nowrap">{x.hp ? formatHp(x.hp) : '—'}</span> },
-    { key: 'rumah', label: 'Rumah', render: (x) => <span className="nowrap">{x.blok}-{x.no_rumah}</span> },
-    { key: 'st', label: 'Status', render: (x) => (x.galat ? <Badge tone="bad">{x.galat}</Badge> : <Badge tone="ok">Siap</Badge>) },
+    { key: 'rumah', label: 'Alamat', render: (x) => <span>{x.blok}-{x.no_rumah}{x.gang ? <span className="muted"> · {x.gang}</span> : ''}</span> },
+    { key: 'st', label: 'Status', sort: (x) => (x.galat ? 0 : 1), render: (x) => (x.galat ? <Badge tone="bad">{x.galat}</Badge> : <Badge tone="ok">Siap</Badge>) },
   ];
 
   return (
@@ -133,7 +139,7 @@ export default function ImportWarga() {
         <div className="steps">
           <div className="step"><span className="n">1</span><div className="body">
             <h3>Siapkan berkas</h3>
-            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b>. Opsional <b>pekerjaan</b> dan <b>kepala_keluarga</b> (ya/tidak). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
+            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b> (boleh 3/5). Opsional <b>gang</b> (nama gang/jalan persis seperti di menu Blok & gang), <b>pekerjaan</b>, dan <b>kepala_keluarga</b> (ya/tidak). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
             <div style={{ marginTop: 10 }}><Button size="sm" variant="secondary" icon={Download} onClick={unduhContoh}>Unduh contoh CSV</Button></div>
           </div></div>
           <div className="step"><span className="n">2</span><div className="body">

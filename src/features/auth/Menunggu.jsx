@@ -5,10 +5,12 @@ import { Button, Callout } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import { useAuth } from '../../context/AuthContext';
 import { formatHp } from '../../lib/phone';
+import { useSettings } from '../../context/SettingsContext';
 
 /** Status akun yang belum aktif: menunggu / ditolak / nonaktif. */
 export default function Menunggu() {
   const { warga, kontak, refreshProfil, signOut, session } = useAuth();
+  const { alamat, namaGang } = useSettings();
   const [loading, setLoading] = useState(false);
   if (!session) return <Navigate to="/masuk" replace />;
   if (warga?.status === 'aktif') return <Navigate to="/" replace />;
@@ -19,7 +21,7 @@ export default function Menunggu() {
     ? 'Pengurus belum dapat menyetujui pendaftaran Anda. Hubungi humas gang atau sekretaris untuk informasi lebih lanjut.'
     : nonaktif
       ? 'Akun Anda sedang dinonaktifkan. Hubungi pengurus paguyuban.'
-      : `Data Anda sudah dikirim ke humas Gang ${warga?.blok || ''} dan sekretaris. Biasanya diperiksa dalam 1–2 hari.`;
+      : `Data Anda sudah dikirim ke ${namaGang(warga?.gang_id) ? `humas ${namaGang(warga.gang_id)}, ` : ''}sekretaris, dan pimpinan paguyuban. Biasanya diperiksa dalam 1–2 hari.`;
   return (
     <AuthLayout>
       <div className="status-hero">
@@ -32,7 +34,7 @@ export default function Menunggu() {
         <dl className="kv" style={{ margin: 0 }}>
           <dt>Nama</dt><dd>{warga?.nama}</dd>
           <dt>Nomor HP</dt><dd className="num">{kontak?.nomor_hp ? formatHp(kontak.nomor_hp) : '-'}</dd>
-          <dt>Rumah</dt><dd>{warga?.blok ? `Blok ${warga.blok} No. ${warga.no_rumah}` : '-'}</dd>
+          <dt>Rumah</dt><dd>{alamat(warga) || '-'}</dd>
         </dl>
       </div>
       <div className="stack-sm">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Trash2, Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
 import { Button, Card, CardHead, CardBody, ImagePicker, Input, LineTabs, IconButton, Field, useConfirm } from '../../components/ui';
@@ -78,16 +79,16 @@ function Blok() {
   const [kode, setKode] = useState(''); const [nama, setNama] = useState('');
   async function tambah() {
     const k = kode.trim().toUpperCase();
-    if (!/^[A-Z0-9]{1,5}$/.test(k)) return toast.error('Kode 1–5 huruf/angka, contoh A atau G1');
-    try { await simpanBlok({ kode: k, nama: nama.trim() || `Gang ${k}`, urutan: blok.length + 1 }); setKode(''); setNama(''); reload(); toast.success('Gang ditambahkan'); } catch (e) { toast.error(e); }
+    if (!/^[A-Z0-9]{1,5}$/.test(k)) return toast.error('Kode 1–5 huruf/angka, contoh A atau C');
+    try { await simpanBlok({ kode: k, nama: nama.trim() || `Blok ${k}`, urutan: blok.length + 1 }); setKode(''); setNama(''); reload(); toast.success('Blok ditambahkan'); } catch (e) { toast.error(e); }
   }
   async function hapus(b) {
-    if (!(await confirm({ title: `Hapus ${b.nama}?`, text: 'Gang yang masih dipakai rumah, warga, atau humas tidak dapat dihapus.', okLabel: 'Hapus', danger: true }))) return;
-    try { await hapusBlok(b.kode); reload(); toast.success('Gang dihapus'); } catch { toast.error('Gang masih dipakai oleh rumah atau warga'); }
+    if (!(await confirm({ title: `Hapus ${b.nama}?`, text: 'Blok yang masih dipakai rumah atau warga tidak dapat dihapus.', okLabel: 'Hapus', danger: true }))) return;
+    try { await hapusBlok(b.kode); reload(); toast.success('Blok dihapus'); } catch { toast.error('Blok masih dipakai oleh rumah atau warga'); }
   }
   return (
     <Card>
-      <CardHead title="Gang / blok" desc="Satu gang dapat dipegang satu atau beberapa Humas Gang." />
+      <CardHead title="Blok" desc="Satu blok dapat berisi beberapa gang atau nama jalan." action={<Link className="link text-sm" to="/admin/wilayah">Atur gang / jalan</Link>} />
       <div className="rows inset">
         {blok.map((b) => (
           <div className="rowi" key={b.kode}>
@@ -99,8 +100,8 @@ function Blok() {
       </div>
       <div className="card-foot">
         <div className="row wrap row-top">
-          <Input fieldClass="grow" placeholder="Kode (A)" value={kode} onChange={(e) => setKode(e.target.value)} maxLength={5} aria-label="Kode gang" style={{ maxWidth: 120 }} />
-          <Input fieldClass="grow" placeholder="Nama (Gang Melati)" value={nama} onChange={(e) => setNama(e.target.value)} maxLength={40} aria-label="Nama gang" />
+          <Input fieldClass="grow" placeholder="Kode (C)" value={kode} onChange={(e) => setKode(e.target.value)} maxLength={5} aria-label="Kode blok" style={{ maxWidth: 120 }} />
+          <Input fieldClass="grow" placeholder="Nama (Blok C)" value={nama} onChange={(e) => setNama(e.target.value)} maxLength={40} aria-label="Nama blok" />
           <Button icon={Plus} variant="secondary" onClick={tambah}>Tambah</Button>
         </div>
       </div>
@@ -143,7 +144,7 @@ export default function PengaturanPaguyuban() {
   return (
     <div className="page form">
       <PageHeader back title="Pengaturan paguyuban" desc="Hanya admin. Perubahan berlaku untuk seluruh warga." />
-      <LineTabs value={tab} onChange={setTab} tabs={[{ value: 'umum', label: 'Umum & iuran' }, { value: 'blok', label: 'Gang / blok' }, { value: 'darurat', label: 'Kontak darurat' }]} />
+      <LineTabs value={tab} onChange={setTab} tabs={[{ value: 'umum', label: 'Umum & iuran' }, { value: 'blok', label: 'Blok & gang' }, { value: 'darurat', label: 'Kontak darurat' }]} />
       {tab === 'umum' ? <Umum /> : tab === 'blok' ? <Blok /> : <Darurat />}
     </div>
   );

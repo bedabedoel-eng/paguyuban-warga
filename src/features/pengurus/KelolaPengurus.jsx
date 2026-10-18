@@ -8,34 +8,35 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { daftarPengurus, simpanPengurus, hapusPengurus } from '../../services/pengurus';
 import { daftarWarga } from '../../services/warga';
-import { PERAN_PENGURUS, MATRIKS } from '../../lib/akses';
+import { PERAN_PENGURUS, MATRIKS, labelJabatan } from '../../lib/akses';
 
 const URUT = { ketua: 1, wakil_ketua: 2, sekretaris: 3, bendahara: 4, humas: 10, seksi: 20 };
 
 function FormJabatan({ awal, warga, onClose, onSaved }) {
-  const { blok } = useSettings();
+  const { gang, namaGang, alamatPendek } = useSettings();
   const toast = useToast();
   const y = new Date().getFullYear();
   const [f, setF] = useState({
-    warga_id: awal?.warga_id || '', peran: awal?.peran || 'seksi', jabatan: awal?.jabatan || '', wilayah_blok: awal?.wilayah_blok || '',
+    warga_id: awal?.warga_id || '', peran: awal?.peran || 'seksi', jabatan: awal?.jabatan || '', wilayah_gang: awal?.wilayah_gang || '',
     periode_mulai: awal?.periode_mulai || y, periode_selesai: awal?.periode_selesai || y + 2, aktif: awal?.aktif ?? true,
   });
   const [err, setErr] = useState({});
   const [loading, setLoading] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-  const usulJabatan = (peran, wil) => (peran === 'humas' ? `Humas Gang ${wil || ''}`.trim() : peran === 'seksi' ? '' : PERAN_PENGURUS[peran].label);
-  function gantiPeran(v) { setF((s) => ({ ...s, peran: v, jabatan: !s.jabatan || Object.values(PERAN_PENGURUS).some((p) => s.jabatan.startsWith(p.label)) || s.jabatan.startsWith('Humas Gang') ? usulJabatan(v, s.wilayah_blok) : s.jabatan })); }
+  const usulJabatan = (peran, wil) => (peran === 'humas' ? (namaGang(wil) ? `Humas ${namaGang(wil)}` : 'Humas Gang') : peran === 'seksi' ? '' : PERAN_PENGURUS[peran].label);
+  const jabatanOtomatis = (j) => !j || j.startsWith('Humas') || Object.values(PERAN_PENGURUS).some((p) => j.startsWith(p.label));
+  function gantiPeran(v) { setF((s) => ({ ...s, peran: v, jabatan: jabatanOtomatis(s.jabatan) ? usulJabatan(v, s.wilayah_gang) : s.jabatan })); }
   async function simpan() {
     const er = {};
     if (!f.warga_id) er.warga_id = 'Pilih warga';
     if (f.jabatan.trim().length < 2) er.jabatan = 'Isi nama jabatan';
-    if (f.peran === 'humas' && !f.wilayah_blok) er.wilayah_blok = 'Pilih gang yang dipegang';
+    if (f.peran === 'humas' && !f.wilayah_gang) er.wilayah_gang = gang.length ? 'Pilih gang/jalan yang dipegang' : 'Buat daftar gang/jalan dulu di menu Blok & gang';
     if (Number(f.periode_selesai) < Number(f.periode_mulai)) er.periode_selesai = 'Tahun selesai sebelum tahun mulai';
     setErr(er);
     if (Object.keys(er).length) return;
     setLoading(true);
     try {
-      await simpanPengurus({ id: awal?.id, warga_id: f.warga_id, peran: f.peran, jabatan: f.jabatan.trim(), wilayah_blok: f.peran === 'humas' ? f.wilayah_blok : null,
+      await simpanPengurus({ id: awal?.id, warga_id: f.warga_id, peran: f.peran, jabatan: f.jabatan.trim(), wilayah_gang: f.peran === 'humas' ? f.wilayah_gang : null,
         inti: PERAN_PENGURUS[f.peran].inti, urutan: URUT[f.peran], periode_mulai: Number(f.periode_mulai) || null, periode_selesai: Number(f.periode_selesai) || null, aktif: f.aktif });
       toast.success(awal ? 'Jabatan diperbarui' : 'Pengurus ditetapkan. Hak aksesnya aktif saat ia masuk berikutnya.');
       onSaved();
@@ -46,11 +47,13 @@ function FormJabatan({ awal, warga, onClose, onSaved }) {
       footer={<><Button variant="secondary" onClick={onClose}>Batal</Button><Button loading={loading} onClick={simpan}>Simpan</Button></>}>
       <div className="stack">
         <Select label="Warga" value={f.warga_id} onChange={set('warga_id')} error={err.warga_id} placeholder="Pilih warga aktif" disabled={!!awal}
-          options={(warga || []).map((w) => ({ value: w.id, label: `${w.nama} · ${w.blok}-${w.no_rumah}` }))} />
+          options={(warga || []).map((w) => ({ value: w.id, label: `${w.nama} · ${alamatPendek(w)}` }))} />
         <div className="form-grid">
           <Select label="Peran" value={f.peran} onChange={(e) => gantiPeran(e.target.value)} options={Object.entries(PERAN_PENGURUS).map(([value, p]) => ({ value, label: p.label }))} hint={PERAN_PENGURUS[f.peran].ringkas} />
           {f.peran === 'humas'
-            ? <Select label="Gang yang dipegang" value={f.wilayah_blok} onChange={(e) => setF((s) => ({ ...s, wilayah_blok: e.target.value, jabatan: s.jabatan.startsWith('Humas Gang') || !s.jabatan ? usulJabatan('humas', e.target.value) : s.jabatan }))} error={err.wilayah_blok} placeholder="Pilih" options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
+            ? <Select label="Gang / jalan yang dipegang" value={f.wilayah_gang} error={err.wilayah_gang} placeholder="Pilih"
+                onChange={(e) => setF((s) => ({ ...s, wilayah_gang: e.target.value, jabatan: jabatanOtomatis(s.jabatan) ? usulJabatan('humas', e.target.value) : s.jabatan }))}
+                options={gang.map((g) => ({ value: g.id, label: g.blok ? `${g.nama} (Blok ${g.blok})` : g.nama }))} />
             : <span />}
           <Input fieldClass="span-2" label="Nama jabatan" value={f.jabatan} onChange={set('jabatan')} error={err.jabatan} maxLength={60} placeholder={f.peran === 'seksi' ? 'Contoh: Seksi Keamanan' : ''} hint="Tampil di halaman Pengurus dan profil." />
           <Input label="Periode mulai" type="number" min="2000" max="2100" value={f.periode_mulai} onChange={set('periode_mulai')} />
@@ -71,6 +74,7 @@ function Sel({ v }) {
 
 export default function KelolaPengurus() {
   const { user } = useAuth();
+  const { namaGang, alamatPendek } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
   const s = useAsync(() => daftarPengurus({ semua: true }), []);
@@ -83,11 +87,11 @@ export default function KelolaPengurus() {
     try { await hapusPengurus(p.id); toast.success('Jabatan dicabut'); s.reload(); } catch (e) { toast.error(e); }
   }
   const cols = [
-    { key: 'nama', label: 'Pengurus', mobileLabel: '', render: (p) => <div className="row"><Avatar nama={p.warga?.nama} path={p.warga?.foto_path} size={34} /><div style={{ textAlign: 'left' }}><div className="cell-main">{p.warga?.nama}</div><div className="cell-sub">Blok {p.warga?.blok}-{p.warga?.no_rumah}</div></div></div> },
-    { key: 'jabatan', label: 'Jabatan', render: (p) => <span>{p.jabatan}{p.wilayah_blok ? <span className="muted"> · Gang {p.wilayah_blok}</span> : ''}</span> },
-    { key: 'peran', label: 'Hak akses', render: (p) => <Badge tone={p.peran === 'seksi' ? '' : 'brand'}>{PERAN_PENGURUS[p.peran]?.label || p.peran}</Badge> },
+    { key: 'nama', label: 'Pengurus', mobileLabel: '', sort: (p) => p.warga?.nama, render: (p) => <div className="row"><Avatar nama={p.warga?.nama} path={p.warga?.foto_path} size={34} /><div style={{ textAlign: 'left' }}><div className="cell-main">{p.warga?.nama}</div><div className="cell-sub">{alamatPendek(p.warga)}</div></div></div> },
+    { key: 'jabatan', label: 'Jabatan', sort: (p) => labelJabatan(p, namaGang), render: (p) => <span>{labelJabatan(p, namaGang)}</span> },
+    { key: 'peran', label: 'Hak akses', sort: (p) => PERAN_PENGURUS[p.peran]?.label || p.peran, render: (p) => <Badge tone={p.peran === 'seksi' ? '' : 'brand'}>{PERAN_PENGURUS[p.peran]?.label || p.peran}</Badge> },
     { key: 'periode', label: 'Periode', render: (p) => <span className="num nowrap">{p.periode_mulai || '—'}–{p.periode_selesai || '—'}</span> },
-    { key: 'status', label: 'Status', render: (p) => <Badge tone={p.aktif ? 'ok' : ''} dot>{p.aktif ? 'Aktif' : 'Nonaktif'}</Badge> },
+    { key: 'status', label: 'Status', sort: (p) => (p.aktif ? 0 : 1), render: (p) => <Badge tone={p.aktif ? 'ok' : ''} dot>{p.aktif ? 'Aktif' : 'Nonaktif'}</Badge> },
     { key: 'aksi', label: '', className: 'actions', render: (p) => <><IconButton small icon={Pencil} size={16} label="Ubah jabatan" onClick={() => setForm(p)} /><IconButton small danger icon={Trash2} size={16} label="Cabut jabatan" onClick={() => hapus(p)} /></> },
   ];
   return (

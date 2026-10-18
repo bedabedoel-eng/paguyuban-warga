@@ -80,9 +80,9 @@ function Periode() {
     try { await tandaiLunasTunai(t.id); toast.success(`Rumah ${t.rumah?.kode} lunas`); s.reload(); } catch (e) { toast.error(e); } finally { setBusy(null); }
   }
   const cols = [
-    { key: 'rumah', label: 'Rumah', render: (t) => <span className="cell-main">{t.rumah?.kode}</span> },
-    { key: 'nominal', label: 'Nominal', className: 'right', render: (t) => <span className="money">{rupiah(t.nominal)}</span> },
-    { key: 'status', label: 'Status', render: (t) => <span className="row" style={{ gap: 6, justifyContent: 'inherit' }}><Badge tone={STATUS_TAGIHAN[t.status].tone} dot>{STATUS_TAGIHAN[t.status].label}</Badge>{t.metode === 'tunai' && <span className="text-xs muted">tunai</span>}</span> },
+    { key: 'rumah', label: 'Rumah', sort: (t) => t.rumah?.kode, render: (t) => <span className="cell-main">{t.rumah?.kode}</span> },
+    { key: 'nominal', label: 'Nominal', className: 'right', sort: (t) => t.nominal, render: (t) => <span className="money">{rupiah(t.nominal)}</span> },
+    { key: 'status', label: 'Status', sort: (t) => STATUS_TAGIHAN[t.status].label, render: (t) => <span className="row" style={{ gap: 6, justifyContent: 'inherit' }}><Badge tone={STATUS_TAGIHAN[t.status].tone} dot>{STATUS_TAGIHAN[t.status].label}</Badge>{t.metode === 'tunai' && <span className="text-xs muted">tunai</span>}</span> },
     { key: 'aksi', label: '', className: 'actions', render: (t) => t.status === 'belum_bayar' && <Button size="xs" variant="secondary" icon={Banknote} loading={busy === t.id} onClick={() => tunai(t)}>Catat tunai</Button> },
   ];
 

@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FolderArchive, Plus, FileText, Mail, Send, NotebookPen, Paperclip, Globe } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, CardBody, EmptyState, ErrorState, Chips, SearchInput, SkeletonRows } from '../../components/ui';
+import { Badge, Button, Card, CardBody, EmptyState, ErrorState, Chips, SearchInput, SkeletonRows, SortSelect } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useAsync } from '../../hooks/useAsync';
 import { useDebounce } from '../../hooks/useDebounce';
 import { daftarDokumen } from '../../services/dokumen';
 import { JENIS_DOKUMEN } from '../../lib/constants';
 import { tanggal } from '../../lib/format';
+import { urutkan } from '../../lib/sort';
 
 export const IKON_DOK = { surat_masuk: Mail, surat_keluar: Send, notulen: NotebookPen, lainnya: FileText };
 
@@ -18,6 +19,13 @@ export default function Administrasi() {
   const [q, setQ] = useState('');
   const dq = useDebounce(q.trim(), 300);
   const s = useAsync(() => daftarDokumen({ jenis, q: dq }), [jenis, dq]);
+  const [urut, setUrut] = useState('baru');
+  const data = useMemo(() => {
+    if (urut === 'lama') return urutkan(s.data, (d) => d.tanggal, 'asc');
+    if (urut === 'judul') return urutkan(s.data, (d) => d.judul);
+    if (urut === 'jenis') return urutkan(s.data, (d) => `${JENIS_DOKUMEN[d.jenis]?.label || ''} ${d.tanggal}`);
+    return urutkan(s.data, (d) => d.tanggal, 'desc');
+  }, [s.data, urut]);
   const pengurus = hak.pengurus;
   return (
     <div className="page narrow">
@@ -26,17 +34,18 @@ export default function Administrasi() {
         actions={hak.kelola_dokumen && <Button size="sm" icon={Plus} to="/administrasi/baru">Arsipkan dokumen</Button>} />
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Cari judul dokumen" />
+        <SortSelect value={urut} onChange={setUrut} options={[{ value: 'baru', label: 'Terbaru' }, { value: 'lama', label: 'Terlama' }, { value: 'judul', label: 'Judul A–Z' }, ...(pengurus ? [{ value: 'jenis', label: 'Jenis dokumen' }] : [])]} />
       </div>
       {pengurus && <Chips value={jenis} onChange={setJenis} tabs={[{ value: '', label: 'Semua' }, ...Object.entries(JENIS_DOKUMEN).map(([value, v]) => ({ value, label: v.label }))]} />}
       <Card>
         <CardBody>
-          {s.loading && !s.data ? <SkeletonRows n={4} /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !s.data?.length ? (
+          {s.loading && !s.data ? <SkeletonRows n={4} /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !data.length ? (
             <EmptyState icon={FolderArchive} title={dq ? 'Dokumen tidak ditemukan' : 'Belum ada dokumen'}
               text={hak.kelola_dokumen ? 'Arsipkan surat dan notulen agar mudah dicari kembali oleh pengurus.' : 'Dokumen yang dibagikan pengurus akan tampil di sini.'}
               action={hak.kelola_dokumen && !dq && <Button size="sm" icon={Plus} to="/administrasi/baru">Arsipkan dokumen</Button>} />
           ) : (
             <div className="rows">
-              {s.data.map((d) => {
+              {data.map((d) => {
                 const J = JENIS_DOKUMEN[d.jenis]; const Icon = IKON_DOK[d.jenis];
                 return (
                   <Link key={d.id} to={`/administrasi/${d.id}`} className="rowi">

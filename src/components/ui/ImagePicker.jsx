@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ImageUp, FileText, X } from 'lucide-react';
 
 /** Area pilih/seret foto atau PDF dengan pratinjau. */
-export default function ImagePicker({ file, onChange, label = 'Pilih foto', hint = 'JPG, PNG, atau WEBP · maks. 5 MB', accept = 'image/jpeg,image/png,image/webp', previewUrl, capture }) {
+export default function ImagePicker({ file, onChange, label = 'Pilih foto', hint = 'JPG, PNG, atau WEBP · maks. 5 MB', accept = 'image/jpeg,image/png,image/webp', previewUrl, capture, ratio }) {
   const ref = useRef();
   const [drag, setDrag] = useState(false);
   const [url, setUrl] = useState(null);
@@ -28,7 +28,7 @@ export default function ImagePicker({ file, onChange, label = 'Pilih foto', hint
     >
       <input ref={ref} type="file" accept={accept} capture={capture} hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(f); e.target.value = ''; }} />
       {shown ? (
-        <img src={shown} alt="Pratinjau" className="preview" />
+        <img src={shown} alt="Pratinjau" className="preview" style={ratio ? { aspectRatio: ratio, objectFit: 'cover', maxHeight: 240, width: 'auto' } : undefined} />
       ) : file ? (
         <>
           <span className="dz-icon"><FileText size={20} /></span>
