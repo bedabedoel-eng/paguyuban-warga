@@ -1,10 +1,10 @@
 import { Lightbulb, Trash2, Building2, ShieldCheck, CalendarDays, MessageSquareText } from 'lucide-react';
 
 export const KATEGORI_PENGUMUMAN = {
-  penting: { label: 'Penting', tone: 'red' },
-  kegiatan: { label: 'Kegiatan', tone: 'green' },
-  info: { label: 'Info', tone: 'blue' },
-  umum: { label: 'Umum', tone: 'green' },
+  penting: { label: 'Penting', tone: 'bad', ico: 'bad' },
+  kegiatan: { label: 'Kegiatan', tone: 'brand', ico: '' },
+  info: { label: 'Info', tone: 'info', ico: 'info' },
+  umum: { label: 'Umum', tone: '', ico: 'neutral' },
 };
 
 export const KATEGORI_LAPORAN = {
@@ -17,23 +17,36 @@ export const KATEGORI_LAPORAN = {
 };
 
 export const STATUS_LAPORAN = {
-  baru: { label: 'Terkirim', tone: 'blue' },
-  diproses: { label: 'Diproses', tone: 'orange' },
-  selesai: { label: 'Selesai', tone: 'green' },
-  ditolak: { label: 'Ditolak', tone: 'red' },
+  baru: { label: 'Baru', tone: 'info' },
+  diproses: { label: 'Diproses', tone: 'warn' },
+  selesai: { label: 'Selesai', tone: 'ok' },
+  ditolak: { label: 'Tidak ditindaklanjuti', tone: 'bad' },
 };
 
 export const STATUS_TAGIHAN = {
-  belum_bayar: { label: 'Belum Bayar', tone: 'red' },
-  menunggu_verifikasi: { label: 'Menunggu Verifikasi', tone: 'orange' },
-  lunas: { label: 'Lunas', tone: 'green' },
+  belum_bayar: { label: 'Belum bayar', tone: 'bad' },
+  menunggu_verifikasi: { label: 'Menunggu verifikasi', tone: 'warn' },
+  lunas: { label: 'Lunas', tone: 'ok' },
 };
 
 export const STATUS_WARGA = {
-  menunggu: { label: 'Menunggu', tone: 'orange' },
-  aktif: { label: 'Anggota Aktif', tone: 'green' },
-  ditolak: { label: 'Ditolak', tone: 'red' },
+  menunggu: { label: 'Menunggu', tone: 'warn' },
+  aktif: { label: 'Aktif', tone: 'ok' },
+  ditolak: { label: 'Ditolak', tone: 'bad' },
   nonaktif: { label: 'Nonaktif', tone: '' },
+};
+
+export const STATUS_KAS = {
+  disetujui: { label: 'Tercatat', tone: 'ok' },
+  menunggu: { label: 'Menunggu persetujuan', tone: 'warn' },
+  ditolak: { label: 'Ditolak', tone: 'bad' },
+};
+
+export const JENIS_DOKUMEN = {
+  surat_masuk: { label: 'Surat masuk', tone: 'info' },
+  surat_keluar: { label: 'Surat keluar', tone: 'brand' },
+  notulen: { label: 'Notulen', tone: 'gold' },
+  lainnya: { label: 'Lainnya', tone: '' },
 };
 
 export const PERAN = { warga: 'Warga', pengurus: 'Pengurus', admin: 'Admin' };

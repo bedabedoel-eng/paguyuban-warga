@@ -29,14 +29,16 @@ const FormKegiatan = lazy(() => import('./features/kegiatan/FormKegiatan'));
 const Aspirasi = lazy(() => import('./features/laporan/Aspirasi'));
 const Keuangan = lazy(() => import('./features/keuangan/Keuangan'));
 const Pengurus = lazy(() => import('./features/pengurus/Pengurus'));
+const KelolaPengurus = lazy(() => import('./features/pengurus/KelolaPengurus'));
+const Administrasi = lazy(() => import('./features/administrasi/Administrasi'));
+const DetailDokumen = lazy(() => import('./features/administrasi/DetailDokumen'));
+const FormDokumen = lazy(() => import('./features/administrasi/FormDokumen'));
 const ProfilSaya = lazy(() => import('./features/profil/ProfilSaya'));
 const UbahProfil = lazy(() => import('./features/profil/UbahProfil'));
 const Pengaturan = lazy(() => import('./features/pengaturan/Pengaturan'));
-const InformasiAkun = lazy(() => import('./features/pengaturan/InformasiAkun'));
 const Privasi = lazy(() => import('./features/pengaturan/Privasi'));
 const PrefNotifikasi = lazy(() => import('./features/pengaturan/PrefNotifikasi'));
 const Keamanan = lazy(() => import('./features/pengaturan/Keamanan'));
-const Bahasa = lazy(() => import('./features/pengaturan/Bahasa'));
 const Tentang = lazy(() => import('./features/pengaturan/Tentang'));
 const Menu = lazy(() => import('./features/menu/Menu'));
 const KontakDarurat = lazy(() => import('./features/menu/KontakDarurat'));
@@ -83,28 +85,45 @@ export default function App() {
                     <Route path="kegiatan/:id" element={<DetailKegiatan />} />
                     <Route path="aspirasi" element={<Aspirasi />} />
                     <Route path="keuangan" element={<Keuangan />} />
+                    <Route path="keuangan/:tab" element={<Keuangan />} />
                     <Route path="pengurus" element={<Pengurus />} />
+                    <Route path="administrasi" element={<Administrasi />} />
+                    <Route path="administrasi/:id" element={<DetailDokumen />} />
                     <Route path="profil" element={<ProfilSaya />} />
                     <Route path="profil/ubah" element={<UbahProfil />} />
                     <Route path="pengaturan" element={<Pengaturan />} />
-                    <Route path="pengaturan/akun" element={<InformasiAkun />} />
+                    <Route path="pengaturan/akun" element={<Navigate to="/profil" replace />} />
                     <Route path="pengaturan/privasi" element={<Privasi />} />
                     <Route path="pengaturan/notifikasi" element={<PrefNotifikasi />} />
                     <Route path="pengaturan/keamanan" element={<Keamanan />} />
-                    <Route path="pengaturan/bahasa" element={<Bahasa />} />
+                    <Route path="pengaturan/bahasa" element={<Navigate to="/pengaturan" replace />} />
                     <Route path="pengaturan/tentang" element={<Tentang />} />
                     <Route path="menu" element={<Menu />} />
                     <Route path="kontak-darurat" element={<KontakDarurat />} />
                     <Route path="notifikasi" element={<Notifikasi />} />
+
                     <Route element={<RequireHak hak="pengurus" />}>
                       <Route path="admin" element={<DashboardAdmin />} />
+                    </Route>
+                    <Route element={<RequireHak hak={['kelola_anggota', 'humas']} />}>
                       <Route path="admin/verifikasi" element={<VerifikasiAnggota />} />
                       <Route path="admin/warga" element={<DataWarga />} />
+                    </Route>
+                    <Route element={<RequireHak hak="kelola_laporan" />}>
                       <Route path="admin/laporan" element={<KelolaLaporan />} />
+                    </Route>
+                    <Route element={<RequireHak hak="kelola_info" />}>
                       <Route path="pengumuman/baru" element={<FormPengumuman />} />
                       <Route path="pengumuman/:id/ubah" element={<FormPengumuman />} />
                       <Route path="kegiatan/baru" element={<FormKegiatan />} />
                       <Route path="kegiatan/:id/ubah" element={<FormKegiatan />} />
+                    </Route>
+                    <Route element={<RequireHak hak="kelola_dokumen" />}>
+                      <Route path="administrasi/baru" element={<FormDokumen />} />
+                      <Route path="administrasi/:id/ubah" element={<FormDokumen />} />
+                    </Route>
+                    <Route element={<RequireHak hak="kelola_pengurus" />}>
+                      <Route path="pengurus/kelola" element={<KelolaPengurus />} />
                     </Route>
                     <Route element={<RequireHak hak="bendahara" />}>
                       <Route path="admin/ipl" element={<KelolaIpl />} />

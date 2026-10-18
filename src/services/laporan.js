@@ -5,8 +5,9 @@ export const buatLaporan = async (l) => unwrap(await supabase.from('laporan').in
 export async function laporanSaya(uid) {
   return unwrap(await supabase.from('laporan').select('*').eq('pelapor_id', uid).order('created_at', { ascending: false }).limit(50));
 }
+/** Semua laporan yang boleh dilihat (RLS: pimpinan semua, humas gangnya). */
 export async function semuaLaporan({ status = '' } = {}) {
-  let q = supabase.from('laporan').select('*, pelapor:pelapor_id(nama,blok,no_rumah)').order('created_at', { ascending: false }).limit(200);
+  let q = supabase.from('laporan').select('*, pelapor:pelapor_id(nama,blok,no_rumah,foto_path)').order('created_at', { ascending: false }).limit(300);
   if (status) q = q.eq('status', status);
   return unwrap(await q);
 }

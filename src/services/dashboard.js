@@ -3,6 +3,7 @@ import { unwrap } from './_util';
 
 export const statistik = async () => unwrap(await supabase.rpc('statistik_dashboard'));
 export const statistikIplBulanan = async (tahun) => unwrap(await supabase.rpc('statistik_ipl_bulanan', { p_tahun: tahun }));
+export const arusKas = async (tahun) => unwrap(await supabase.rpc('arus_kas_bulanan', { p_tahun: tahun }));
 export async function aktivitasTerbaru(limit = 6) {
   return unwrap(await supabase.from('aktivitas').select('*, pelaku:pelaku_id(nama)').order('created_at', { ascending: false }).limit(limit));
 }

@@ -1,7 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Splash from '../features/auth/Splash';
-import { ErrorState } from '../components/ui';
+import { ErrorState, EmptyState, Button } from '../components/ui';
 
 /** Hanya untuk pengguna yang sudah masuk dan berstatus aktif. */
 export function RequireAktif() {
@@ -9,7 +10,7 @@ export function RequireAktif() {
   const loc = useLocation();
   if (loading) return <Splash />;
   if (!session) return <Navigate to="/masuk" replace state={{ from: loc.pathname }} />;
-  if (profilError) return <div style={{ padding: 24 }}><ErrorState error={String(profilError.message || profilError)} onRetry={refreshProfil} /></div>;
+  if (profilError) return <div className="page narrow"><ErrorState error={String(profilError.message || profilError)} onRetry={refreshProfil} /></div>;
   if (!warga) return <Splash />;
   if (warga.status === 'menunggu' && (!kontak?.nomor_hp || !warga.blok || !warga.no_rumah)) return <Navigate to="/lengkapi" replace />;
   if (warga.status !== 'aktif') return <Navigate to="/menunggu" replace />;
@@ -32,9 +33,23 @@ export function RequireLogin() {
   return <Outlet />;
 }
 
-/** Batasi halaman berdasarkan hak (pengurus | admin | bendahara). */
+/**
+ * Batasi halaman berdasarkan hak. hak: string atau array (cukup salah satu).
+ * Pengguna tanpa hak melihat penjelasan, bukan dialihkan diam-diam.
+ */
 export function RequireHak({ hak: perlu }) {
   const { hak } = useAuth();
-  if (!hak[perlu]) return <Navigate to="/" replace />;
+  const daftar = Array.isArray(perlu) ? perlu : [perlu];
+  if (!daftar.some((k) => hak[k])) {
+    return (
+      <div className="page narrow">
+        <div className="card">
+          <EmptyState icon={ShieldAlert} title="Halaman ini khusus pengurus berwenang"
+            text="Jabatan Anda tidak memiliki akses ke halaman ini. Bila seharusnya punya, minta Ketua mengatur jabatan Anda."
+            action={<Button variant="secondary" to="/">Kembali ke beranda</Button>} />
+        </div>
+      </div>
+    );
+  }
   return <Outlet />;
 }

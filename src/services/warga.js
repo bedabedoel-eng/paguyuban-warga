@@ -9,9 +9,9 @@ export async function profilSaya(uid) {
   const [w, k, j] = await Promise.all([
     supabase.from('warga').select(KOLOM_WARGA).eq('id', uid).maybeSingle(),
     supabase.from('warga_kontak').select('*').eq('warga_id', uid).maybeSingle(),
-    supabase.from('pengurus').select('jabatan').eq('warga_id', uid).eq('aktif', true).order('urutan').limit(1),
+    supabase.from('pengurus').select('*').eq('warga_id', uid).eq('aktif', true).order('urutan'),
   ]);
-  return { warga: unwrap(w), kontak: unwrap(k), jabatan: j.data?.[0]?.jabatan || null };
+  return { warga: unwrap(w), kontak: unwrap(k), jabatan: j.data || [] };
 }
 
 export async function hakSaya() {
@@ -52,15 +52,17 @@ export async function ubahKontak(uid, data) {
 
 /* ----- Admin / pengurus ----- */
 export async function wargaMenunggu() {
+  // RLS hanya mengembalikan pendaftar di wilayah kewenangan pengguna
   const w = unwrap(await supabase.from('warga').select(KOLOM_WARGA).in('status', ['menunggu']).order('created_at'));
   const k = w.length ? unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', w.map((x) => x.id))) : [];
   const km = Object.fromEntries(k.map((x) => [x.warga_id, x]));
   return w.map((x) => ({ ...x, kontak: km[x.id] || null }));
 }
 
-export async function semuaWarga({ status = '', q = '' } = {}) {
+export async function semuaWarga({ status = '', q = '', blok = '' } = {}) {
   let query = supabase.from('warga').select(KOLOM_WARGA).order('nama').limit(1000);
   if (status) query = query.eq('status', status);
+  if (blok) query = query.eq('blok', blok);
   if (q) query = query.ilike('nama', `%${q.replace(/[%_,()]/g, ' ')}%`);
   const w = unwrap(await query);
   const k = w.length ? unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', w.map((x) => x.id))) : [];
