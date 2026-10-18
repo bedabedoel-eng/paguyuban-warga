@@ -39,8 +39,8 @@ function EditWarga({ w, onClose, onSaved }) {
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }
   async function reset() {
-    if (sandi.length < 8) return toast.error('Kata sandi sementara minimal 8 karakter');
-    try { await resetSandiWarga(w.id, sandi); toast.success('Kata sandi diatur ulang. Sampaikan ke warga.'); setSandi(''); } catch (e) { toast.error(e); }
+    if (!/^\d{6,}$/.test(sandi)) return toast.error('PIN sementara harus berupa angka minimal 6 digit');
+    try { await resetSandiWarga(w.id, sandi); toast.success('PIN diatur ulang. Sampaikan ke warga.'); setSandi(''); } catch (e) { toast.error(e); }
   }
   async function jadiPengurus() {
     if (!jabatan.trim()) return toast.error('Isi jabatan');
@@ -79,8 +79,8 @@ function EditWarga({ w, onClose, onSaved }) {
             <div className="row"><div className="grow"><input className="input" placeholder="Contoh: Bendahara, Seksi Keamanan" value={jabatan} onChange={(e) => setJabatan(e.target.value)} maxLength={60} aria-label="Jabatan" /></div><Button variant="outline" onClick={jadiPengurus}>Tambah</Button></div>
             <p className="tiny muted">Jabatan mengandung kata “Bendahara” atau “Ketua” otomatis dapat mengelola IPL dan kas.</p>
             <div className="divider" />
-            <h3>Atur Ulang Kata Sandi</h3>
-            <div className="row"><div className="grow"><PasswordInput placeholder="Kata sandi sementara (min. 8)" value={sandi} onChange={(e) => setSandi(e.target.value)} /></div><Button variant="outline" onClick={reset}>Atur Ulang</Button></div>
+            <h3>Atur Ulang PIN</h3>
+            <div className="row"><div className="grow"><PasswordInput placeholder="PIN sementara (min. 6 angka)" value={sandi} onChange={(e) => setSandi(e.target.value.replace(/\D/g, ''))} inputMode="numeric" pattern="[0-9]*" maxLength={12} /></div><Button variant="outline" onClick={reset}>Atur Ulang</Button></div>
             {w.id !== user.id && <><div className="divider" /><Button variant="danger-outline" onClick={hapus}>Hapus Akun Warga</Button></>}
           </>
         )}
