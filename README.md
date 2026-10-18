@@ -159,7 +159,7 @@ Buat repository kosong terlebih dahulu di GitHub (disarankan **Private**). `.git
    - Bila DNS di tempat lain, tambahkan `CNAME warga → <project>.pages.dev` di penyedia DNS Anda.
    - SSL/HTTPS aktif otomatis.
 5. Kembali ke Supabase > **Authentication > URL Configuration**: ubah *Site URL* ke `https://warga.domainanda.id` dan tambahkan `https://warga.domainanda.id/**` ke *Redirect URLs* (juga `https://<project>.pages.dev/**` bila dipakai).
-6. Berkas `public/_redirects` membuat semua rute (mis. `/ipl`) tetap terbuka saat halaman di-refresh. Berkas `public/_headers` memasang header keamanan dan *Content-Security-Policy*. Bila Anda memakai domain Supabase kustom atau layanan luar lain, tambahkan ke `connect-src`/`img-src` di berkas itu.
+6. Berkas `wrangler.jsonc` (opsi `not_found_handling: single-page-application`) membuat semua rute (mis. `/ipl`) tetap terbuka saat halaman di-refresh; `name` di dalamnya harus sama dengan nama proyek di Cloudflare. Jangan membuat `public/_redirects` berisi `/* /index.html 200` karena ditolak Workers (deteksi perulangan). Berkas `public/_headers` memasang header keamanan dan *Content-Security-Policy*. Bila Anda memakai domain Supabase kustom atau layanan luar lain, tambahkan ke `connect-src`/`img-src` di berkas itu.
 
 ## 9. Pengujian
 
@@ -218,7 +218,7 @@ Hosting dan database tetap Rp0 selama pemakaian di bawah batas di atas.
 | Pendaftar tidak muncul di Verifikasi | Pastikan SQL `01-skema.sql` sukses dijalankan (trigger `on_auth_user_created`) |
 | "Anda tidak memiliki akses" | Peran belum sesuai (mis. belum jadi bendahara) atau akun belum aktif |
 | Gambar tidak tampil | Cek bucket & kebijakan Storage; pastikan `01-skema.sql` dijalankan penuh |
-| Halaman 404 saat refresh | Pastikan `public/_redirects` ikut ter-deploy |
+| Halaman 404 saat refresh | Pastikan `wrangler.jsonc` ikut ter-deploy dan memuat `not_found_handling: single-page-application` |
 | Notifikasi tidak realtime | Cek **Database > Replication**: tabel `notifikasi` harus ada di publikasi `supabase_realtime`. Aplikasi tetap memperbarui lencana saat jendela aktif kembali dan tiap 2 menit |
 
 **Pembaruan aplikasi:** ubah kode → `git push` → Cloudflare membangun otomatis.
