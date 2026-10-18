@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, PhoneInput, PinInput, Alert, Modal } from '../../components/ui';
+import { Button, PhoneInput, PasswordInput, Alert, Modal } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import GoogleButton from './GoogleButton';
 import { masukDenganHp, keluar } from '../../services/auth';
@@ -56,7 +56,7 @@ export default function Login({ mode = 'warga' }) {
         </div>
         {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
         <PhoneInput label={admin ? 'Nomor HP' : undefined} placeholder="Nomor HP" value={hp} onChange={(e) => setHp(e.target.value)} error={errors.hp} autoFocus />
-        <PinInput label={admin ? 'PIN' : undefined} placeholder="PIN (6 angka)" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} autoComplete="current-password" />
+        <PasswordInput label={admin ? 'PIN' : undefined} placeholder="PIN" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} autoComplete="current-password" />
         <Button type="submit" block loading={loading}>{admin ? 'Masuk' : 'Masuk'}</Button>
         <button type="button" className="link-sm center" style={{ alignSelf: 'center' }} onClick={() => setLupa(true)}>Lupa PIN?</button>
         {!admin && <GoogleButton />}
