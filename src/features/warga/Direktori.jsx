@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Users } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Select, EmptyState, Loader, ErrorState } from '../../components/ui';
+import { FotoPotret } from '../../components/ui/Avatar';
+import { Select, EmptyState, Loader, ErrorState } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useAsync } from '../../hooks/useAsync';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -41,9 +42,11 @@ export default function Direktori() {
             <div className="grid-cards">
               {list.data.map((w) => (
                 <Link key={w.id} to={`/warga/${w.id}`} className="card person-card">
-                  <Avatar nama={w.nama} path={w.foto_path} size={72} />
-                  <span className="nm">{w.nama}</span>
-                  <span className="meta">{w.blok}-{w.no_rumah}<br />{w.pekerjaan || ' '}</span>
+                  <FotoPotret nama={w.nama} path={w.foto_path} />
+                  <span className="body">
+                    <span className="nm">{w.nama}</span>
+                    <span className="meta">Blok {w.blok} &middot; No. {w.no_rumah}</span>
+                  </span>
                 </Link>
               ))}
             </div>
