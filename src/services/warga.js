@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 import { unwrap } from './_util';
+import { AUTH_EMAIL_DOMAIN } from '../lib/supabase';
 
-export const KOLOM_WARGA = 'id,nama,blok,no_rumah,rumah_id,kepala_keluarga,pekerjaan,hobi,tentang,keluarga,foto_path,role,status,alasan_status,bergabung_at,created_at,pref_notifikasi';
+export const KOLOM_WARGA = 'id,nama,blok,no_rumah,rumah_id,kepala_keluarga,pekerjaan,hobi,tentang,keluarga,foto_path,role,status,alasan_status,bergabung_at,created_at,pref_notifikasi,wajib_ganti_pin';
 
 export async function profilSaya(uid) {
   const [w, k, j] = await Promise.all([
@@ -71,4 +72,7 @@ export const tolakAnggota = async (id, alasan) => unwrap(await supabase.rpc('tol
 export const ubahWargaAdmin = async (id, data) => unwrap(await supabase.from('warga').update(data).eq('id', id).select(KOLOM_WARGA).single());
 export const ubahKontakAdmin = async (id, data) => unwrap(await supabase.from('warga_kontak').update(data).eq('warga_id', id));
 export const resetSandiWarga = async (id, baru) => unwrap(await supabase.rpc('reset_sandi_warga', { p_id: id, p_baru: baru }));
+/** Import massal (admin). rows: [{nama,hp,blok,no_rumah,pekerjaan?,kepala_keluarga?}] */
+export const importWarga = async (rows, pin = '123456') =>
+  unwrap(await supabase.rpc('import_warga', { p_rows: rows, p_domain: AUTH_EMAIL_DOMAIN, p_pin: pin }));
 export const hapusWarga = async (id) => unwrap(await supabase.rpc('hapus_warga', { p_id: id }));

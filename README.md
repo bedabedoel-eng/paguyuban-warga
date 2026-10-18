@@ -40,7 +40,8 @@ paguyuban-warga/
 ├─ supabase/
 │  ├─ 01-skema.sql        # tabel, fungsi, trigger, RLS, storage (jalankan sekali)
 │  ├─ 02-data-awal.sql    # profil paguyuban, blok, kontak darurat (sesuaikan)
-│  └─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
+│  ├─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
+│  └─ 04-import-warga.sql # import warga massal + wajib ganti PIN (setelah 03)
 ├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
@@ -73,6 +74,7 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
 3. **Jalankan SQL**: buka **SQL Editor > New query**.
    - Tempel isi `supabase/01-skema.sql` lalu **Run**. Aman dijalankan ulang.
    - Tempel isi `supabase/03-pin-angka.sql` lalu **Run** (mengubah aturan sandi menjadi PIN 6 angka; **wajib** dijalankan setelah `01`).
+   - Tempel isi `supabase/04-import-warga.sql` lalu **Run** (import warga massal dan kewajiban ganti PIN). **Jalankan sebelum men-deploy versi aplikasi yang memakainya.**
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)
@@ -116,7 +118,9 @@ Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil 
 
 Fungsi `jadikan_admin` tidak dapat dipanggil dari aplikasi, hanya dari SQL Editor.
 
-**Lupa PIN:** karena tidak memakai SMS/email, warga menghubungi admin. Admin membuka **Data Warga > Ubah > Atur Ulang PIN**, mengisi PIN sementara (6 angka), lalu warga menggantinya di Pengaturan > Keamanan.
+**Import warga massal:** masuk sebagai admin > **Warga > Import Warga**. Unduh contoh CSV, isi kolom `nama, hp, blok, no_rumah` (opsional `pekerjaan`, `kepala_keluarga` ya/tidak), unggah, periksa pratinjau, lalu **Buat Akun**. Semua akun langsung aktif dengan PIN awal `123456`, dan warga otomatis diminta membuat PIN baru saat pertama masuk (layar *Buat PIN Baru*). Warga yang belum mengganti PIN ditandai di **Data Warga** (filter *Belum ganti PIN*). Satu nomor HP hanya untuk satu akun; baris dengan nomor ganda atau blok tak dikenal dilewati dan dilaporkan. Uji dulu dengan 2-3 baris.
+
+**Lupa PIN:** karena tidak memakai SMS/email, warga menghubungi admin. Admin membuka **Data Warga > Ubah > Atur Ulang PIN**, mengisi PIN sementara (6 angka). Warga otomatis diminta membuat PIN baru saat masuk.
 
 ## 6. Login Google (opsional)
 

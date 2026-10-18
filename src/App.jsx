@@ -11,6 +11,7 @@ import Login from './features/auth/Login';
 import Daftar from './features/auth/Daftar';
 import Menunggu from './features/auth/Menunggu';
 import LengkapiData from './features/auth/LengkapiData';
+import GantiPin from './features/auth/GantiPin';
 import BelumDikonfigurasi from './features/auth/BelumDikonfigurasi';
 import Beranda from './features/beranda/Beranda';
 
@@ -46,6 +47,7 @@ const DataWarga = lazy(() => import('./features/admin/DataWarga'));
 const DataRumah = lazy(() => import('./features/admin/DataRumah'));
 const KelolaIpl = lazy(() => import('./features/admin/KelolaIpl'));
 const KelolaLaporan = lazy(() => import('./features/admin/KelolaLaporan'));
+const ImportWarga = lazy(() => import('./features/admin/ImportWarga'));
 const PengaturanPaguyuban = lazy(() => import('./features/admin/PengaturanPaguyuban'));
 
 export default function App() {
@@ -65,6 +67,7 @@ export default function App() {
                 <Route element={<RequireLogin />}>
                   <Route path="/menunggu" element={<Menunggu />} />
                   <Route path="/lengkapi" element={<LengkapiData />} />
+                  <Route path="/ganti-pin" element={<GantiPin />} />
                 </Route>
                 <Route element={<RequireAktif />}>
                   <Route element={<AppShell />}>
@@ -109,6 +112,7 @@ export default function App() {
                     </Route>
                     <Route element={<RequireHak hak="admin" />}>
                       <Route path="admin/pengaturan" element={<PengaturanPaguyuban />} />
+                      <Route path="admin/import" element={<ImportWarga />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>

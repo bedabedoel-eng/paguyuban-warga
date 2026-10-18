@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Pencil } from 'lucide-react';
+import { Search, Pencil, FileUp } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
 import { Alert, Avatar, Badge, Button, Card, EmptyState, ErrorState, Input, Loader, Modal, PinInput, PhoneInput, Select, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -80,6 +80,7 @@ function EditWarga({ w, onClose, onSaved }) {
             <p className="tiny muted">Jabatan mengandung kata “Bendahara” atau “Ketua” otomatis dapat mengelola IPL dan kas.</p>
             <div className="divider" />
             <h3>Atur Ulang PIN</h3>
+            <p className="tiny muted">Warga akan diminta membuat PIN baru saat masuk berikutnya.</p>
             <div className="row"><div className="grow"><PinInput placeholder="PIN sementara (6 angka)" value={sandi} onChange={(e) => setSandi(e.target.value)} /></div><Button variant="outline" onClick={reset}>Atur Ulang</Button></div>
             {w.id !== user.id && <><div className="divider" /><Button variant="danger-outline" onClick={hapus}>Hapus Akun Warga</Button></>}
           </>
@@ -93,16 +94,21 @@ export default function DataWarga() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const dq = useDebounce(q.trim(), 300);
-  const s = useAsync(() => semuaWarga({ status, q: dq }), [status, dq]);
+  const { hak } = useAuth();
+  const belumPin = status === 'belum_pin';
+  const s = useAsync(async () => {
+    const rows = await semuaWarga({ status: belumPin ? '' : status, q: dq });
+    return belumPin ? rows.filter((x) => x.wajib_ganti_pin) : rows;
+  }, [status, dq]);
   const [edit, setEdit] = useState(null);
   return (
     <>
-      <PageHeader title="Data Warga" />
+      <PageHeader title="Data Warga" actions={hak.admin ? <Button size="sm" variant="outline" icon={FileUp} to="/admin/import">Import Warga</Button> : undefined} />
       <div className="page">
         <div className="page-inner">
           <div className="row wrap">
             <div className="input-icon grow" style={{ minWidth: 200 }}><Search size={18} /><input className="input" type="search" placeholder="Cari nama..." value={q} onChange={(e) => setQ(e.target.value)} aria-label="Cari warga" /></div>
-            <select className="select sm" style={{ width: 160 }} value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter status"><option value="">Semua status</option>{Object.entries(STATUS_WARGA).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
+            <select className="select sm" style={{ width: 160 }} value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter status"><option value="">Semua status</option><option value="belum_pin">Belum ganti PIN</option>{Object.entries(STATUS_WARGA).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
           </div>
           <Card>
             {s.loading && !s.data ? <Loader /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !s.data?.length ? <EmptyState title="Tidak ada data" /> : (
@@ -111,7 +117,7 @@ export default function DataWarga() {
                   <thead><tr><th>Nama</th><th>Rumah</th><th className="desktop-only">Nomor HP</th><th>Peran</th><th>Status</th><th /></tr></thead>
                   <tbody>{s.data.map((w) => (
                     <tr key={w.id}>
-                      <td><div className="row"><Avatar nama={w.nama} path={w.foto_path} size={34} /><b>{w.nama}</b></div></td>
+                      <td><div className="row"><Avatar nama={w.nama} path={w.foto_path} size={34} /><b>{w.nama}</b>{w.wajib_ganti_pin && <Badge tone="orange">Belum ganti PIN</Badge>}</div></td>
                       <td className="nowrap">{w.blok ? `${w.blok}-${w.no_rumah}` : '-'}</td>
                       <td className="desktop-only nowrap">{w.kontak?.nomor_hp ? formatHp(w.kontak.nomor_hp) : '-'}</td>
                       <td>{PERAN[w.role]}</td>

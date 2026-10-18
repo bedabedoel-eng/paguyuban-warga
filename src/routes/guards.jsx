@@ -13,6 +13,7 @@ export function RequireAktif() {
   if (!warga) return <Splash />;
   if (warga.status === 'menunggu' && (!kontak?.nomor_hp || !warga.blok || !warga.no_rumah)) return <Navigate to="/lengkapi" replace />;
   if (warga.status !== 'aktif') return <Navigate to="/menunggu" replace />;
+  if (warga.wajib_ganti_pin) return <Navigate to="/ganti-pin" replace />;
   return <Outlet />;
 }
 

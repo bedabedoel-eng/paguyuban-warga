@@ -5,11 +5,12 @@ export function sidebarItems(hak) {
   const warga = [{ to: '/warga', label: 'Direktori Warga' }];
   if (hak.pengurus) warga.push({ to: '/admin/verifikasi', label: 'Verifikasi Anggota' }, { to: '/admin/warga', label: 'Data Warga' });
   if (hak.admin || hak.bendahara) warga.push({ to: '/admin/rumah', label: 'Data Rumah' });
+  if (hak.admin) warga.push({ to: '/admin/import', label: 'Import Warga' });
   const ipl = [{ to: '/ipl', label: 'Tagihan Saya', end: true }, { to: '/ipl/riwayat', label: 'Riwayat Pembayaran' }];
   if (hak.bendahara) ipl.push({ to: '/admin/ipl', label: 'Kelola IPL' });
   const items = [
     { to: '/', label: 'Beranda', icon: House, end: true },
-    { label: 'Warga', icon: Users, base: ['/warga', '/admin/verifikasi', '/admin/warga', '/admin/rumah'], children: warga },
+    { label: 'Warga', icon: Users, base: ['/warga', '/admin/verifikasi', '/admin/warga', '/admin/rumah', '/admin/import'], children: warga },
     { label: 'IPL', icon: Database, base: ['/ipl', '/admin/ipl'], children: ipl },
     { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays },
     { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone },
