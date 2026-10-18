@@ -1,0 +1,47 @@
+/* ---------- Splash ---------- */
+.splash {
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(120% 80% at 50% 30%, #0f7d5c 0%, #0b6b4f 45%, #074c38 100%); color: #fff; overflow: hidden;
+}
+.splash-center { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 0 24px; margin-top: -18vh; }
+.splash h1 { font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1.2; max-width: 280px; margin-top: 8px; }
+.splash p { font-size: 13px; opacity: .9; max-width: 260px; }
+.splash-dots { display: flex; gap: 6px; margin-top: 18px; }
+.splash-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); animation: dot 1s infinite ease-in-out; }
+.splash-dots i:nth-child(2) { animation-delay: .15s; }
+.splash-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes dot { 0%, 100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+.splash-scene { position: absolute; left: 0; right: 0; bottom: 0; height: 42vh; }
+
+/* ---------- Halaman masuk / daftar ---------- */
+.auth { min-height: 100dvh; display: grid; background: #fff; }
+.auth-side { display: none; }
+.auth-main { position: relative; display: flex; flex-direction: column; align-items: center; min-height: 100dvh; overflow: hidden; }
+.auth-card { position: relative; z-index: 1; width: 100%; max-width: 420px; padding: calc(env(safe-area-inset-top) + 36px) 24px 24px; }
+.auth-brand { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; margin-bottom: 28px; }
+.auth-brand.compact { margin-bottom: 20px; }
+.brand-name-green { color: var(--emerald); font-weight: 700; font-size: 17px; text-transform: uppercase; line-height: 1.2; max-width: 220px; letter-spacing: .01em; }
+.auth-brand.compact .brand-name-green { font-size: 14px; }
+.auth-title { font-size: 19px; font-weight: 600; color: var(--text); }
+.auth-title.green { color: var(--emerald); }
+.auth-sub { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.auth-foot { text-align: center; font-size: 12.5px; color: var(--text-2); }
+.auth-scene { position: relative; width: 100%; height: 190px; margin-top: auto; flex: none; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.google-btn { color: var(--text) !important; font-weight: 500 !important; }
+
+@media (min-width: 900px) {
+  .auth { grid-template-columns: minmax(380px, 46%) 1fr; }
+  .auth-side {
+    display: flex; flex-direction: column; position: relative; overflow: hidden; color: #fff;
+    background: radial-gradient(120% 80% at 50% 25%, #0f7d5c 0%, #0b6b4f 45%, #074c38 100%);
+  }
+  .auth-side-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 18vh 40px 0; }
+  .auth-side .brand-name { font-size: 28px; font-weight: 700; text-transform: uppercase; line-height: 1.2; max-width: 340px; margin-top: 8px; }
+  .auth-side .brand-tag { font-size: 14px; opacity: .9; max-width: 320px; }
+  .auth-side-scene { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; }
+  .auth-main { justify-content: center; background: var(--bg); }
+  .auth-card { background: #fff; border-radius: 18px; box-shadow: var(--shadow-lg); padding: 32px 32px 28px; margin: 32px 0; }
+  .auth-scene { display: none; }
+}
