@@ -4,8 +4,8 @@
   "description": "Bersama Membangun Lingkungan yang Lebih Baik",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B6B4F",
-  "theme_color": "#0B6B4F",
+  "background_color": "#0e2e23",
+  "theme_color": "#0e2e23",
   "lang": "id",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
