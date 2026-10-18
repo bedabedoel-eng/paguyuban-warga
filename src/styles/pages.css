@@ -10,7 +10,7 @@
 .home-head .bell { color: #fff; }
 .home-head .bell:hover { background: rgba(255, 255, 255, .12); }
 .home-head .bell .count-dot { position: absolute; top: 2px; right: 2px; }
-.home-body { padding: 0 16px; margin-top: -48px; display: flex; flex-direction: column; gap: 16px; }
+.home-body { padding: 0 16px; margin-top: -48px; display: flex; flex-direction: column; gap: 14px; }
 .ipl-card {
   display: flex; align-items: stretch; padding: 16px 18px; border-radius: 14px; color: #fff; text-decoration: none !important;
   background: linear-gradient(135deg, #1f8a5b 0%, #12764f 100%); box-shadow: 0 10px 24px rgba(11, 107, 79, .28);
@@ -18,12 +18,44 @@
 }
 .ipl-card-col { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .ipl-card-col.right { align-items: flex-end; text-align: right; }
-.ipl-card .big { font-size: 24px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
+.ipl-card .big { font-size: 22px; font-weight: 700; line-height: 1.2; margin-top: 4px; }
 .ipl-card-sep { width: 1px; background: rgba(255, 255, 255, .3); margin: 0 14px; }
+
+.admin-banner-m {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+  text-decoration: none !important; color: var(--text);
+  border: 1px solid #f5d89a; background: #fffcf2;
+}
+
+.mini-stats3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mini-stat {
+  padding: 10px 8px; text-align: center; display: flex; flex-direction: column; gap: 3px;
+  text-decoration: none !important; color: var(--text);
+}
+.mini-stat b { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .quick4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .quick4 a { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--text); text-decoration: none; }
 .quick4 .icon-circle { width: 54px; height: 54px; background: var(--green-100); border-radius: 16px; transition: transform .15s; }
 .quick4 a:active .icon-circle { transform: scale(.95); }
+
+.quick8 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 8px; }
+.q8-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 500; color: var(--text); text-decoration: none !important;
+  text-align: center; line-height: 1.25;
+}
+.q8-item .icon-circle {
+  width: 50px; height: 50px; border-radius: 16px;
+  transition: transform .15s, box-shadow .15s;
+}
+.q8-item:active .icon-circle { transform: scale(.94); }
+.q8-item:hover .icon-circle { box-shadow: var(--shadow); }
+.q8-badge {
+  position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: 99px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+  display: grid; place-items: center; border: 2px solid #fff;
+}
 
 /* =========================================================
    BERANDA (DESKTOP)
@@ -147,7 +179,7 @@ a.stat-card:hover { box-shadow: var(--shadow-lg); }
 .profile-card .avatar { margin-top: -0px; border: 4px solid #fff; box-shadow: var(--shadow); }
 .profile-card h2 { font-size: 18px; color: var(--emerald); margin-top: 10px; }
 .info-list { display: flex; flex-direction: column; gap: 14px; text-align: left; width: 100%; }
-.info-list .it { display: flex; gap: 12px; align-items: flex-start; }
+.info-list .it { display: flex; gap: 12px; align-items: francis; }
 .info-list .it svg { color: var(--emerald); flex: none; margin-top: 2px; }
 .info-list .it .k { font-size: 12.5px; font-weight: 600; }
 .info-list .it .v { font-size: 12.5px; color: var(--text-2); }
@@ -233,17 +265,16 @@ a.stat-card:hover { box-shadow: var(--shadow-lg); }
 .promo p { position: relative; z-index: 2; padding: 18px; max-width: 58%; font-weight: 600; color: var(--emerald-800); font-size: 13px; line-height: 1.5; }
 
 /* Admin */
-.admin-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.admin-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .admin-stat { padding: 14px 10px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.admin-stats > :nth-child(4) { grid-column: span 3; flex-direction: row; justify-content: center; gap: 12px; }
-@media (min-width: 768px) { .admin-stats > :nth-child(4) { grid-column: auto; flex-direction: column; } }
-.admin-stat .v { font-size: 20px; font-weight: 700; color: var(--emerald); }
+.admin-stat .v { font-size: 18px; font-weight: 700; color: var(--emerald); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .admin-stat .l { font-size: 11px; color: var(--muted); }
 .admin-task { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
 .admin-task .v { font-size: 22px; font-weight: 700; color: var(--emerald); }
 .admin-task .l { font-size: 12.5px; font-weight: 600; }
 @media (min-width: 768px) {
   .admin-stats { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .admin-stat .v { font-size: 20px; }
   .admin-tasks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 }
 .mobile-only { display: initial; }
