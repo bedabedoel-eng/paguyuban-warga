@@ -18,9 +18,8 @@ export function validasiDaftar(f, { butuhSandi = true } = {}) {
   if (!f.blok) e.blok = 'Pilih blok';
   if (!/^[0-9A-Za-z-]{1,6}$/.test(f.noRumah.trim())) e.noRumah = 'Isi nomor rumah';
   if (butuhSandi) {
-    if (f.password.length < 8) e.password = 'Minimal 8 karakter';
-    else if (!/[A-Za-z]/.test(f.password) || !/\d/.test(f.password)) e.password = 'Gunakan kombinasi huruf dan angka';
-    if (f.konfirmasi !== f.password) e.konfirmasi = 'Konfirmasi tidak sama';
+    if (!/^\d{6,}$/.test(f.password)) e.password = 'PIN harus berupa angka minimal 6 digit';
+    if (f.konfirmasi !== f.password) e.konfirmasi = 'Konfirmasi PIN tidak sama';
   }
   return e;
 }
@@ -34,6 +33,7 @@ export default function Daftar() {
   const [loading, setLoading] = useState(false);
   const [syarat, setSyarat] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+  const setPin = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value.replace(/\D/g, '') }));
 
   async function submit(e) {
     e.preventDefault();
@@ -66,8 +66,27 @@ export default function Daftar() {
             <Input placeholder="No. rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
           </div>
         </div>
-        <PasswordInput placeholder="Kata sandi" value={f.password} onChange={set('password')} error={errors.password} autoComplete="new-password" hint="Minimal 8 karakter, kombinasi huruf dan angka" />
-        <PasswordInput placeholder="Konfirmasi kata sandi" value={f.konfirmasi} onChange={set('konfirmasi')} error={errors.konfirmasi} autoComplete="new-password" />
+        <PasswordInput
+          placeholder="Buat PIN (minimal 6 angka)"
+          value={f.password}
+          onChange={setPin('password')}
+          error={errors.password}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          autoComplete="new-password"
+          hint="Minimal 6 digit angka (contoh: 123456)"
+        />
+        <PasswordInput
+          placeholder="Konfirmasi PIN"
+          value={f.konfirmasi}
+          onChange={setPin('konfirmasi')}
+          error={errors.konfirmasi}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          autoComplete="new-password"
+        />
         <Button type="submit" block loading={loading}>Daftar</Button>
         <GoogleButton label="Daftar dengan Google" />
         <p className="auth-foot small">
