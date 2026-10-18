@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CircleAlert } from 'lucide-react';
-import { Button, Input, PhoneInput, PasswordInput, Select, Alert, Modal } from '../../components/ui';
+import { Button, Input, PhoneInput, PinInput, Select, Alert, Modal } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import GoogleButton from './GoogleButton';
 import { daftar } from '../../services/auth';
@@ -18,7 +18,7 @@ export function validasiDaftar(f, { butuhSandi = true } = {}) {
   if (!f.blok) e.blok = 'Pilih blok';
   if (!/^[0-9A-Za-z-]{1,6}$/.test(f.noRumah.trim())) e.noRumah = 'Isi nomor rumah';
   if (butuhSandi) {
-    if (!/^\d{6,}$/.test(f.password)) e.password = 'PIN harus berupa angka minimal 6 digit';
+    if (!/^\d{6}$/.test(f.password)) e.password = 'PIN harus 6 angka';
     if (f.konfirmasi !== f.password) e.konfirmasi = 'Konfirmasi PIN tidak sama';
   }
   return e;
@@ -33,7 +33,6 @@ export default function Daftar() {
   const [loading, setLoading] = useState(false);
   const [syarat, setSyarat] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
-  const setPin = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value.replace(/\D/g, '') }));
 
   async function submit(e) {
     e.preventDefault();
@@ -66,27 +65,8 @@ export default function Daftar() {
             <Input placeholder="No. rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
           </div>
         </div>
-        <PasswordInput
-          placeholder="Buat PIN (minimal 6 angka)"
-          value={f.password}
-          onChange={setPin('password')}
-          error={errors.password}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={12}
-          autoComplete="new-password"
-          hint="Minimal 6 digit angka (contoh: 123456)"
-        />
-        <PasswordInput
-          placeholder="Konfirmasi PIN"
-          value={f.konfirmasi}
-          onChange={setPin('konfirmasi')}
-          error={errors.konfirmasi}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={12}
-          autoComplete="new-password"
-        />
+        <PinInput placeholder="Buat PIN (6 angka)" value={f.password} onChange={set('password')} error={errors.password} autoComplete="new-password" hint="6 angka, mudah diingat tetapi jangan pakai tanggal lahir" />
+        <PinInput placeholder="Ulangi PIN" value={f.konfirmasi} onChange={set('konfirmasi')} error={errors.konfirmasi} autoComplete="new-password" />
         <Button type="submit" block loading={loading}>Daftar</Button>
         <GoogleButton label="Daftar dengan Google" />
         <p className="auth-foot small">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Pencil } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Alert, Avatar, Badge, Button, Card, EmptyState, ErrorState, Input, Loader, Modal, PasswordInput, PhoneInput, Select, useConfirm } from '../../components/ui';
+import { Alert, Avatar, Badge, Button, Card, EmptyState, ErrorState, Input, Loader, Modal, PinInput, PhoneInput, Select, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -39,7 +39,7 @@ function EditWarga({ w, onClose, onSaved }) {
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }
   async function reset() {
-    if (!/^\d{6,}$/.test(sandi)) return toast.error('PIN sementara harus berupa angka minimal 6 digit');
+    if (!/^\d{6}$/.test(sandi)) return toast.error('PIN sementara harus 6 angka');
     try { await resetSandiWarga(w.id, sandi); toast.success('PIN diatur ulang. Sampaikan ke warga.'); setSandi(''); } catch (e) { toast.error(e); }
   }
   async function jadiPengurus() {
@@ -80,7 +80,7 @@ function EditWarga({ w, onClose, onSaved }) {
             <p className="tiny muted">Jabatan mengandung kata “Bendahara” atau “Ketua” otomatis dapat mengelola IPL dan kas.</p>
             <div className="divider" />
             <h3>Atur Ulang PIN</h3>
-            <div className="row"><div className="grow"><PasswordInput placeholder="PIN sementara (min. 6 angka)" value={sandi} onChange={(e) => setSandi(e.target.value.replace(/\D/g, ''))} inputMode="numeric" pattern="[0-9]*" maxLength={12} /></div><Button variant="outline" onClick={reset}>Atur Ulang</Button></div>
+            <div className="row"><div className="grow"><PinInput placeholder="PIN sementara (6 angka)" value={sandi} onChange={(e) => setSandi(e.target.value)} /></div><Button variant="outline" onClick={reset}>Atur Ulang</Button></div>
             {w.id !== user.id && <><div className="divider" /><Button variant="danger-outline" onClick={hapus}>Hapus Akun Warga</Button></>}
           </>
         )}

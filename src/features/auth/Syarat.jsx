@@ -9,7 +9,7 @@ export default function Syarat() {
       <p><b>Siapa yang dapat melihat:</b> nama, blok/nomor rumah, pekerjaan, dan foto dapat dilihat sesama anggota aktif. Nomor HP hanya terlihat oleh pengurus, dan oleh anggota lain bila Anda mengizinkannya di menu Privasi. Tagihan IPL dan laporan Anda hanya terlihat oleh Anda dan pengurus terkait.</p>
       <p><b>Penggunaan:</b> data hanya dipakai untuk administrasi paguyuban (iuran, informasi, kegiatan) dan tidak diperjualbelikan atau dibagikan ke pihak lain.</p>
       <p><b>Hak Anda:</b> Anda dapat memperbarui profil kapan saja dan meminta admin menghapus akun beserta data Anda.</p>
-      <p><b>Kewajiban:</b> memberikan data yang benar, menjaga kerahasiaan kata sandi, dan menggunakan aplikasi dengan santun.</p>
+      <p><b>Kewajiban:</b> memberikan data yang benar, menjaga kerahasiaan PIN, dan menggunakan aplikasi dengan santun.</p>
     </div>
   );
 }
