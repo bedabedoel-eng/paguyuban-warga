@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CircleAlert } from 'lucide-react';
-import { Button, Input, PhoneInput, PinInput, Select, Alert, Modal } from '../../components/ui';
+import { UserPlus } from 'lucide-react';
+import { Button, Input, PhoneInput, PinInput, Select, Callout, Modal } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import GoogleButton from './GoogleButton';
 import { daftar } from '../../services/auth';
@@ -15,7 +15,7 @@ export function validasiDaftar(f, { butuhSandi = true } = {}) {
   if (f.nama.trim().length < 2) e.nama = 'Nama lengkap minimal 2 huruf';
   else if (!/^[\p{L} .,'-]+$/u.test(f.nama.trim())) e.nama = 'Nama hanya boleh berisi huruf';
   if (!normalizeHp(f.hp)) e.hp = 'Nomor HP tidak valid (contoh 81234567890)';
-  if (!f.blok) e.blok = 'Pilih blok';
+  if (!f.blok) e.blok = 'Pilih gang/blok';
   if (!/^[0-9A-Za-z-]{1,6}$/.test(f.noRumah.trim())) e.noRumah = 'Isi nomor rumah';
   if (butuhSandi) {
     if (!/^\d{6}$/.test(f.password)) e.password = 'PIN harus 6 angka';
@@ -43,39 +43,33 @@ export default function Daftar() {
     try {
       await daftar(f);
       nav('/menunggu', { replace: true });
-    } catch (e2) {
-      setErr(pesanError(e2));
-    } finally { setLoading(false); }
+    } catch (e2) { setErr(pesanError(e2)); } finally { setLoading(false); }
   }
 
   return (
-    <AuthLayout compactBrand>
+    <AuthLayout>
+      <div className="auth-title">
+        <h1>Daftar warga</h1>
+        <p>Akun aktif setelah pengurus memeriksa data rumah Anda.</p>
+      </div>
       <form onSubmit={submit} className="stack" noValidate>
-        <div>
-          <h1 className="auth-title green">Daftar Anggota</h1>
-          <p className="auth-sub">Buat akun untuk bergabung dengan paguyuban. Akun aktif setelah disetujui pengurus.</p>
+        {err && <Callout tone="bad">{err}</Callout>}
+        <Input label="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} autoComplete="name" maxLength={80} />
+        <PhoneInput label="Nomor HP" placeholder="81234567890" value={f.hp} onChange={set('hp')} error={errors.hp} hint="Dipakai untuk masuk. Tidak ditampilkan ke warga lain tanpa izin Anda." />
+        <div className="form-grid">
+          <Select label="Gang / blok" placeholder="Pilih" value={f.blok} onChange={set('blok')} error={errors.blok} options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
+          <Input label="Nomor rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
         </div>
-        {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
-        <Input placeholder="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} autoComplete="name" maxLength={80} />
-        <PhoneInput placeholder="Nomor HP" value={f.hp} onChange={set('hp')} error={errors.hp} />
-        <div>
-          <div className="label mb-2">Blok / No. Rumah</div>
-          <div className="form-grid">
-            <Select placeholder="Pilih blok" value={f.blok} onChange={set('blok')} error={errors.blok} options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
-            <Input placeholder="No. rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
-          </div>
+        <div className="form-grid">
+          <PinInput label="Buat PIN" placeholder="6 angka" value={f.password} onChange={set('password')} error={errors.password} autoComplete="new-password" />
+          <PinInput label="Ulangi PIN" placeholder="6 angka" value={f.konfirmasi} onChange={set('konfirmasi')} error={errors.konfirmasi} autoComplete="new-password" />
         </div>
-        <PinInput placeholder="Buat PIN (6 angka)" value={f.password} onChange={set('password')} error={errors.password} autoComplete="new-password" hint="6 angka, mudah diingat tetapi jangan pakai tanggal lahir" />
-        <PinInput placeholder="Ulangi PIN" value={f.konfirmasi} onChange={set('konfirmasi')} error={errors.konfirmasi} autoComplete="new-password" />
-        <Button type="submit" block loading={loading}>Daftar</Button>
+        <p className="text-xs muted">Hindari tanggal lahir atau angka berurutan. Dengan mendaftar, Anda menyetujui <button type="button" className="link text-xs" onClick={() => setSyarat(true)}>ketentuan penggunaan data</button>.</p>
+        <Button type="submit" block size="lg" icon={UserPlus} loading={loading}>Daftar</Button>
         <GoogleButton label="Daftar dengan Google" />
-        <p className="auth-foot small">
-          Dengan mendaftar, Anda menyetujui<br />
-          <button type="button" className="link-sm bold" onClick={() => setSyarat(true)}>Syarat & Ketentuan</button>
-        </p>
-        <p className="auth-foot">Sudah punya akun? <Link to="/masuk" className="bold">Masuk</Link></p>
       </form>
-      <Modal open={syarat} onClose={() => setSyarat(false)} title="Syarat & Ketentuan"><Syarat /></Modal>
+      <p className="auth-foot">Sudah punya akun? <Link to="/masuk">Masuk</Link></p>
+      <Modal open={syarat} onClose={() => setSyarat(false)} title="Ketentuan penggunaan data" footer={<Button onClick={() => setSyarat(false)}>Tutup</Button>}><Syarat /></Modal>
     </AuthLayout>
   );
 }

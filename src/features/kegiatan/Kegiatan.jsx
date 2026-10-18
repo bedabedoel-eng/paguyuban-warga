@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, MapPin, Plus } from 'lucide-react';
+import { CalendarDays, MapPin, Plus, Clock, Users } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, EmptyState, ErrorState, Loader, SegTabs, StorageImage } from '../../components/ui';
-import HouseScene from '../../components/illustrations/HouseScene';
+import { Badge, Button, Card, EmptyState, ErrorState, SegTabs, SkeletonRows } from '../../components/ui';
 import Kalender from './Kalender';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { daftarKegiatan, daftarIkut, batalIkut } from '../../services/kegiatan';
-import { isoDate, jam, tanggal, parseDate } from '../../lib/format';
+import { statusAgenda } from '../beranda/widgets';
+import { isoDate, jam, tanggal, parseDate, BULAN_PENDEK } from '../../lib/format';
 
 export function KegiatanCard({ k, uid, onChanged }) {
   const toast = useToast();
@@ -17,27 +17,34 @@ export function KegiatanCard({ k, uid, onChanged }) {
   const ikut = k.peserta?.some((p) => p.warga_id === uid);
   const selesai = parseDate(k.selesai) < new Date();
   const penuh = k.kuota && k.peserta?.length >= k.kuota;
+  const m = parseDate(k.mulai);
+  const st = statusAgenda(k);
   async function toggle() {
     setBusy(true);
-    try { if (ikut) await batalIkut(k.id, uid); else await daftarIkut(k.id); toast.success(ikut ? 'Pendaftaran dibatalkan' : 'Berhasil mendaftar'); onChanged?.(); }
+    try { if (ikut) await batalIkut(k.id, uid); else await daftarIkut(k.id); toast.success(ikut ? 'Pendaftaran dibatalkan' : `Terdaftar di ${k.judul}`); onChanged?.(); }
     catch (e) { toast.error(e); } finally { setBusy(false); }
   }
   return (
-    <Card className="event-card">
-      <div className="top">
-        <span className="thumb" style={{ width: 64, height: 64 }}>{k.gambar_path ? <StorageImage path={k.gambar_path} fallback={<HouseScene variant="day" wave={false} />} /> : <HouseScene variant="day" wave={false} />}</span>
-        <div className="grow">
-          <Link to={`/kegiatan/${k.id}`} className="title" style={{ fontSize: 14, fontWeight: 600, color: 'inherit', display: 'block' }}>{k.judul}</Link>
-          <div className="sub row" style={{ marginTop: 2 }}><CalendarDays size={13} />{tanggal(k.mulai, { pendek: true })} • {jam(k.mulai)} - {jam(k.selesai)}</div>
-          <div className="sub row"><MapPin size={13} />{k.lokasi}</div>
+    <Card className="event">
+      <span className="date-chip"><b>{m.getDate()}</b><span>{BULAN_PENDEK[m.getMonth()]}</span></span>
+      <div className="t">
+        <div className="row wrap" style={{ gap: 6 }}>
+          {st && <Badge tone={st.tone}>{st.label}</Badge>}
+          {k.blok && <Badge tone="gold">Gang {k.blok}</Badge>}
+          {ikut && <Badge tone="ok" dot>Anda terdaftar</Badge>}
         </div>
-        {ikut && <Badge tone="green">Terdaftar</Badge>}
-      </div>
-      <div className="actions">
-        {k.perlu_daftar && !selesai ? (
-          <Button size="sm" variant={ikut ? 'outline' : 'primary'} loading={busy} disabled={!ikut && penuh} onClick={toggle}>{ikut ? 'Batal Ikut' : penuh ? 'Kuota Penuh' : 'Daftar'}</Button>
-        ) : <Button size="sm" variant="outline" disabled>{selesai ? 'Selesai' : 'Tanpa Pendaftaran'}</Button>}
-        <Button size="sm" variant="outline" to={`/kegiatan/${k.id}`}>Detail</Button>
+        <Link to={`/kegiatan/${k.id}`} className="ttl">{k.judul}</Link>
+        <div className="meta">
+          <span><Clock size={14} />{jam(k.mulai)}–{jam(k.selesai)}</span>
+          <span><MapPin size={14} />{k.lokasi}</span>
+          {k.perlu_daftar && <span><Users size={14} />{k.peserta?.length || 0}{k.kuota ? `/${k.kuota}` : ''} peserta</span>}
+        </div>
+        <div className="acts">
+          {k.perlu_daftar && !selesai && (
+            <Button size="sm" variant={ikut ? 'secondary' : 'primary'} loading={busy} disabled={!ikut && penuh} onClick={toggle}>{ikut ? 'Batal ikut' : penuh ? 'Kuota penuh' : 'Ikut kegiatan'}</Button>
+          )}
+          <Button size="sm" variant="ghost" to={`/kegiatan/${k.id}`}>Detail</Button>
+        </div>
       </div>
     </Card>
   );
@@ -57,23 +64,23 @@ export default function Kegiatan() {
   const state = hari ? bln : list;
   const refresh = () => { bln.reload(); list.reload(); };
   return (
-    <>
-      <PageHeader title="Kegiatan" back={false} actions={hak.pengurus && <Button size="sm" icon={Plus} to="/kegiatan/baru">Buat Kegiatan</Button>} mobileActions={null} />
-      <div className="page">
-        <div className="kegiatan-layout page-inner" style={{ gap: 14 }}>
-          <div className="stack">
-            <SegTabs value={tab} onChange={(v) => { setTab(v); setHari(null); }} tabs={[{ value: 'mendatang', label: 'Mendatang' }, { value: 'selesai', label: 'Selesai' }]} />
-            <Kalender bulan={bulan} onBulan={(b) => { setBulan(b); setHari(null); }} terpilih={hari} onPilih={setHari} adaKegiatan={adaSet} />
-          </div>
-          <div className="stack">
-            {hari && <div className="row between"><b>{tanggal(hari, { hari: true })}</b><button className="link-sm" onClick={() => setHari(null)}>Tampilkan semua</button></div>}
-            {state.loading && !state.data ? <Loader /> : state.error ? <ErrorState error={state.error} onRetry={state.reload} /> : !tampil?.length ? (
-              <Card><EmptyState icon={CalendarDays} title={hari ? 'Tidak ada kegiatan di tanggal ini' : tab === 'selesai' ? 'Belum ada kegiatan selesai' : 'Belum ada kegiatan mendatang'} /></Card>
-            ) : tampil.map((k) => <KegiatanCard key={k.id} k={k} uid={user.id} onChanged={refresh} />)}
-          </div>
+    <div className="page">
+      <PageHeader title="Kegiatan" desc="Agenda lingkungan. Daftar ikut agar panitia bisa menyiapkan keperluan."
+        actions={hak.kelola_info && <Button size="sm" icon={Plus} to="/kegiatan/baru">Jadwalkan kegiatan</Button>} />
+      <div className="split-l">
+        <div className="stack">
+          <SegTabs block value={tab} onChange={(v) => { setTab(v); setHari(null); }} tabs={[{ value: 'mendatang', label: 'Mendatang' }, { value: 'selesai', label: 'Sudah lewat' }]} />
+          <Kalender bulan={bulan} onBulan={(b) => { setBulan(b); setHari(null); }} terpilih={hari} onPilih={setHari} adaKegiatan={adaSet} />
+        </div>
+        <div className="stack">
+          {hari && <div className="row between"><h2>{tanggal(hari, { hari: true })}</h2><button type="button" className="link" onClick={() => setHari(null)}>Tampilkan semua</button></div>}
+          {state.loading && !state.data ? <Card pad><SkeletonRows n={3} /></Card> : state.error ? <ErrorState error={state.error} onRetry={state.reload} /> : !tampil?.length ? (
+            <Card><EmptyState icon={CalendarDays} title={hari ? 'Tidak ada kegiatan di tanggal ini' : tab === 'selesai' ? 'Belum ada kegiatan yang lewat' : 'Belum ada kegiatan terjadwal'}
+              action={hak.kelola_info && !hari && tab === 'mendatang' && <Button size="sm" icon={Plus} to="/kegiatan/baru">Jadwalkan kegiatan</Button>} /></Card>
+          ) : tampil.map((k) => <KegiatanCard key={k.id} k={k} uid={user.id} onChanged={refresh} />)}
         </div>
       </div>
-      {hak.pengurus && <Link to="/kegiatan/baru" className="fab" aria-label="Buat kegiatan"><Plus size={26} /></Link>}
-    </>
+      {hak.kelola_info && <Link to="/kegiatan/baru" className="fab"><Plus size={20} />Jadwalkan</Link>}
+    </div>
   );
 }

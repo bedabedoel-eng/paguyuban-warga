@@ -18,16 +18,9 @@ export default function GoogleButton({ label = 'Masuk dengan Google' }) {
   if (!GOOGLE_LOGIN) return null;
   return (
     <>
-      <div className="or"><span>atau</span></div>
-      <button
-        type="button"
-        className="btn outline block google-btn"
-        disabled={loading}
-        onClick={async () => {
-          setLoading(true);
-          try { await masukGoogle(); } catch (e) { toast.error(e); setLoading(false); }
-        }}
-      >
+      <div className="divider-or">atau</div>
+      <button type="button" className="btn secondary block google-btn" disabled={loading}
+        onClick={async () => { setLoading(true); try { await masukGoogle(); } catch (e) { toast.error(e); setLoading(false); } }}>
         <G /> {label}
       </button>
     </>

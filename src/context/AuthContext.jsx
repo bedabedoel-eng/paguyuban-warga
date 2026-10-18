@@ -2,33 +2,33 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase, isConfigured } from '../lib/supabase';
 import { profilSaya, hakSaya } from '../services/warga';
 import { keluar as signOutApi } from '../services/auth';
+import { HAK_KOSONG, normalHak, labelPeran } from '../lib/akses';
 
 const Ctx = createContext(null);
-const HAK_KOSONG = { aktif: false, pengurus: false, admin: false, bendahara: false };
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [warga, setWarga] = useState(null);
   const [kontak, setKontak] = useState(null);
-  const [jabatan, setJabatan] = useState(null);
+  const [jabatan, setJabatan] = useState([]);
   const [hak, setHak] = useState(HAK_KOSONG);
   const [loading, setLoading] = useState(isConfigured);
   const [profilError, setProfilError] = useState(null);
   const uidRef = useRef(null);
 
   const muatProfil = useCallback(async (uid) => {
-    if (!uid) { setWarga(null); setKontak(null); setHak(HAK_KOSONG); return; }
+    if (!uid) { setWarga(null); setKontak(null); setJabatan([]); setHak(HAK_KOSONG); return; }
     try {
       setProfilError(null);
       const [{ warga: w, kontak: k, jabatan: j }, h] = await Promise.all([profilSaya(uid), hakSaya()]);
-      setWarga(w); setKontak(k); setJabatan(j); setHak(h || HAK_KOSONG);
+      setWarga(w); setKontak(k); setJabatan(j || []); setHak(normalHak(h));
     } catch (e) {
       setProfilError(e);
     }
   }, []);
 
   useEffect(() => {
-    if (!isConfigured) return;
+    if (!isConfigured) return undefined;
     let alive = true;
     supabase.auth.getSession().then(async ({ data }) => {
       if (!alive) return;
@@ -51,7 +51,7 @@ export function AuthProvider({ children }) {
 
   const signOut = useCallback(async () => {
     await signOutApi();
-    setWarga(null); setKontak(null); setHak(HAK_KOSONG);
+    setWarga(null); setKontak(null); setJabatan([]); setHak(HAK_KOSONG);
   }, []);
 
   const value = useMemo(() => ({
@@ -60,6 +60,8 @@ export function AuthProvider({ children }) {
     warga,
     kontak,
     jabatan,
+    /** Label jabatan utama untuk tampilan */
+    peranLabel: labelPeran(hak, jabatan[0]?.jabatan),
     hak,
     loading,
     profilError,

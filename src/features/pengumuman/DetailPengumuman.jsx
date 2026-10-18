@@ -1,13 +1,14 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Pencil, Trash2 } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, ErrorState, Loader, StorageImage, useConfirm } from '../../components/ui';
+import { Avatar, Badge, Button, Card, ErrorState, SkeletonRows, StorageImage, IconButton, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { detailPengumuman, hapusPengumuman } from '../../services/pengumuman';
 import { removeFile } from '../../lib/storage';
 import { KATEGORI_PENGUMUMAN } from '../../lib/constants';
+import { kelolaWilayah } from '../../lib/akses';
 import { tanggalJam } from '../../lib/format';
 
 export default function DetailPengumuman() {
@@ -17,26 +18,37 @@ export default function DetailPengumuman() {
   const confirm = useConfirm();
   const nav = useNavigate();
   const s = useAsync(() => detailPengumuman(id), [id]);
-  if (s.loading && !s.data) return <><PageHeader title="Pengumuman" /><Loader /></>;
-  if (s.error && !s.data) return <><PageHeader title="Pengumuman" /><div className="page"><ErrorState error={s.error} /></div></>;
+  if (s.loading && !s.data) return <div className="page narrow"><PageHeader back title="Pengumuman" /><Card pad><SkeletonRows n={4} avatar={false} /></Card></div>;
+  if (s.error && !s.data) return <div className="page narrow"><PageHeader back title="Pengumuman" /><ErrorState error={s.error} onRetry={s.reload} /></div>;
   const p = s.data;
-  const k = KATEGORI_PENGUMUMAN[p.kategori];
+  const k = KATEGORI_PENGUMUMAN[p.kategori] || KATEGORI_PENGUMUMAN.umum;
+  const boleh = p.blok ? kelolaWilayah(hak, p.blok) : hak.kelola_anggota;
   async function hapus() {
-    if (!(await confirm({ title: 'Hapus pengumuman?', text: 'Pengumuman ini akan dihapus permanen.', okLabel: 'Hapus', danger: true }))) return;
+    if (!(await confirm({ title: 'Hapus pengumuman?', text: 'Pengumuman ini akan hilang dari daftar semua warga.', okLabel: 'Hapus', danger: true }))) return;
     try { await hapusPengumuman(id); if (p.gambar_path) removeFile('konten', p.gambar_path).catch(() => {}); toast.success('Pengumuman dihapus'); nav('/pengumuman', { replace: true }); } catch (e) { toast.error(e); }
   }
   return (
-    <>
-      <PageHeader title="Pengumuman" actions={hak.pengurus && (<><Button size="sm" variant="outline" icon={Pencil} to={`/pengumuman/${id}/ubah`}>Ubah</Button><Button size="sm" variant="danger-outline" icon={Trash2} onClick={hapus}>Hapus</Button></>)} mobileActions={hak.pengurus && <button className="icon-btn" onClick={hapus} aria-label="Hapus"><Trash2 size={20} /></button>} />
-      <div className="page" style={{ maxWidth: 820 }}>
-        <Card pad className="stack">
-          {p.gambar_path && <div style={{ borderRadius: 12, overflow: 'hidden' }}><StorageImage path={p.gambar_path} className="post-cover" /></div>}
-          <div className="row"><Badge tone={k?.tone}>{k?.label}</Badge><span className="small muted">{tanggalJam(p.created_at)}{p.penulis?.nama ? ` • ${p.penulis.nama}` : ''}</span></div>
-          <h1>{p.judul}</h1>
-          <p className="post-body">{p.isi}</p>
-          {hak.pengurus && <Button variant="outline" size="sm" to={`/pengumuman/${id}/ubah`} className="mobile-only">Ubah pengumuman</Button>}
-        </Card>
-      </div>
-    </>
+    <div className="page narrow">
+      <PageHeader back="/pengumuman" title="Pengumuman"
+        actions={boleh && <><Button size="sm" variant="secondary" icon={Pencil} to={`/pengumuman/${id}/ubah`}>Ubah</Button><Button size="sm" variant="danger-soft" icon={Trash2} onClick={hapus}>Hapus</Button></>}
+        mobileActions={boleh && <><IconButton icon={Pencil} label="Ubah" to={`/pengumuman/${id}/ubah`} /><IconButton icon={Trash2} label="Hapus" onClick={hapus} /></>} />
+      <Card pad className="stack">
+        <div className="post-meta">
+          <Badge tone={k.tone}>{k.label}</Badge>
+          {p.blok && <Badge tone="gold">Khusus Gang {p.blok}</Badge>}
+          <span>{tanggalJam(p.created_at)}</span>
+        </div>
+        <h1 className="post-title">{p.judul}</h1>
+        {p.ringkasan && <p className="ink-2" style={{ fontSize: 'var(--fs-lg)' }}>{p.ringkasan}</p>}
+        {p.gambar_path && <StorageImage path={p.gambar_path} className="cover" alt="" />}
+        <p className="prose">{p.isi}</p>
+        {p.penulis?.nama && (
+          <div className="row" style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+            <Avatar nama={p.penulis.nama} size={32} />
+            <span className="text-sm"><span className="muted">Ditulis oleh</span> {p.penulis.nama}</span>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

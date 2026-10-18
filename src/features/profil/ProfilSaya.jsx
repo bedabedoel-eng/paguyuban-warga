@@ -1,52 +1,60 @@
 import { Link } from 'react-router-dom';
-import { Phone, Mail, Briefcase, Heart, Pencil, Settings, LogOut, House, LayoutDashboard } from 'lucide-react';
+import { Pencil, Settings, LogOut, Phone, Mail, House, Briefcase, Heart, Users, CalendarDays, KeyRound, ShieldCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Button, Card, Badge } from '../../components/ui';
+import { Avatar, Button, Card, CardHead, CardBody, Badge, IconButton } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { formatHp } from '../../lib/phone';
-import { PERAN } from '../../lib/constants';
+import { tanggal } from '../../lib/format';
 
 export default function ProfilSaya() {
-  const { warga, kontak, jabatan, hak, signOut } = useAuth();
-  const row = (Icon, k, v) => (
-    <div className="list-item" style={{ alignItems: 'flex-start' }}>
-      <Icon size={19} className="green" style={{ marginTop: 2 }} />
-      <div className="grow"><div className="small muted">{k}</div><div className="bold" style={{ fontSize: 13 }}>{v || '-'}</div></div>
-    </div>
-  );
+  const { warga, kontak, jabatan, peranLabel, user, signOut } = useAuth();
+  const google = user?.app_metadata?.provider === 'google';
+  const facts = [
+    [Phone, 'Nomor HP (untuk masuk)', kontak?.nomor_hp && formatHp(kontak.nomor_hp)],
+    [Mail, 'Email', kontak?.email],
+    [House, 'Rumah', warga.blok && `Blok ${warga.blok} No. ${warga.no_rumah}${warga.kepala_keluarga ? ' · kepala keluarga' : ''}`],
+    [Briefcase, 'Pekerjaan', warga.pekerjaan],
+    [Users, 'Keluarga', warga.keluarga],
+    [Heart, 'Hobi', warga.hobi],
+    [CalendarDays, 'Anggota sejak', warga.bergabung_at && tanggal(warga.bergabung_at)],
+    [KeyRound, 'Cara masuk', google ? 'Akun Google' : 'Nomor HP + PIN'],
+  ];
   return (
-    <>
-      <PageHeader title="Profil Saya" back={false} actions={<Link to="/pengaturan" className="icon-btn" aria-label="Pengaturan"><Settings size={21} /></Link>} />
-      <div className="page" style={{ maxWidth: 760 }}>
-        <div className="page-inner">
-          <Card className="center" pad>
-            <div className="stack" style={{ alignItems: 'center', gap: 4 }}>
-              <Avatar nama={warga.nama} path={warga.foto_path} size={100} ring />
-              <h2 className="green mt-2" style={{ fontSize: 18 }}>{warga.nama}</h2>
-              <p className="small text-2">{warga.blok}-{warga.no_rumah}{jabatan ? ` • ${jabatan}` : ''}</p>
-              <div className="row"><Badge tone="green">{PERAN[warga.role]}</Badge></div>
-              <Button size="sm" variant="outline" icon={Pencil} to="/profil/ubah" className="mt-2">Ubah Profil</Button>
+    <div className="page narrow">
+      <PageHeader title="Profil saya" mobileActions={<><IconButton icon={Pencil} label="Ubah profil" to="/profil/ubah" /><IconButton icon={Settings} label="Pengaturan" to="/pengaturan" /></>}
+        actions={<><Button size="sm" variant="secondary" icon={Settings} to="/pengaturan">Pengaturan</Button><Button size="sm" icon={Pencil} to="/profil/ubah">Ubah profil</Button></>} />
+      <Card pad>
+        <div className="profile-head">
+          <Avatar nama={warga.nama} path={warga.foto_path} size={88} ring />
+          <div className="t">
+            <h2>{warga.nama}</h2>
+            <p>{peranLabel}</p>
+            <div className="tags">
+              <Badge tone="ok" dot>Anggota aktif</Badge>
+              {jabatan.map((j) => <Badge key={j.id} tone="gold"><ShieldCheck size={12} />{j.jabatan}</Badge>)}
             </div>
-          </Card>
-          <Card pad>
-            <div className="list">
-              {row(Phone, 'Nomor HP', kontak?.nomor_hp && formatHp(kontak.nomor_hp))}
-              {row(Mail, 'Email', kontak?.email)}
-              {row(House, 'Alamat', warga.blok && `Blok ${warga.blok} No. ${warga.no_rumah}`)}
-              {row(Briefcase, 'Pekerjaan', warga.pekerjaan)}
-              {row(Heart, 'Hobi', warga.hobi)}
-            </div>
-          </Card>
-          <Card pad className="menu-list">
-            <div className="list">
-              {hak.pengurus && <Link to="/admin" className="list-item"><LayoutDashboard size={20} className="lead" /><span className="lbl">Panel Admin</span></Link>}
-              <Link to="/menu" className="list-item"><House size={20} className="lead" /><span className="lbl">Semua Menu</span></Link>
-              <Link to="/pengaturan" className="list-item"><Settings size={20} className="lead" /><span className="lbl">Pengaturan</span></Link>
-              <button className="list-item danger" onClick={signOut}><LogOut size={20} className="lead" /><span className="lbl">Keluar</span></button>
-            </div>
-          </Card>
+          </div>
+          <Button className="only-mobile" block variant="secondary" icon={Pencil} to="/profil/ubah">Ubah profil</Button>
         </div>
-      </div>
-    </>
+      </Card>
+      {warga.tentang && <Card><CardBody><h2 style={{ marginBottom: 8 }}>Tentang saya</h2><p className="about">{warga.tentang}</p></CardBody></Card>}
+      <Card>
+        <CardHead title="Data diri" desc="Nomor HP dan alamat rumah hanya dapat diubah sekretaris atau admin." />
+        <div className="rows inset">
+          {facts.map(([Icon, k, v]) => (
+            <div className="rowi" key={k}>
+              <span className="ico sm neutral"><Icon size={16} /></span>
+              <span className="rowi-main"><span className="rowi-sub">{k}</span><span className="rowi-title" style={{ fontWeight: v ? 600 : 400, color: v ? undefined : 'var(--ink-4)' }}>{v || 'Belum diisi'}</span></span>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card className="only-mobile">
+        <div className="rows inset">
+          <Link to="/pengaturan" className="rowi"><Settings size={18} className="muted" /><span className="rowi-main"><span className="rowi-title">Pengaturan akun</span></span></Link>
+          <button type="button" className="rowi danger" onClick={signOut}><LogOut size={18} /><span className="rowi-main"><span className="rowi-title">Keluar</span></span></button>
+        </div>
+      </Card>
+    </div>
   );
 }

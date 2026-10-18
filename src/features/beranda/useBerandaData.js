@@ -1,12 +1,14 @@
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useAsync } from '../../hooks/useAsync';
-import { statistik, statistikIplBulanan, aktivitasTerbaru, cuaca } from '../../services/dashboard';
+import { cuaca } from '../../services/dashboard';
 import { tagihanRumah } from '../../services/ipl';
 import { daftarPengumuman } from '../../services/pengumuman';
 import { daftarKegiatan } from '../../services/kegiatan';
 import { daftarNotifikasi } from '../../services/notifikasi';
 import { daftarKontakDarurat } from '../../services/pengaturan';
+import { ringkasanKas } from '../../services/kas';
+import { awalBulan } from '../../lib/format';
 
 /** Ringkas status IPL dari daftar tagihan rumah. */
 export function ringkasIpl(tagihan = []) {
@@ -14,26 +16,26 @@ export function ringkasIpl(tagihan = []) {
   const tahun = new Date().getFullYear();
   const tahunIni = tagihan.filter((t) => Number(t.periode.slice(0, 4)) === tahun);
   const belum = tagihan.filter((t) => t.status === 'belum_bayar');
+  const menunggu = tagihan.filter((t) => t.status === 'menunggu_verifikasi');
   return {
     terbaru,
     lunasTahunIni: tahunIni.filter((t) => t.status === 'lunas').length,
     totalTahunIni: tahunIni.length,
     belum,
+    menunggu,
     totalBelum: belum.reduce((s, t) => s + t.nominal, 0),
   };
 }
 
-export function useBerandaData({ desktop }) {
+export function useBerandaData() {
   const { warga } = useAuth();
   const { pengaturan } = useSettings();
   const ipl = useAsync(() => tagihanRumah(warga?.rumah_id), [warga?.rumah_id]);
-  const pengumuman = useAsync(() => daftarPengumuman({ limit: desktop ? 3 : 4 }), [desktop]);
-  const stat = useAsync(statistik, [], { enabled: desktop });
-  const chart = useAsync(() => statistikIplBulanan(new Date().getFullYear()), [], { enabled: desktop });
-  const agenda = useAsync(() => daftarKegiatan({ limit: 3 }), [], { enabled: desktop });
-  const aktivitas = useAsync(() => aktivitasTerbaru(4), [], { enabled: desktop });
-  const notif = useAsync(() => daftarNotifikasi({ limit: 4 }), [], { enabled: desktop });
-  const kontak = useAsync(daftarKontakDarurat, [], { enabled: desktop });
-  const weather = useAsync(() => cuaca(pengaturan.latitude, pengaturan.longitude), [pengaturan.latitude, pengaturan.longitude], { enabled: desktop });
-  return { ipl, pengumuman, stat, chart, agenda, aktivitas, notif, kontak, weather };
+  const pengumuman = useAsync(() => daftarPengumuman({ limit: 4 }), []);
+  const agenda = useAsync(() => daftarKegiatan({ limit: 4 }), []);
+  const notif = useAsync(() => daftarNotifikasi({ limit: 5 }), []);
+  const kontak = useAsync(daftarKontakDarurat, []);
+  const kas = useAsync(() => ringkasanKas(awalBulan()), []);
+  const weather = useAsync(() => cuaca(pengaturan.latitude, pengaturan.longitude), [pengaturan.latitude, pengaturan.longitude]);
+  return { ipl, pengumuman, agenda, notif, kontak, kas, weather };
 }

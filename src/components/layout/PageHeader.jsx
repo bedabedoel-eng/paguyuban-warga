@@ -2,22 +2,27 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 /**
- * Judul halaman: header hijau di HP, judul + tombol aksi di tablet/desktop.
- * back: true (kembali ke riwayat) | string (path) | false
+ * Judul halaman. Di HP: bilah atas ringkas (kembali + judul + aksi ikon).
+ * Di desktop: judul besar, deskripsi, dan tombol aksi.
+ * back: true (riwayat) | string (path) | false
  */
-export default function PageHeader({ title, back = true, actions, mobileActions }) {
+export default function PageHeader({ title, desc, back = false, actions, mobileActions }) {
   const nav = useNavigate();
   const goBack = () => (typeof back === 'string' ? nav(back) : window.history.length > 1 ? nav(-1) : nav('/'));
+  const mAct = mobileActions !== undefined ? mobileActions : null;
   return (
     <>
       <header className="m-header">
-        {back && <button className="icon-btn" onClick={goBack} aria-label="Kembali"><ArrowLeft size={22} /></button>}
-        <h1 style={{ paddingLeft: back ? 0 : 8 }}>{title}</h1>
-        {(mobileActions !== undefined ? mobileActions : actions) && <div className="actions">{mobileActions !== undefined ? mobileActions : actions}</div>}
-      </header>
-      <div className="page-head">
-        {back && <button className="back" onClick={goBack} aria-label="Kembali"><ArrowLeft size={18} /></button>}
+        {back ? <button className="icon-btn" onClick={goBack} aria-label="Kembali"><ArrowLeft size={22} /></button> : <span style={{ width: 4 }} />}
         <h1>{title}</h1>
+        {mAct && <div className="actions">{mAct}</div>}
+      </header>
+      <div className={`page-head has-m-header${mAct ? ' has-m-act' : ''}`}>
+        {back && <button className="icon-btn back only-desktop" onClick={goBack} aria-label="Kembali"><ArrowLeft size={20} /></button>}
+        <div className="t">
+          <h1>{title}</h1>
+          {desc && <p className="only-desktop">{desc}</p>}
+        </div>
         {actions && <div className="actions">{actions}</div>}
       </div>
     </>

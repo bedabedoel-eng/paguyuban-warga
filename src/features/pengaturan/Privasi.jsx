@@ -1,5 +1,5 @@
 import PageHeader from '../../components/layout/PageHeader';
-import { Card, Toggle } from '../../components/ui';
+import { Card, CardBody, Toggle, Callout } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ubahKontak } from '../../services/warga';
@@ -8,20 +8,25 @@ export default function Privasi() {
   const { kontak, user, setKontak } = useAuth();
   const toast = useToast();
   async function ubah(k, v) {
-    try { setKontak(await ubahKontak(user.id, { [k]: v })); } catch (e) { toast.error(e); }
+    try { setKontak(await ubahKontak(user.id, { [k]: v })); toast.success('Pengaturan privasi disimpan'); } catch (e) { toast.error(e); }
   }
+  const row = (k, t, s) => (
+    <div className="rowi">
+      <span className="rowi-main"><span className="rowi-title">{t}</span><span className="rowi-sub">{s}</span></span>
+      <Toggle label={t} checked={kontak?.[k]} onChange={(v) => ubah(k, v)} />
+    </div>
+  );
   return (
-    <>
-      <PageHeader title="Privasi Profil" />
-      <div className="page" style={{ maxWidth: 640 }}>
-        <Card pad>
-          <p className="small text-2 mb-3">Atur data kontak yang dapat dilihat sesama warga. Pengurus tetap dapat melihatnya untuk keperluan administrasi.</p>
-          <div className="list">
-            <div className="list-item"><span className="grow"><span className="title" style={{ display: 'block' }}>Tampilkan nomor HP</span><span className="sub">Warga lain dapat menghubungi Anda</span></span><Toggle label="Tampilkan nomor HP" checked={kontak?.tampilkan_hp} onChange={(v) => ubah('tampilkan_hp', v)} /></div>
-            <div className="list-item"><span className="grow"><span className="title" style={{ display: 'block' }}>Tampilkan email</span><span className="sub">Hanya bila Anda mengisi email</span></span><Toggle label="Tampilkan email" checked={kontak?.tampilkan_email} onChange={(v) => ubah('tampilkan_email', v)} /></div>
-          </div>
-        </Card>
-      </div>
-    </>
+    <div className="page narrow">
+      <PageHeader back="/pengaturan" title="Privasi" />
+      <Card>
+        <div className="rows inset">
+          {row('tampilkan_hp', 'Tampilkan nomor HP ke warga', 'Tetangga dapat menelepon atau mengirim WhatsApp dari direktori')}
+          {row('tampilkan_email', 'Tampilkan email ke warga', 'Hanya berlaku bila Anda mengisi email')}
+        </div>
+      </Card>
+      <Callout tone="neutral">Terlepas dari pengaturan ini, pengurus yang berwenang (sekretaris, pimpinan, bendahara, dan humas gang Anda) tetap dapat melihat nomor HP untuk keperluan administrasi.</Callout>
+      <Card><CardBody className="text-sm muted">Data tagihan dan aspirasi Anda tidak pernah tampil ke warga lain.</CardBody></Card>
+    </div>
   );
 }

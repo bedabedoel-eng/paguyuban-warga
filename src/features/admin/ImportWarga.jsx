@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Download, FileUp, CircleAlert, CircleCheck } from 'lucide-react';
+import { Download, FileUp, CircleCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Alert, Badge, Button, Card, useConfirm } from '../../components/ui';
+import { Callout, Badge, Button, Card, DataTable, useConfirm } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { parseCsv, CONTOH_CSV } from '../../lib/csv';
@@ -65,7 +65,6 @@ export default function ImportWarga() {
   const confirm = useConfirm();
   const inputRef = useRef(null);
   const [nama, setNama] = useState('');
-  const [hasil, setHasil] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [laporan, setLaporan] = useState(null);
@@ -119,78 +118,68 @@ export default function ImportWarga() {
     } finally { setLoading(false); }
   }
 
+  const cols = [
+    { key: 'baris', label: 'Baris', render: (x) => <span className="num muted">{x.baris}</span> },
+    { key: 'nama', label: 'Nama', render: (x) => <span className="cell-main">{x.nama || '—'}</span> },
+    { key: 'hp', label: 'Nomor HP', render: (x) => <span className="num nowrap">{x.hp ? formatHp(x.hp) : '—'}</span> },
+    { key: 'rumah', label: 'Rumah', render: (x) => <span className="nowrap">{x.blok}-{x.no_rumah}</span> },
+    { key: 'st', label: 'Status', render: (x) => (x.galat ? <Badge tone="bad">{x.galat}</Badge> : <Badge tone="ok">Siap</Badge>) },
+  ];
+
   return (
-    <>
-      <PageHeader title="Import Warga" />
-      <div className="page">
-        <div className="page-inner">
-          <Card pad className="stack">
-            <h2>Import data warga dari CSV</h2>
-            <p className="small text-2">
-              Kolom yang dibaca: <b>nama, hp, blok, no_rumah</b> (wajib), serta <b>pekerjaan</b> dan <b>kepala_keluarga</b> (ya/tidak, opsional).
-              Dari Excel, pilih <i>Save As &gt; CSV</i>. Satu baris untuk satu orang yang punya nomor HP sendiri.
-            </p>
-            <Alert tone="info">
-              Semua akun dibuat <b>aktif</b> dengan PIN awal <b>{PIN_AWAL}</b>. Saat pertama masuk, warga langsung diminta membuat PIN baru.
-              Bagikan PIN awal hanya lewat grup warga atau pesan langsung, dan minta segera masuk.
-            </Alert>
-            <div className="row wrap">
-              <input ref={inputRef} type="file" accept=".csv,text/csv,text/plain" onChange={pilih} style={{ display: 'none' }} />
-              <Button icon={FileUp} onClick={() => inputRef.current?.click()}>Pilih Berkas CSV</Button>
-              <Button variant="outline" icon={Download} onClick={unduhContoh}>Unduh Contoh</Button>
-              {nama && <span className="small muted">{nama}</span>}
-            </div>
-          </Card>
-
-          {data?.kurang.length > 0 && (
-            <Alert tone="error" icon={CircleAlert}>Kolom wajib tidak ditemukan: <b>{data.kurang.join(', ')}</b>. Periksa baris judul (header) berkas Anda.</Alert>
-          )}
-
-          {data && data.kurang.length === 0 && (
-            <Card pad className="stack">
-              <div className="row between wrap">
-                <div className="row wrap">
-                  <Badge tone="green">{valid.length} siap diimpor</Badge>
-                  {bermasalah.length > 0 && <Badge tone="red">{bermasalah.length} bermasalah</Badge>}
-                </div>
-                <Button loading={loading} disabled={!valid.length} onClick={proses}>Buat {valid.length} Akun</Button>
-              </div>
-              {bermasalah.length > 0 && <p className="small text-2">Baris bermasalah akan dilewati. Perbaiki di berkas lalu impor lagi bila perlu.</p>}
-              <div className="table-wrap">
-                <table className="table">
-                  <thead><tr><th>Baris</th><th>Nama</th><th>Nomor HP</th><th>Rumah</th><th>Status</th></tr></thead>
-                  <tbody>
-                    {data.list.slice(0, 300).map((x) => (
-                      <tr key={x.baris}>
-                        <td>{x.baris}</td>
-                        <td><b>{x.nama || '-'}</b></td>
-                        <td className="nowrap">{x.hp ? formatHp(x.hp) : '-'}</td>
-                        <td className="nowrap">{x.blok}-{x.no_rumah}</td>
-                        <td>{x.galat ? <span className="red small">{x.galat}</span> : <span className="green small">Siap</span>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {data.list.length > 300 && <p className="small muted">Menampilkan 300 baris pertama dari {data.list.length}.</p>}
-            </Card>
-          )}
-
-          {laporan && (
-            <Card pad className="stack">
-              <div className="row"><CircleCheck size={20} className="green" /><h2>{laporan.dibuat} akun berhasil dibuat</h2></div>
-              {laporan.terhenti && <Alert tone="error" icon={CircleAlert}>Proses terhenti di tengah jalan. Akun yang sudah dibuat tetap tersimpan; impor ulang berkas yang sama akan melewati nomor yang sudah terdaftar.</Alert>}
-              {laporan.dilewati.length > 0 && (
-                <>
-                  <p className="small text-2">{laporan.dilewati.length} baris dilewati oleh server:</p>
-                  <ul className="small">{laporan.dilewati.map((s, i) => <li key={i}>Baris {s.baris}{s.nama ? ` (${s.nama})` : ''}: {s.alasan}</li>)}</ul>
-                </>
-              )}
-              <p className="small text-2">Pantau warga yang belum mengganti PIN di <b>Data Warga</b> (filter "Belum ganti PIN").</p>
-            </Card>
-          )}
+    <div className="page medium">
+      <PageHeader back title="Import warga" desc="Buat banyak akun warga sekaligus dari berkas CSV (Excel > Simpan sebagai CSV)." />
+      <Card pad className="stack">
+        <div className="steps">
+          <div className="step"><span className="n">1</span><div className="body">
+            <h3>Siapkan berkas</h3>
+            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b>. Opsional <b>pekerjaan</b> dan <b>kepala_keluarga</b> (ya/tidak). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
+            <div style={{ marginTop: 10 }}><Button size="sm" variant="secondary" icon={Download} onClick={unduhContoh}>Unduh contoh CSV</Button></div>
+          </div></div>
+          <div className="step"><span className="n">2</span><div className="body">
+            <h3>Pilih dan periksa</h3>
+            <input ref={inputRef} type="file" accept=".csv,text/csv,text/plain" onChange={pilih} hidden />
+            <div className="row wrap"><Button size="sm" icon={FileUp} onClick={() => inputRef.current?.click()}>Pilih berkas CSV</Button>{nama && <span className="text-sm muted">{nama}</span>}</div>
+          </div></div>
+          <div className="step"><span className="n">3</span><div className="body">
+            <h3>Buat akun</h3>
+            <Callout tone="info">Semua akun langsung <b>aktif</b> dengan PIN awal <b className="num">{PIN_AWAL}</b>, dan warga wajib membuat PIN baru saat pertama masuk. Bagikan PIN awal hanya lewat pesan pribadi atau grup warga.</Callout>
+          </div></div>
         </div>
-      </div>
-    </>
+      </Card>
+
+      {data?.kurang.length > 0 && (
+        <Callout tone="bad">Kolom wajib tidak ditemukan: <b>{data.kurang.join(', ')}</b>. Periksa baris judul (header) berkas.</Callout>
+      )}
+
+      {data && data.kurang.length === 0 && (
+        <Card className="flush">
+          <div className="card-head">
+            <div className="t row wrap">
+              <Badge tone="ok">{valid.length} siap</Badge>
+              {bermasalah.length > 0 && <Badge tone="bad">{bermasalah.length} akan dilewati</Badge>}
+            </div>
+            <Button loading={loading} disabled={!valid.length} onClick={proses}>Buat {valid.length} akun</Button>
+          </div>
+          <div style={{ height: 12 }} />
+          <DataTable columns={cols} rows={data.list.slice(0, 300)} rowKey="baris" caption="Pratinjau import" />
+          {data.list.length > 300 && <div className="card-foot text-sm muted">Menampilkan 300 dari {data.list.length} baris.</div>}
+        </Card>
+      )}
+
+      {laporan && (
+        <Card pad className="stack-sm">
+          <div className="row"><CircleCheck size={20} className="t-ok" /><h2>{laporan.dibuat} akun berhasil dibuat</h2></div>
+          {laporan.terhenti && <Callout tone="bad">Proses terhenti di tengah jalan. Akun yang sudah dibuat tetap tersimpan; impor ulang berkas yang sama akan melewati nomor yang sudah terdaftar.</Callout>}
+          {laporan.dilewati.length > 0 && (
+            <>
+              <p className="text-sm ink-2">{laporan.dilewati.length} baris dilewati server:</p>
+              <ul className="text-sm">{laporan.dilewati.map((x, i) => <li key={i}>Baris {x.baris}{x.nama ? ` (${x.nama})` : ''}: {x.alasan}</li>)}</ul>
+            </>
+          )}
+          <p className="text-sm muted">Pantau warga yang belum mengganti PIN di Data anggota, filter “Belum ganti PIN”.</p>
+        </Card>
+      )}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, EmptyState, ErrorState, Loader, SegTabs } from '../../components/ui';
+import { Button, Card, CardBody, EmptyState, ErrorState, SegTabs, SkeletonRows, IconButton } from '../../components/ui';
 import { useNotif } from '../../context/NotifContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -10,24 +10,24 @@ import { NotifRow } from '../beranda/widgets';
 
 export default function Notifikasi() {
   const [tab, setTab] = useState('semua');
-  const { refresh } = useNotif();
+  const { refresh, unread } = useNotif();
   const toast = useToast();
-  const s = useAsync(() => daftarNotifikasi({ belum: tab === 'belum' }), [tab]);
-  async function baca(n) { if (!n.dibaca_at) { try { await tandaiDibaca([n.id]); refresh(); s.reload(); } catch { /* abaikan */ } } }
+  const s = useAsync(() => daftarNotifikasi({ belum: tab === 'belum', limit: 100 }), [tab]);
+  async function baca(n) { if (!n.dibaca_at) { try { await tandaiDibaca([n.id]); refresh(); } catch { /* abaikan */ } } }
   async function semua() { try { await tandaiDibaca(); toast.success('Semua notifikasi ditandai dibaca'); refresh(); s.reload(); } catch (e) { toast.error(e); } }
   return (
-    <>
-      <PageHeader title="Notifikasi" actions={<Button size="sm" variant="outline" icon={CheckCheck} onClick={semua}>Tandai semua dibaca</Button>} mobileActions={<button className="icon-btn" onClick={semua} aria-label="Tandai semua dibaca"><CheckCheck size={21} /></button>} />
-      <div className="page" style={{ maxWidth: 760 }}>
-        <div className="page-inner">
-          <SegTabs value={tab} onChange={setTab} tabs={[{ value: 'semua', label: 'Semua' }, { value: 'belum', label: 'Belum Dibaca' }]} />
-          <Card pad>
-            {s.loading && !s.data ? <Loader /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !s.data?.length ? <EmptyState icon={Bell} title="Tidak ada notifikasi" /> : (
-              <div className="list">{s.data.map((n) => <NotifRow key={n.id} n={n} big onClick={() => baca(n)} />)}</div>
-            )}
-          </Card>
-        </div>
-      </div>
-    </>
+    <div className="page narrow">
+      <PageHeader title="Notifikasi"
+        actions={unread > 0 && <Button size="sm" variant="secondary" icon={CheckCheck} onClick={semua}>Tandai semua dibaca</Button>}
+        mobileActions={unread > 0 && <IconButton icon={CheckCheck} label="Tandai semua dibaca" onClick={semua} />} />
+      <SegTabs value={tab} onChange={setTab} tabs={[{ value: 'semua', label: 'Semua' }, { value: 'belum', label: 'Belum dibaca', count: unread }]} />
+      <Card>
+        <CardBody>
+          {s.loading && !s.data ? <SkeletonRows n={5} /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !s.data?.length ? (
+            <EmptyState icon={Bell} title={tab === 'belum' ? 'Semua notifikasi sudah dibaca' : 'Belum ada notifikasi'} text="Tagihan, pengumuman, dan tanggapan aspirasi akan diberitahukan di sini." />
+          ) : <div className="rows">{s.data.map((n) => <NotifRow key={n.id} n={n} onClick={() => baca(n)} />)}</div>}
+        </CardBody>
+      </Card>
+    </div>
   );
 }

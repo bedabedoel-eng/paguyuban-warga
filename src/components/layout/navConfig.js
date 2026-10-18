@@ -1,25 +1,51 @@
-import { House, Users, Database, CalendarDays, Megaphone, MessageSquareText, ChartColumn, UsersRound, Bell, Settings, LayoutDashboard } from 'lucide-react';
+import {
+  House, Receipt, CalendarDays, Megaphone, MessageSquareText, Users, Wallet, UsersRound, LayoutDashboard,
+  UserCheck, IdCard, Inbox, Building2, FileCheck2, BadgeCheck, FolderArchive, Settings2, FileUp, Network,
+} from 'lucide-react';
 
-/** Menu sidebar desktop, disaring sesuai hak akses. */
-export function sidebarItems(hak) {
-  const warga = [{ to: '/warga', label: 'Direktori Warga' }];
-  if (hak.pengurus) warga.push({ to: '/admin/verifikasi', label: 'Verifikasi Anggota' }, { to: '/admin/warga', label: 'Data Warga' });
-  if (hak.admin || hak.bendahara) warga.push({ to: '/admin/rumah', label: 'Data Rumah' });
-  if (hak.admin) warga.push({ to: '/admin/import', label: 'Import Warga' });
-  const ipl = [{ to: '/ipl', label: 'Tagihan Saya', end: true }, { to: '/ipl/riwayat', label: 'Riwayat Pembayaran' }];
-  if (hak.bendahara) ipl.push({ to: '/admin/ipl', label: 'Kelola IPL' });
-  const items = [
-    { to: '/', label: 'Beranda', icon: House, end: true },
-    { label: 'Warga', icon: Users, base: ['/warga', '/admin/verifikasi', '/admin/warga', '/admin/rumah', '/admin/import'], children: warga },
-    { label: 'IPL', icon: Database, base: ['/ipl', '/admin/ipl'], children: ipl },
-    { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays },
-    { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone },
-    { to: hak.pengurus ? '/admin/laporan' : '/aspirasi', label: 'Aspirasi & Laporan', icon: MessageSquareText, also: ['/aspirasi', '/admin/laporan'] },
-    { to: '/keuangan', label: 'Keuangan', icon: ChartColumn },
-    { to: '/pengurus', label: 'Pengurus', icon: UsersRound },
-    { to: '/notifikasi', label: 'Notifikasi', icon: Bell, badge: 'notif' },
-    { to: '/pengaturan', label: 'Pengaturan', icon: Settings, also: ['/profil', '/pengaturan', '/admin/pengaturan'] },
-  ];
-  if (hak.pengurus) items.push({ sep: true }, { to: '/admin', label: 'Panel Admin', icon: LayoutDashboard, end: true });
-  return items;
+/**
+ * Menu sidebar dikelompokkan dan disaring sesuai hak.
+ * badge: kunci di statistik_dashboard untuk lencana jumlah.
+ */
+export function navGroups(hak) {
+  const warga = {
+    label: null,
+    items: [
+      { to: '/', label: 'Beranda', icon: House, end: true },
+      { to: '/ipl', label: 'Tagihan IPL', icon: Receipt, also: ['/ipl'] },
+      { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone },
+      { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays },
+      { to: '/aspirasi', label: 'Aspirasi saya', icon: MessageSquareText },
+      { to: '/warga', label: 'Direktori warga', icon: Users },
+      { to: '/keuangan', label: 'Kas paguyuban', icon: Wallet },
+      { to: '/pengurus', label: 'Pengurus', icon: UsersRound, end: true },
+    ],
+  };
+  const groups = [warga];
+  if (hak.pengurus) {
+    const kelola = [{ to: '/admin', label: 'Ringkasan pengurus', icon: LayoutDashboard, end: true }];
+    if (hak.kelola_anggota || hak.humas) {
+      kelola.push({ to: '/admin/verifikasi', label: 'Verifikasi anggota', icon: UserCheck, badge: 'anggota_menunggu' });
+      kelola.push({ to: '/admin/warga', label: 'Data anggota', icon: IdCard });
+    }
+    if (hak.kelola_laporan) kelola.push({ to: '/admin/laporan', label: 'Aspirasi masuk', icon: Inbox, badge: 'laporan_baru' });
+    if (hak.bendahara) {
+      kelola.push({ to: '/admin/ipl', label: 'Kelola IPL', icon: FileCheck2, badge: 'pembayaran_menunggu' });
+      kelola.push({ to: '/admin/rumah', label: 'Data rumah', icon: Building2 });
+    }
+    if (hak.setujui_kas) kelola.push({ to: '/keuangan/persetujuan', label: 'Persetujuan kas', icon: BadgeCheck, badge: 'pengeluaran_menunggu' });
+    kelola.push({ to: '/administrasi', label: 'Surat & notulen', icon: FolderArchive });
+    if (hak.kelola_pengurus) kelola.push({ to: '/pengurus/kelola', label: 'Atur pengurus', icon: Network });
+    groups.push({ label: 'Kepengurusan', items: kelola });
+  }
+  if (hak.admin) {
+    groups.push({
+      label: 'Sistem',
+      items: [
+        { to: '/admin/pengaturan', label: 'Pengaturan paguyuban', icon: Settings2 },
+        { to: '/admin/import', label: 'Import warga', icon: FileUp },
+      ],
+    });
+  }
+  return groups;
 }

@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, PhoneInput, PasswordInput, Alert, Modal } from '../../components/ui';
+import { LogIn } from 'lucide-react';
+import { Button, PhoneInput, PasswordInput, Callout, Modal } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import GoogleButton from './GoogleButton';
 import { masukDenganHp, keluar } from '../../services/auth';
 import { normalizeHp } from '../../lib/phone';
 import { pesanError } from '../../lib/errors';
 import { supabase } from '../../lib/supabase';
-import { CircleAlert } from 'lucide-react';
 
-/** Halaman masuk warga (mode default) dan admin (mode="admin"). */
+/** Halaman masuk warga (default) dan pengurus (mode="admin"). */
 export default function Login({ mode = 'warga' }) {
   const admin = mode === 'admin';
   const nav = useNavigate();
   const [hp, setHp] = useState('');
-  const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [errors, setErrors] = useState({});
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,50 +24,52 @@ export default function Login({ mode = 'warga' }) {
     e.preventDefault();
     const er = {};
     if (!normalizeHp(hp)) er.hp = 'Masukkan nomor HP yang valid, contoh 81234567890';
-    if (password.length < 6) er.password = 'PIN terdiri dari 6 angka';
+    if (pin.length < 6) er.pin = 'PIN terdiri dari 6 angka';
     setErrors(er);
     if (Object.keys(er).length) return;
     setLoading(true); setErr('');
     try {
-      await masukDenganHp(hp, password);
+      await masukDenganHp(hp, pin);
       if (admin) {
         const { data } = await supabase.rpc('hak_saya');
         if (!data?.pengurus) {
           await keluar();
-          throw new Error('Akun ini bukan pengurus atau admin. Silakan masuk lewat halaman warga.');
+          throw new Error('Akun ini tidak memiliki jabatan pengurus. Silakan masuk lewat halaman warga.');
         }
         nav('/admin', { replace: true });
-      } else {
-        nav('/', { replace: true });
-      }
+      } else nav('/', { replace: true });
     } catch (e2) {
       setErr(pesanError(e2));
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   return (
-    <AuthLayout compactBrand={admin}>
+    <AuthLayout>
+      <div className="auth-title">
+        <h1>{admin ? 'Masuk pengurus' : 'Masuk'}</h1>
+        <p>{admin ? 'Khusus akun yang memiliki jabatan pengurus.' : 'Gunakan nomor HP dan PIN yang Anda daftarkan.'}</p>
+      </div>
       <form onSubmit={submit} className="stack" noValidate>
-        <div>
-          <h1 className="auth-title">{admin ? 'Masuk Admin' : 'Masuk ke Akun Anda'}</h1>
-          <p className="auth-sub">{admin ? 'Gunakan akun yang telah diberikan' : 'Gunakan nomor HP dan PIN untuk melanjutkan'}</p>
+        {err && <Callout tone="bad">{err}</Callout>}
+        <PhoneInput label="Nomor HP" placeholder="81234567890" value={hp} onChange={(e) => setHp(e.target.value)} error={errors.hp} autoFocus />
+        <div className="stack-sm">
+          <PasswordInput label="PIN" placeholder="6 angka" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} error={errors.pin} autoComplete="current-password" />
+          <button type="button" className="link" style={{ alignSelf: 'flex-end' }} onClick={() => setLupa(true)}>Lupa PIN?</button>
         </div>
-        {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
-        <PhoneInput label={admin ? 'Nomor HP' : undefined} placeholder="Nomor HP" value={hp} onChange={(e) => setHp(e.target.value)} error={errors.hp} autoFocus />
-        <PasswordInput label={admin ? 'PIN' : undefined} placeholder="PIN" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} autoComplete="current-password" />
-        <Button type="submit" block loading={loading}>{admin ? 'Masuk' : 'Masuk'}</Button>
-        <button type="button" className="link-sm center" style={{ alignSelf: 'center' }} onClick={() => setLupa(true)}>Lupa PIN?</button>
+        <Button type="submit" block size="lg" icon={LogIn} loading={loading}>Masuk</Button>
         {!admin && <GoogleButton />}
-        {!admin ? (
-          <p className="auth-foot">Belum punya akun? <Link to="/daftar" className="bold">Daftar di sini</Link></p>
-        ) : (
-          <p className="auth-foot"><Link to="/masuk">Masuk sebagai warga</Link></p>
-        )}
       </form>
-      <Modal open={lupa} onClose={() => setLupa(false)} title="Lupa PIN">
-        <p className="text-2">Demi keamanan, aplikasi ini tidak mengirim SMS atau email. Hubungi <b>admin paguyuban</b> untuk mengatur ulang PIN Anda. Setelah itu, masuk dengan PIN sementara dan segera ganti di menu Pengaturan &gt; Keamanan.</p>
+      {!admin ? (
+        <p className="auth-foot">Belum punya akun? <Link to="/daftar">Daftar sebagai warga</Link></p>
+      ) : (
+        <p className="auth-foot"><Link to="/masuk">Kembali ke halaman masuk warga</Link></p>
+      )}
+      <Modal open={lupa} onClose={() => setLupa(false)} title="Lupa PIN"
+        footer={<Button onClick={() => setLupa(false)}>Mengerti</Button>}>
+        <div className="stack-sm ink-2">
+          <p>Aplikasi ini tidak mengirim SMS atau email, jadi PIN diatur ulang oleh admin paguyuban.</p>
+          <p>Hubungi admin atau sekretaris, lalu masuk dengan PIN sementara yang diberikan. Anda akan langsung diminta membuat PIN baru.</p>
+        </div>
       </Modal>
     </AuthLayout>
   );

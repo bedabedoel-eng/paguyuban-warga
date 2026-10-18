@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { signedUrl } from '../../lib/storage';
 
-/** Menampilkan gambar dari Supabase Storage (privat via signed URL). */
+/** Gambar dari Supabase Storage (privat via signed URL). */
 export default function StorageImage({ bucket = 'konten', path, alt = '', fallback = null, className, style }) {
   const [url, setUrl] = useState(null);
   const [failed, setFailed] = useState(false);

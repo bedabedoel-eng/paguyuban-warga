@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CircleAlert } from 'lucide-react';
-import { Button, Input, PhoneInput, Select, Alert } from '../../components/ui';
+import { Button, Input, PhoneInput, Select, Callout } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import { lengkapiPendaftaran } from '../../services/auth';
 import { pesanError } from '../../lib/errors';
@@ -34,22 +33,22 @@ export default function LengkapiData() {
   }
 
   return (
-    <AuthLayout compactBrand>
+    <AuthLayout>
+      <div className="auth-title">
+        <h1>Lengkapi data rumah</h1>
+        <p>Pengurus memerlukan data ini untuk memverifikasi Anda.</p>
+      </div>
       <form onSubmit={submit} className="stack" noValidate>
-        <div>
-          <h1 className="auth-title green">Lengkapi Data</h1>
-          <p className="auth-sub">Satu langkah lagi. Isi data berikut agar pengurus dapat memverifikasi Anda.</p>
-        </div>
-        {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
-        <Input placeholder="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} maxLength={80} />
-        <PhoneInput placeholder="Nomor HP" value={f.hp} onChange={set('hp')} error={errors.hp} />
+        {err && <Callout tone="bad">{err}</Callout>}
+        <Input label="Nama lengkap" value={f.nama} onChange={set('nama')} error={errors.nama} maxLength={80} />
+        <PhoneInput label="Nomor HP" value={f.hp} onChange={set('hp')} error={errors.hp} />
         <div className="form-grid">
-          <Select placeholder="Pilih blok" value={f.blok} onChange={set('blok')} error={errors.blok} options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
-          <Input placeholder="No. rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
+          <Select label="Gang / blok" placeholder="Pilih" value={f.blok} onChange={set('blok')} error={errors.blok} options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
+          <Input label="Nomor rumah" value={f.noRumah} onChange={set('noRumah')} error={errors.noRumah} maxLength={6} />
         </div>
-        <Button type="submit" block loading={loading}>Kirim</Button>
-        <button type="button" className="link-sm" style={{ alignSelf: 'center' }} onClick={signOut}>Keluar</button>
+        <Button type="submit" block size="lg" loading={loading}>Kirim untuk diverifikasi</Button>
       </form>
+      <p className="auth-foot"><button type="button" className="link" onClick={signOut}>Keluar</button></p>
     </AuthLayout>
   );
 }

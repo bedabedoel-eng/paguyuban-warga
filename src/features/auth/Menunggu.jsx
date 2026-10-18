@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Clock, CircleX, RefreshCw } from 'lucide-react';
-import { Button } from '../../components/ui';
+import { Clock, CircleX, RefreshCw, LogOut } from 'lucide-react';
+import { Button, Callout } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import { useAuth } from '../../context/AuthContext';
 import { formatHp } from '../../lib/phone';
 
-/** Status akun yang belum aktif: menunggu persetujuan / ditolak / nonaktif. */
+/** Status akun yang belum aktif: menunggu / ditolak / nonaktif. */
 export default function Menunggu() {
   const { warga, kontak, refreshProfil, signOut, session } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -14,32 +14,32 @@ export default function Menunggu() {
   if (warga?.status === 'aktif') return <Navigate to="/" replace />;
   const ditolak = warga?.status === 'ditolak';
   const nonaktif = warga?.status === 'nonaktif';
+  const judul = ditolak ? 'Pendaftaran belum disetujui' : nonaktif ? 'Akun dinonaktifkan' : 'Menunggu verifikasi pengurus';
+  const teks = ditolak
+    ? 'Pengurus belum dapat menyetujui pendaftaran Anda. Hubungi humas gang atau sekretaris untuk informasi lebih lanjut.'
+    : nonaktif
+      ? 'Akun Anda sedang dinonaktifkan. Hubungi pengurus paguyuban.'
+      : `Data Anda sudah dikirim ke humas Gang ${warga?.blok || ''} dan sekretaris. Biasanya diperiksa dalam 1–2 hari.`;
   return (
-    <AuthLayout compactBrand>
-      <div className="stack center" style={{ alignItems: 'center' }}>
-        <span className={`icon-circle ${ditolak || nonaktif ? 'tone-red' : 'tone-gold'}`} style={{ width: 64, height: 64 }}>
-          {ditolak || nonaktif ? <CircleX size={30} /> : <Clock size={30} />}
-        </span>
-        <h1 className="auth-title">{ditolak ? 'Pendaftaran Ditolak' : nonaktif ? 'Akun Dinonaktifkan' : 'Menunggu Persetujuan'}</h1>
-        <p className="auth-sub">
-          {ditolak
-            ? 'Maaf, pendaftaran Anda belum dapat disetujui pengurus.'
-            : nonaktif
-              ? 'Akun Anda sedang dinonaktifkan. Hubungi pengurus paguyuban.'
-              : 'Terima kasih telah mendaftar. Pengurus akan memeriksa data Anda. Silakan cek kembali nanti.'}
-        </p>
-        {warga?.alasan_status && <div className="alert warn" style={{ width: '100%', textAlign: 'left' }}>Alasan: {warga.alasan_status}</div>}
-        <div className="card card-pad" style={{ width: '100%', textAlign: 'left' }}>
-          <div className="kv"><span>Nama</span><span>{warga?.nama}</span></div>
-          <div className="kv"><span>Nomor HP</span><span>{kontak?.nomor_hp ? formatHp(kontak.nomor_hp) : '-'}</span></div>
-          <div className="kv"><span>Rumah</span><span>{warga?.blok ? `Blok ${warga.blok} No. ${warga.no_rumah}` : '-'}</span></div>
-        </div>
+    <AuthLayout>
+      <div className="status-hero">
+        <span className={`ico ${ditolak || nonaktif ? 'bad' : 'gold'}`}>{ditolak || nonaktif ? <CircleX size={28} /> : <Clock size={28} />}</span>
+        <h1 style={{ fontSize: 'var(--fs-2xl)' }}>{judul}</h1>
+        <p className="ink-2">{teks}</p>
+      </div>
+      {warga?.alasan_status && <Callout tone="warn"><b>Catatan pengurus:</b> {warga.alasan_status}</Callout>}
+      <div className="card pad">
+        <dl className="kv" style={{ margin: 0 }}>
+          <dt>Nama</dt><dd>{warga?.nama}</dd>
+          <dt>Nomor HP</dt><dd className="num">{kontak?.nomor_hp ? formatHp(kontak.nomor_hp) : '-'}</dd>
+          <dt>Rumah</dt><dd>{warga?.blok ? `Blok ${warga.blok} No. ${warga.no_rumah}` : '-'}</dd>
+        </dl>
+      </div>
+      <div className="stack-sm">
         {!ditolak && !nonaktif && (
-          <Button block variant="outline" icon={RefreshCw} loading={loading} onClick={async () => { setLoading(true); await refreshProfil(); setLoading(false); }}>
-            Periksa status
-          </Button>
+          <Button block variant="secondary" icon={RefreshCw} loading={loading} onClick={async () => { setLoading(true); await refreshProfil(); setLoading(false); }}>Periksa status</Button>
         )}
-        <Button block variant="ghost" onClick={signOut}>Keluar</Button>
+        <Button block variant="ghost" icon={LogOut} onClick={signOut}>Keluar</Button>
       </div>
     </AuthLayout>
   );

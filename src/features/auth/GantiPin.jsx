@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { CircleAlert, ShieldCheck } from 'lucide-react';
-import { Button, PasswordInput, PinInput, Alert } from '../../components/ui';
+import { Button, PasswordInput, PinInput, Callout } from '../../components/ui';
 import AuthLayout from './AuthLayout';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ubahSandi } from '../../services/auth';
 import { pesanError } from '../../lib/errors';
 
-/** Layar wajib saat pertama masuk (akun hasil import) atau setelah PIN direset admin. */
+/** Wajib saat pertama masuk (akun hasil import) atau setelah PIN direset admin. */
 export default function GantiPin() {
   const nav = useNavigate();
   const toast = useToast();
@@ -24,9 +23,9 @@ export default function GantiPin() {
   async function submit(e) {
     e.preventDefault();
     const er = {};
-    if (!f.lama) er.lama = 'Isi PIN awal dari pengurus';
+    if (!f.lama) er.lama = 'Isi PIN sementara dari pengurus';
     if (!/^\d{6}$/.test(f.baru)) er.baru = 'PIN baru harus 6 angka';
-    else if (f.baru === f.lama) er.baru = 'PIN baru harus berbeda dari PIN awal';
+    else if (f.baru === f.lama) er.baru = 'PIN baru harus berbeda dari PIN sementara';
     if (f.ulang !== f.baru) er.ulang = 'Konfirmasi PIN tidak sama';
     setErrors(er);
     if (Object.keys(er).length) return;
@@ -34,26 +33,25 @@ export default function GantiPin() {
     try {
       await ubahSandi(f.lama, f.baru);
       await refreshProfil();
-      toast.success('PIN berhasil dibuat. Selamat datang!');
+      toast.success('PIN baru tersimpan. Selamat datang!');
       nav('/', { replace: true });
     } catch (e2) { setErr(pesanError(e2)); } finally { setLoading(false); }
   }
 
   return (
-    <AuthLayout compactBrand>
+    <AuthLayout>
+      <div className="auth-title">
+        <h1>Buat PIN pribadi</h1>
+        <p>Ganti PIN sementara dari pengurus dengan PIN yang hanya Anda ketahui.</p>
+      </div>
       <form onSubmit={submit} className="stack" noValidate>
-        <div>
-          <h1 className="auth-title green">Buat PIN Baru</h1>
-          <p className="auth-sub">Demi keamanan akun, ganti PIN awal Anda dengan PIN pribadi sebelum melanjutkan.</p>
-        </div>
-        <Alert tone="info" icon={ShieldCheck}>Masukkan PIN awal yang diberikan pengurus, lalu buat PIN baru 6 angka yang hanya Anda yang tahu.</Alert>
-        {err && <Alert tone="error" icon={CircleAlert}>{err}</Alert>}
-        <PasswordInput label="PIN awal" placeholder="PIN awal" value={f.lama} onChange={set('lama')} error={errors.lama} autoComplete="current-password" autoFocus />
+        {err && <Callout tone="bad">{err}</Callout>}
+        <PasswordInput label="PIN sementara" placeholder="Dari pengurus" inputMode="numeric" value={f.lama} onChange={set('lama')} error={errors.lama} autoComplete="current-password" autoFocus />
         <PinInput label="PIN baru" placeholder="6 angka" value={f.baru} onChange={set('baru')} error={errors.baru} autoComplete="new-password" hint="Jangan pakai tanggal lahir atau angka berurutan" />
-        <PinInput label="Ulangi PIN baru" placeholder="Ulangi PIN baru" value={f.ulang} onChange={set('ulang')} error={errors.ulang} autoComplete="new-password" />
-        <Button type="submit" block loading={loading}>Simpan dan Lanjutkan</Button>
-        <button type="button" className="link-sm" style={{ alignSelf: 'center' }} onClick={signOut}>Keluar</button>
+        <PinInput label="Ulangi PIN baru" placeholder="6 angka" value={f.ulang} onChange={set('ulang')} error={errors.ulang} autoComplete="new-password" />
+        <Button type="submit" block size="lg" loading={loading}>Simpan PIN</Button>
       </form>
+      <p className="auth-foot"><button type="button" className="link" onClick={signOut}>Keluar</button></p>
     </AuthLayout>
   );
 }

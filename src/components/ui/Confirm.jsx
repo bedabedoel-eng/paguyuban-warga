@@ -18,12 +18,12 @@ export function ConfirmProvider({ children }) {
         title={state?.title || 'Konfirmasi'}
         footer={(
           <>
-            <Button variant="outline" onClick={() => done(false)}>Batal</Button>
-            <Button variant={state?.danger ? 'danger' : 'primary'} onClick={() => done(true)}>{state?.okLabel || 'Ya, lanjutkan'}</Button>
+            <Button variant="secondary" onClick={() => done(false)}>Batal</Button>
+            <Button variant={state?.danger ? 'danger' : 'primary'} onClick={() => done(true)}>{state?.okLabel || 'Lanjutkan'}</Button>
           </>
         )}
       >
-        <p className="text-2">{state?.text}</p>
+        <p className="ink-2">{state?.text}</p>
       </Modal>
     </Ctx.Provider>
   );
