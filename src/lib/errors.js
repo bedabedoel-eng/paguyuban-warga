@@ -7,7 +7,7 @@ export function pesanError(err) {
   if (/User already registered|already been registered/i.test(m)) return 'Nomor HP ini sudah terdaftar. Silakan masuk.';
   if (/Email not confirmed/i.test(m)) return 'Akun belum dikonfirmasi. Minta admin menonaktifkan "Confirm email" di Supabase.';
   if (/email_address_invalid|Email address .* is invalid/i.test(m + code)) return 'Domain akun internal ditolak Supabase. Admin perlu mengganti VITE_AUTH_EMAIL_DOMAIN.';
-  if (/Password should be at least|weak_password/i.test(m + code)) return 'PIN terlalu pendek (minimal 6 angka). Setting Minimum password length di Supabase harus diatur ke 6.';
+  if (/Password should be at least|weak_password/i.test(m + code)) return 'PIN tidak diterima. Pastikan "Minimum password length" di Supabase diatur ke 6 dan PIN berupa 6 angka.';
   if (/rate limit|too many/i.test(m) || code === 'over_request_rate_limit') return 'Terlalu banyak percobaan. Tunggu beberapa menit lalu coba lagi.';
   if (/Signups not allowed/i.test(m)) return 'Pendaftaran sedang ditutup oleh admin.';
   if (/provider is not enabled|Unsupported provider/i.test(m)) return 'Login Google belum diaktifkan di Supabase.';

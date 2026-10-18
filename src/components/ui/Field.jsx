@@ -20,27 +20,34 @@ export const Input = forwardRef(function Input({ label, error, hint, className =
   );
 });
 
-export function PasswordInput({ label, error, hint, fieldClass, inputMode = 'numeric', pattern = '[0-9]*', ...rest }) {
+export function PasswordInput({ label, error, hint, fieldClass, ...rest }) {
   const id = useId();
   const [show, setShow] = useState(false);
   return (
     <Field label={label} error={error} hint={hint} htmlFor={id} className={fieldClass}>
       <div className="input-group">
-        <input
-          id={id}
-          type={show ? 'text' : 'password'}
-          inputMode={inputMode}
-          pattern={pattern}
-          className={`input ${error ? 'invalid' : ''}`}
-          style={{ paddingRight: 42 }}
-          aria-invalid={!!error}
-          {...rest}
-        />
-        <button type="button" className="suffix-btn" onClick={() => setShow((s) => !s)} aria-label={show ? 'Sembunyikan PIN' : 'Tampilkan PIN'}>
+        <input id={id} type={show ? 'text' : 'password'} className={`input ${error ? 'invalid' : ''}`} style={{ paddingRight: 42 }} aria-invalid={!!error} {...rest} />
+        <button type="button" className="suffix-btn" onClick={() => setShow((s) => !s)} aria-label={show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}>
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
     </Field>
+  );
+}
+
+/** Isian PIN angka (6 digit). Hanya menerima angka, papan ketik numerik di HP. */
+export function PinInput({ onChange, ...rest }) {
+  return (
+    <PasswordInput
+      inputMode="numeric"
+      pattern="[0-9]*"
+      maxLength={6}
+      {...rest}
+      onChange={(e) => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        onChange?.(e);
+      }}
+    />
   );
 }
 

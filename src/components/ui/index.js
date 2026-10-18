@@ -1,5 +1,5 @@
 export { default as Button } from './Button';
-export { Field, Input, PasswordInput, PhoneInput, Select, Textarea, Toggle } from './Field';
+export { Field, Input, PasswordInput, PinInput, PhoneInput, Select, Textarea, Toggle } from './Field';
 export { Card, CardHead, SectionTitle } from './Card';
 export { default as Badge } from './Badge';
 export { default as Avatar } from './Avatar';
