@@ -2,7 +2,9 @@
 
 Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supabase** (Auth, PostgreSQL, Storage) dan di-hosting di **Cloudflare Pages**. Seluruhnya memakai paket gratis.
 
-**Fitur:** login nomor HP + PIN 6 angka (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas/keuangan transparan, pengumuman, kegiatan dengan kalender dan pendaftaran peserta, aspirasi & laporan, notifikasi realtime, pengurus, panel admin, dashboard desktop dan HP.
+**Fitur:** login nomor HP + PIN 6 angka (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga per gang, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas transparan dengan **persetujuan Ketua untuk pengeluaran besar**, pengumuman dan kegiatan (bisa untuk semua warga atau satu gang), aspirasi & laporan, **arsip surat & notulen**, notifikasi realtime, struktur pengurus dengan **hak akses per jabatan**, dashboard sesuai peran untuk desktop dan HP.
+
+Tampilan memakai **Plus Jakarta Sans** (judul) dan **Inter** (teks), ikon **Lucide**, dan dimuat dari paket npm (tanpa Google Fonts, sehingga CSP tetap ketat).
 
 ---
 
@@ -24,12 +26,31 @@ Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supab
 
 ## 1. Peran dan hak akses
 
-| Peran | Cara didapat | Bisa |
+Setiap pengurus punya **jabatan** (teks bebas, mis. "Humas Gang Melati") dan **peran** yang menentukan hak aksesnya. Peran diatur Ketua/Admin di **Pengurus > Atur pengurus**.
+
+| Peran | Fokus | Bisa |
 |---|---|---|
-| **Warga** | Daftar lalu disetujui pengurus | Lihat direktori, tagihan rumahnya sendiri, kas, pengumuman, kegiatan; kirim bukti bayar & laporan |
-| **Pengurus** | Admin menambahkan jabatan ke seorang warga (menu Admin > Data Warga > Ubah) | Verifikasi anggota, buat pengumuman & kegiatan, tanggapi laporan, lihat data warga |
-| **Bendahara** | Pengurus berjabatan mengandung kata *Bendahara* atau *Ketua* (atau Admin) | Terbitkan tagihan IPL, verifikasi bukti, catat tunai, kelola kas, data rumah |
-| **Admin** | Dijadikan admin lewat SQL (lihat bagian 5) | Semua di atas + ubah data/peran/nomor HP warga, atur ulang PIN, hapus akun, pengaturan paguyuban |
+| **Warga** | Anggota aktif | Lihat direktori, tagihan rumahnya sendiri, kas (ringkasan & transaksi yang sudah disetujui), pengumuman & kegiatan untuk semua warga dan gangnya; kirim bukti bayar & aspirasi; baca notulen yang dibagikan |
+| **Ketua** | Pengawasan & keputusan penting | Semua fitur pengurus, **menyetujui/menolak pengeluaran** di atas batas, mengatur susunan pengurus dan perannya |
+| **Wakil Ketua** | Membantu Ketua | Memantau semua modul (termasuk pengeluaran yang menunggu), verifikasi anggota, pengumuman, kegiatan, aspirasi, arsip. **Tidak** mencatat kas atau menyetujui pengeluaran |
+| **Sekretaris** | Administrasi | Verifikasi & ubah data anggota, pengumuman, agenda kegiatan, **surat masuk/keluar dan notulen** |
+| **Bendahara** | Keuangan | Tagihan IPL, verifikasi bukti transfer, data rumah, catat pemasukan/pengeluaran, laporan kas. Pengeluaran ≥ batas persetujuan (default Rp 1.000.000) menunggu keputusan Ketua dan belum mengurangi saldo |
+| **Humas Gang** | Satu gang (= blok) | Verifikasi pendaftar, ubah data warga, tanggapi aspirasi, dan buat pengumuman/kegiatan **khusus gangnya** |
+| **Seksi / anggota** | Tampil di struktur | Seperti warga, ditambah ringkasan pengurus |
+| **Admin** | Teknis | Semua hak + pengaturan paguyuban, import warga, ubah peran/nomor HP, atur ulang PIN |
+
+Ringkasan matriks (✓ = penuh, ◐ = terbatas):
+
+| Modul | Ketua | Wakil | Sekretaris | Bendahara | Humas Gang |
+|---|---|---|---|---|---|
+| Verifikasi & data anggota | ✓ | ✓ | ✓ | – | ◐ gangnya |
+| Pengumuman & kegiatan | ✓ | ✓ | ✓ | – | ◐ gangnya |
+| Aspirasi warga | ✓ | ✓ | lihat | – | ◐ gangnya |
+| IPL & kas | lihat + setujui | lihat | – | ✓ | – |
+| Surat & notulen | ✓ | ✓ | ✓ | lihat | lihat |
+| Atur pengurus | ✓ | – | – | – | – |
+
+Matriks yang sama tampil di **Ringkasan pengurus** sebagai rujukan. Catatan perubahan: sebelumnya jabatan berisi kata "Ketua" (termasuk Wakil Ketua) otomatis mendapat hak bendahara; kini hak keuangan hanya untuk Ketua, Bendahara, dan Admin.
 
 Semua aturan ini ditegakkan **di database (RLS)**, bukan hanya di tampilan. Kunci yang ada di frontend hanyalah kunci publik (anon/publishable).
 
@@ -41,23 +62,25 @@ paguyuban-warga/
 │  ├─ 01-skema.sql        # tabel, fungsi, trigger, RLS, storage (jalankan sekali)
 │  ├─ 02-data-awal.sql    # profil paguyuban, blok, kontak darurat (sesuaikan)
 │  ├─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
-│  └─ 04-import-warga.sql # import warga massal + wajib ganti PIN (setelah 03)
+│  ├─ 04-import-warga.sql # import warga massal + wajib ganti PIN (setelah 03)
+│  └─ 05-struktur-pengurus.sql # peran pengurus, hak per jabatan, persetujuan kas, arsip surat (setelah 04)
 ├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
-│  ├─ routes/guards.jsx   # penjaga rute (login, aktif, pengurus, bendahara, admin)
-│  ├─ context/            # Auth, Pengaturan, Toast, Notifikasi
-│  ├─ lib/                # supabase client, format, nomor HP, upload & kompres foto, galat
+│  ├─ routes/guards.jsx   # penjaga rute (login, aktif, hak per peran)
+│  ├─ context/            # Auth (hak akses), Pengaturan, Toast, Notifikasi, Tugas (antrean pengurus)
+│  ├─ lib/                # supabase client, akses (peran & matriks), format, nomor HP, upload foto, galat
 │  ├─ services/           # semua akses data Supabase, satu file per domain
 │  ├─ hooks/              # useAsync, useDebounce, useMediaQuery
 │  ├─ components/
 │  │  ├─ ui/              # Button, Field, Card, Modal, Tabs, ImagePicker, dst. (reusable)
 │  │  ├─ layout/          # Sidebar, Topbar, BottomNav, PageHeader, AppShell
-│  │  └─ illustrations/   # Logo dan ilustrasi perumahan (SVG)
+│  │  └─ illustrations/   # Logo dan motif atap (SVG)
 │  ├─ features/           # satu folder per modul layar
 │  │  ├─ auth/ beranda/ warga/ ipl/ keuangan/ pengumuman/ kegiatan/
-│  │  └─ laporan/ pengurus/ profil/ pengaturan/ menu/ notifikasi/ admin/
-│  └─ styles/             # tokens (warna), base, components, layout, auth, pages
+│  │  └─ laporan/ pengurus/ administrasi/ profil/ pengaturan/ menu/ notifikasi/ admin/
+│  └─ styles/             # tokens (warna, huruf, jarak), base, components, layout, pages
+├─ tests/                 # data contoh + konfigurasi Vite untuk uji tampilan tanpa Supabase
 ├─ .env.example
 └─ vite.config.js
 ```
@@ -75,6 +98,7 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
    - Tempel isi `supabase/01-skema.sql` lalu **Run**. Aman dijalankan ulang.
    - Tempel isi `supabase/03-pin-angka.sql` lalu **Run** (mengubah aturan sandi menjadi PIN 6 angka; **wajib** dijalankan setelah `01`).
    - Tempel isi `supabase/04-import-warga.sql` lalu **Run** (import warga massal dan kewajiban ganti PIN). **Jalankan sebelum men-deploy versi aplikasi yang memakainya.**
+   - Tempel isi `supabase/05-struktur-pengurus.sql` lalu **Run** (peran pengurus, hak akses per jabatan, persetujuan pengeluaran, arsip surat & notulen, pengumuman per gang). Aman dijalankan ulang dan **tidak menghapus data**; jabatan lama dipetakan otomatis ke peran (mis. "Humas Gang A" → Humas untuk blok A). **Wajib** sebelum men-deploy versi ini. Bila suatu saat Anda menjalankan ulang `01`, jalankan ulang `05` sesudahnya.
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)
@@ -103,7 +127,7 @@ Isi `.env.local`:
 | `VITE_AUTH_EMAIL_DOMAIN` | domain email internal, mis. `akun.paguyubananda.id`. Pakai subdomain dari domain Anda sendiri. **Jangan diubah setelah ada warga mendaftar.** |
 | `VITE_GOOGLE_LOGIN` | `true` bila login Google sudah diaktifkan (bagian 6), selain itu `false` |
 
-Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil build).
+Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil build), `npm run dev:mock` (menjalankan tampilan dengan data contoh tanpa Supabase; buka `http://127.0.0.1:5174/?as=ketua`, ganti `ketua` dengan `warga`, `wakil`, `sekretaris`, `bendahara`, `humas`, atau `admin`).
 
 ## 5. Membuat admin pertama
 
@@ -114,7 +138,7 @@ Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil 
    ```
    Hasilnya `Berhasil: akun sekarang Admin aktif.`
 3. Di aplikasi tekan **Periksa status** atau muat ulang. Anda masuk sebagai admin dan melihat menu **Panel Admin**.
-4. Mulai sekarang pendaftar baru muncul di **Admin > Verifikasi Anggota**. Tambahkan pengurus lewat **Data Warga > Ubah > Jabatan Pengurus**.
+4. Mulai sekarang pendaftar baru muncul di **Admin > Verifikasi Anggota**. Susun pengurus lewat **Pengurus > Atur pengurus**: pilih warga, tulis jabatan, pilih peran, dan untuk Humas pilih gangnya.
 
 Fungsi `jadikan_admin` tidak dapat dipanggil dari aplikasi, hanya dari SQL Editor.
 
@@ -167,6 +191,7 @@ Yang sudah diuji pada pengembangan (stack Postgres + GoTrue + PostgREST asli, de
 
 - **67 pemeriksaan database**: warga menunggu tidak melihat data, tidak bisa menaikkan peran sendiri, privasi nomor HP, isolasi tagihan antar rumah, bukti transfer hanya terbaca pemilik/bendahara, unggah ke folder orang lain ditolak, verifikasi → lunas → kas otomatis, kuota kegiatan, laporan hanya terlihat pelapor/pengurus, admin terakhir tidak bisa diturunkan, anon tidak bisa membaca data pribadi.
 - **60 pemeriksaan halaman** (30 rute × desktop & HP): tanpa galat dan tanpa scroll horizontal.
+- **Pembaruan tampilan & hak akses (migrasi 05):** 66 pemeriksaan database pada PGlite (Postgres) dengan RLS: peningkatan dari data jabatan lama, migrasi dijalankan dua kali, hak tiap peran, pendaftar dan aspirasi dibatasi per gang untuk Humas, notifikasi pengumuman per gang, alur persetujuan pengeluaran dan saldo, dokumen publik/internal, pengelolaan pengurus oleh Ketua. Ditambah 546 tangkapan layar (39 rute × 7 peran × desktop & HP) tanpa galat konsol dan tanpa scroll horizontal, serta uji alur: login, tolak pengeluaran, pencarian, form kas di HP, keluar.
 - **21 pemeriksaan alur browser**: daftar → menunggu → disetujui → tagihan terbit → bayar + unggah bukti → verifikasi → kas bertambah → pembatasan rute per peran → laporan dengan foto.
 
 **Batasan pengujian yang jujur:** pengujian di atas memakai Postgres, GoTrue (Supabase Auth), dan PostgREST asli, tetapi **Supabase Storage dan Realtime diganti stub sederhana** yang menjalankan kebijakan RLS `storage.objects` dari SQL yang sama. Aplikasi belum dicoba langsung di proyek Supabase Anda sendiri. Karena itu lakukan pengujian manual berikut sebagai penerimaan, terutama unggah foto, ubah PIN, dan notifikasi realtime.
@@ -175,7 +200,9 @@ Pengujian manual setelah deploy (disarankan):
 1. Daftar dengan HP lain → muncul di Verifikasi Anggota → setujui → warga bisa masuk.
 2. Bendahara: Kelola IPL > Tagihan per Periode > Terbitkan Tagihan.
 3. Warga: IPL > Bayar Sekarang > unggah foto > Kirim. Bendahara: Terima → cek menu Keuangan.
-4. Coba buka `/admin` dengan akun warga biasa: harus dialihkan ke beranda.
+4. Coba buka `/admin` dengan akun warga biasa: muncul keterangan "Halaman ini khusus pengurus berwenang".
+8. Bendahara mencatat pengeluaran Rp 1.500.000 → Ketua menerima notifikasi → setujui di **Kas paguyuban > Persetujuan** → saldo berkurang.
+9. Humas Gang membuat pengumuman "Khusus gang" → hanya warga gang itu yang menerima notifikasi.
 5. Pengaturan > Keamanan: ubah PIN, keluar, masuk lagi dengan PIN baru.
 6. Ubah Profil: unggah foto profil dan pastikan tampil.
 7. Buat pengumuman dari akun admin; akun warga harus menerima notifikasi.
