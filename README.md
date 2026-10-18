@@ -2,7 +2,7 @@
 
 Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supabase** (Auth, PostgreSQL, Storage) dan di-hosting di **Cloudflare Pages**. Seluruhnya memakai paket gratis.
 
-**Fitur:** login nomor HP + kata sandi (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas/keuangan transparan, pengumuman, kegiatan dengan kalender dan pendaftaran peserta, aspirasi & laporan, notifikasi realtime, pengurus, panel admin, dashboard desktop dan HP.
+**Fitur:** login nomor HP + PIN 6 angka (opsional Google), pendaftaran dengan persetujuan pengurus, direktori & profil warga, tagihan IPL, unggah bukti transfer, verifikasi bendahara, kas/keuangan transparan, pengumuman, kegiatan dengan kalender dan pendaftaran peserta, aspirasi & laporan, notifikasi realtime, pengurus, panel admin, dashboard desktop dan HP.
 
 ---
 
@@ -29,7 +29,7 @@ Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supab
 | **Warga** | Daftar lalu disetujui pengurus | Lihat direktori, tagihan rumahnya sendiri, kas, pengumuman, kegiatan; kirim bukti bayar & laporan |
 | **Pengurus** | Admin menambahkan jabatan ke seorang warga (menu Admin > Data Warga > Ubah) | Verifikasi anggota, buat pengumuman & kegiatan, tanggapi laporan, lihat data warga |
 | **Bendahara** | Pengurus berjabatan mengandung kata *Bendahara* atau *Ketua* (atau Admin) | Terbitkan tagihan IPL, verifikasi bukti, catat tunai, kelola kas, data rumah |
-| **Admin** | Dijadikan admin lewat SQL (lihat bagian 5) | Semua di atas + ubah data/peran/nomor HP warga, atur ulang kata sandi, hapus akun, pengaturan paguyuban |
+| **Admin** | Dijadikan admin lewat SQL (lihat bagian 5) | Semua di atas + ubah data/peran/nomor HP warga, atur ulang PIN, hapus akun, pengaturan paguyuban |
 
 Semua aturan ini ditegakkan **di database (RLS)**, bukan hanya di tampilan. Kunci yang ada di frontend hanyalah kunci publik (anon/publishable).
 
@@ -39,7 +39,8 @@ Semua aturan ini ditegakkan **di database (RLS)**, bukan hanya di tampilan. Kunc
 paguyuban-warga/
 ├─ supabase/
 │  ├─ 01-skema.sql        # tabel, fungsi, trigger, RLS, storage (jalankan sekali)
-│  └─ 02-data-awal.sql    # profil paguyuban, blok, kontak darurat (sesuaikan)
+│  ├─ 02-data-awal.sql    # profil paguyuban, blok, kontak darurat (sesuaikan)
+│  └─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
 ├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
@@ -67,10 +68,11 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
 1. Daftar di <https://supabase.com> dan klik **New project** (pilih region terdekat, mis. *Southeast Asia (Singapore)*). Simpan *database password*.
 2. **Atur autentikasi** (penting):
    - **Authentication > Sign In / Providers > Email**: biarkan *Enable Email provider* aktif, **matikan "Confirm email"**. Aplikasi memakai email internal `628xxx@domain-anda` hanya sebagai penampung nomor HP, tidak ada email yang dikirim.
-   - Di bagian yang sama atur **Minimum password length = 8**.
+   - Di bagian yang sama atur **Minimum password length = 6** (PIN warga terdiri dari 6 angka; nilai 8 akan membuat pendaftaran gagal).
    - **Authentication > URL Configuration**: *Site URL* = `https://domain-anda.id` (isi setelah domain siap; sementara boleh `http://localhost:5173`). Tambahkan di *Redirect URLs*: `http://localhost:5173/**` dan `https://domain-anda.id/**`.
 3. **Jalankan SQL**: buka **SQL Editor > New query**.
    - Tempel isi `supabase/01-skema.sql` lalu **Run**. Aman dijalankan ulang.
+   - Tempel isi `supabase/03-pin-angka.sql` lalu **Run** (mengubah aturan sandi menjadi PIN 6 angka; **wajib** dijalankan setelah `01`).
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)
@@ -114,7 +116,7 @@ Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil 
 
 Fungsi `jadikan_admin` tidak dapat dipanggil dari aplikasi, hanya dari SQL Editor.
 
-**Lupa kata sandi:** karena tidak memakai SMS/email, warga menghubungi admin. Admin membuka **Data Warga > Ubah > Atur Ulang Kata Sandi**, mengisi kata sandi sementara, lalu warga menggantinya di Pengaturan > Keamanan.
+**Lupa PIN:** karena tidak memakai SMS/email, warga menghubungi admin. Admin membuka **Data Warga > Ubah > Atur Ulang PIN**, mengisi PIN sementara (6 angka), lalu warga menggantinya di Pengaturan > Keamanan.
 
 ## 6. Login Google (opsional)
 
@@ -163,14 +165,14 @@ Yang sudah diuji pada pengembangan (stack Postgres + GoTrue + PostgREST asli, de
 - **60 pemeriksaan halaman** (30 rute × desktop & HP): tanpa galat dan tanpa scroll horizontal.
 - **21 pemeriksaan alur browser**: daftar → menunggu → disetujui → tagihan terbit → bayar + unggah bukti → verifikasi → kas bertambah → pembatasan rute per peran → laporan dengan foto.
 
-**Batasan pengujian yang jujur:** pengujian di atas memakai Postgres, GoTrue (Supabase Auth), dan PostgREST asli, tetapi **Supabase Storage dan Realtime diganti stub sederhana** yang menjalankan kebijakan RLS `storage.objects` dari SQL yang sama. Aplikasi belum dicoba langsung di proyek Supabase Anda sendiri. Karena itu lakukan pengujian manual berikut sebagai penerimaan, terutama unggah foto, ubah kata sandi, dan notifikasi realtime.
+**Batasan pengujian yang jujur:** pengujian di atas memakai Postgres, GoTrue (Supabase Auth), dan PostgREST asli, tetapi **Supabase Storage dan Realtime diganti stub sederhana** yang menjalankan kebijakan RLS `storage.objects` dari SQL yang sama. Aplikasi belum dicoba langsung di proyek Supabase Anda sendiri. Karena itu lakukan pengujian manual berikut sebagai penerimaan, terutama unggah foto, ubah PIN, dan notifikasi realtime.
 
 Pengujian manual setelah deploy (disarankan):
 1. Daftar dengan HP lain → muncul di Verifikasi Anggota → setujui → warga bisa masuk.
 2. Bendahara: Kelola IPL > Tagihan per Periode > Terbitkan Tagihan.
 3. Warga: IPL > Bayar Sekarang > unggah foto > Kirim. Bendahara: Terima → cek menu Keuangan.
 4. Coba buka `/admin` dengan akun warga biasa: harus dialihkan ke beranda.
-5. Pengaturan > Keamanan: ubah kata sandi, keluar, masuk lagi dengan kata sandi baru.
+5. Pengaturan > Keamanan: ubah PIN, keluar, masuk lagi dengan PIN baru.
 6. Ubah Profil: unggah foto profil dan pastikan tampil.
 7. Buat pengumuman dari akun admin; akun warga harus menerima notifikasi.
 
@@ -179,7 +181,7 @@ Pengujian manual setelah deploy (disarankan):
 - **Kunci**: hanya `anon/publishable` key di frontend. `service_role` tidak dipakai di mana pun.
 - **RLS aktif di semua tabel**; peran dicek lewat fungsi `is_aktif/is_pengurus/is_bendahara/is_admin`. Kolom peran/status/rumah dilindungi trigger sehingga warga tidak bisa menaikkan hak sendiri.
 - **Data pribadi**: nomor HP & email ada di tabel terpisah (`warga_kontak`) yang hanya dibaca pemilik dan pengurus. Warga lain melihatnya hanya jika pemilik mengizinkan (menu Privasi).
-- **Operasi sensitif lewat fungsi database** (`SECURITY DEFINER`, `search_path` dikunci): persetujuan, verifikasi pembayaran, penerbitan tagihan, reset sandi, hapus akun. Pembayaran tidak bisa dibuat langsung ke tabel.
+- **Operasi sensitif lewat fungsi database** (`SECURITY DEFINER`, `search_path` dikunci): persetujuan, verifikasi pembayaran, penerbitan tagihan, reset PIN, hapus akun. Pembayaran tidak bisa dibuat langsung ke tabel.
 - **File**: bucket `bukti` & `konten` privat, diakses lewat signed URL berumur 1 jam; batas 3 MB dan hanya JPG/PNG/WEBP (+PDF untuk bukti). Foto dikompres di perangkat sebelum diunggah.
 - **Validasi**: di formulir (UX) dan di database (`CHECK`, regex, panjang maksimum) sehingga tetap aman bila API dipanggil langsung.
 - **Header**: CSP, X-Frame-Options, HSTS, dan lainnya lewat `public/_headers`.
@@ -194,7 +196,7 @@ Angka berikut adalah ketentuan yang berlaku saat dokumen ini dibuat; **periksa h
 | **Supabase Free** | Database 500 MB, Storage 1 GB, transfer 5 GB/bulan, 50.000 pengguna aktif bulanan, ukuran upload maks. 50 MB per file | Cukup untuk ratusan KK. Foto dikompres (±100–300 KB) agar muat |
 | | **Project di-pause bila tidak ada aktivitas ±1 minggu** | Selama dipakai warga tidak terjadi. Bila ter-pause, tekan *Restore* di dashboard |
 | | Tidak ada backup otomatis yang bisa dipulihkan sendiri di paket gratis | Ekspor rutin: **Table Editor > Export CSV**, atau `pg_dump` dari *Connect* |
-| | SMS OTP butuh penyedia berbayar | Itu sebabnya login memakai nomor HP + kata sandi |
+| | SMS OTP butuh penyedia berbayar | Itu sebabnya login memakai nomor HP + PIN |
 | **Cloudflare Pages Free** | 500 build/bulan, 1 build berjalan, bandwidth situs statis tanpa batas | Lebih dari cukup |
 | **GitHub Free** | Repository privat tak terbatas | Cukup |
 | **Open-Meteo** (cuaca di dashboard) | Gratis tanpa kunci untuk pemakaian non-komersial | Jika gagal, widget cuaca disembunyikan |
