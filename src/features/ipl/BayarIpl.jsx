@@ -8,7 +8,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { tagihanRumah, kirimPembayaran } from '../../services/ipl';
-import { uploadFile, removeFile } from '../../lib/storage';
+import { uploadFile, removeFile, publicUrl } from '../../lib/storage';
 import { rupiah, periode } from '../../lib/format';
 
 export default function BayarIpl() {
@@ -74,7 +74,13 @@ export default function BayarIpl() {
                   <div className="grow" style={{ minWidth: 0 }}><div className="no">{pengaturan.bank_norek}</div><div className="text-sm muted">a.n. {pengaturan.bank_atas_nama}</div></div>
                   <Button variant="secondary" size="sm" icon={Copy} onClick={() => salin(pengaturan.bank_norek)}>Salin</Button>
                 </div>
-              ) : <Callout tone="warn">Rekening belum diatur. Hubungi bendahara untuk pembayaran tunai.</Callout>}
+              ) : !pengaturan.qris_path && <Callout tone="warn">Rekening belum diatur. Hubungi bendahara untuk pembayaran tunai.</Callout>}
+              {pengaturan.qris_path && (
+                <figure className="qris" style={{ margin: '12px 0 0', textAlign: 'center' }}>
+                  <img src={publicUrl(pengaturan.qris_path)} alt="Kode QRIS paguyuban" style={{ maxWidth: 260, width: '100%', borderRadius: 12, border: '1px solid var(--line, #e5e7eb)' }} loading="lazy" />
+                  <figcaption className="text-sm muted">Atau bayar dengan QRIS. Nominal: <b>{rupiah(total)}</b></figcaption>
+                </figure>
+              )}
             </div></div>
             <div className="step"><span className="n">3</span><div className="body stack">
               <h3 style={{ margin: '4px 0 0' }}>Unggah bukti transfer</h3>

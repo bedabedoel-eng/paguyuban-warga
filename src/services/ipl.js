@@ -41,6 +41,16 @@ export async function pembayaranMenunggu({ batas = 50 } = {}) {
   return { rows: rows.map((x) => ({ ...x, tagihan: t.filter((y) => y.pembayaran_id === x.id) })), total: r.count ?? rows.length };
 }
 
+/** Rumah yang menunggak (bendahara). Kosong bila migrasi 09 belum dijalankan. */
+export async function tunggakanIpl() {
+  const r = await supabase.rpc('tunggakan_ipl');
+  if (r.error) {
+    if (r.error.code === 'PGRST202' || r.error.code === '42883') return null;
+    throw r.error;
+  }
+  return r.data || [];
+}
+
 export const verifikasiPembayaran = async (id, terima, alasan) =>
   unwrap(await supabase.rpc('verifikasi_pembayaran', { p_id: id, p_terima: terima, p_alasan: alasan || null }));
 export const tandaiLunasTunai = async (id) => unwrap(await supabase.rpc('tandai_lunas_tunai', { p_tagihan: id }));

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Trash2, Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, CardHead, CardBody, ImagePicker, Input, LineTabs, IconButton, Field, useConfirm } from '../../components/ui';
+import { Button, Card, CardHead, CardBody, ImagePicker, Input, LineTabs, IconButton, Field, Toggle, useConfirm } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -15,6 +15,7 @@ function Umum() {
   const toast = useToast();
   const [f, setF] = useState({ batas_persetujuan: 1000000, ...pengaturan });
   const [foto, setFoto] = useState(null);
+  const [qris, setQris] = useState(null);
   const [loading, setLoading] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   async function simpan(e) {
@@ -24,15 +25,19 @@ function Umum() {
     try {
       let foto_lingkungan = f.foto_lingkungan || null;
       if (foto) { foto_lingkungan = await uploadFile('publik', 'lingkungan', foto, { maxSize: 1600 }); if (pengaturan.foto_lingkungan) removeFile('publik', pengaturan.foto_lingkungan).catch(() => {}); }
+      let qris_path = f.qris_path || null;
+      if (qris) { qris_path = await uploadFile('publik', 'qris', qris, { maxSize: 1600, quality: 0.9 }); if (pengaturan.qris_path) removeFile('publik', pengaturan.qris_path).catch(() => {}); }
       const data = {
         nama_paguyuban: f.nama_paguyuban.trim(), tagline: f.tagline.trim(), nama_lingkungan: f.nama_lingkungan.trim(), rt: f.rt.trim(), rw: f.rw.trim(),
         alamat: f.alamat.trim(), luas_wilayah: f.luas_wilayah.trim(), latitude: f.latitude === '' || f.latitude == null ? null : Number(f.latitude), longitude: f.longitude === '' || f.longitude == null ? null : Number(f.longitude),
         tarif_ipl: Math.max(0, Math.round(Number(f.tarif_ipl) || 0)), jatuh_tempo_hari: Math.min(28, Math.max(1, Number(f.jatuh_tempo_hari) || 10)),
         bank_nama: f.bank_nama.trim(), bank_norek: f.bank_norek.trim(), bank_atas_nama: f.bank_atas_nama.trim(), foto_lingkungan,
       };
+      if ('qris_path' in pengaturan) data.qris_path = qris_path;
+      if ('tagihan_otomatis' in pengaturan) data.tagihan_otomatis = !!f.tagihan_otomatis;
       if ('batas_persetujuan' in pengaturan) data.batas_persetujuan = Math.max(0, Math.round(Number(f.batas_persetujuan) || 0));
       await simpanPengaturan(data);
-      await reload(); setFoto(null); toast.success('Pengaturan disimpan');
+      await reload(); setFoto(null); setQris(null); toast.success('Pengaturan disimpan');
     } catch (e2) { toast.error(e2); } finally { setLoading(false); }
   }
   return (
@@ -65,6 +70,17 @@ function Umum() {
           <Input label="Nama bank" value={f.bank_nama} onChange={set('bank_nama')} maxLength={40} />
           <Input label="Nomor rekening" value={f.bank_norek} onChange={set('bank_norek')} maxLength={40} />
           <Input fieldClass="span-2" label="Atas nama" value={f.bank_atas_nama} onChange={set('bank_atas_nama')} maxLength={80} />
+          {'qris_path' in pengaturan && (
+            <Field label="Gambar QRIS" optional className="span-2" hint="Tampil di halaman Bayar IPL agar warga bisa membayar lewat aplikasi e-wallet/mobile banking.">
+              <ImagePicker file={qris} onChange={setQris} previewUrl={pengaturan.qris_path ? publicUrl(pengaturan.qris_path) : null} />
+            </Field>
+          )}
+          {'tagihan_otomatis' in pengaturan && (
+            <div className="span-2 row between" style={{ gap: 12 }}>
+              <div><div className="strong">Terbitkan tagihan IPL otomatis</div><div className="text-sm muted">Setiap tanggal 1 (07.05 WIB) tagihan bulan itu dibuat untuk semua rumah dihuni dan warga diberi tahu. Perlu pg_cron aktif di Supabase (lihat panduan 09).</div></div>
+              <Toggle checked={!!f.tagihan_otomatis} onChange={(v) => setF((x) => ({ ...x, tagihan_otomatis: v }))} label="Tagihan IPL otomatis" />
+            </div>
+          )}
         </CardBody>
       </Card>
       <div className="form-actions"><Button type="submit" icon={Save} loading={loading}>Simpan pengaturan</Button></div>

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Check, Eye, X, FilePlus2, Banknote, Receipt, FileCheck2 } from 'lucide-react';
+import { Check, Eye, X, FilePlus2, Banknote, Receipt, FileCheck2, MessageCircle, Download, AlertTriangle } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, SegTabs, StorageImage, Textarea, Select, Chips, DataTable, Stat, useConfirm } from '../../components/ui';
+import { Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, SegTabs, StorageImage, Textarea, Select, SearchInput, Chips, DataTable, Stat, useConfirm } from '../../components/ui';
 import { useToast } from '../../context/ToastContext';
 import { useTugas } from '../../context/TugasContext';
 import { useAsync } from '../../hooks/useAsync';
-import { buatTagihan, tagihanPeriode, periodeTersedia, pembayaranMenunggu, verifikasiPembayaran, tandaiLunasTunai } from '../../services/ipl';
+import { buatTagihan, tagihanPeriode, periodeTersedia, pembayaranMenunggu, verifikasiPembayaran, tandaiLunasTunai, tunggakanIpl } from '../../services/ipl';
+import { useSettings } from '../../context/SettingsContext';
+import { tautanPengingat, KOLOM_TUNGGAKAN, ringkasTunggakan } from '../../lib/tunggakan';
+import { toCsv, unduhBerkas, stempelTanggal } from '../../lib/csv';
 import { signedUrl } from '../../lib/storage';
 import { awalBulan, periode, rupiah, relatif } from '../../lib/format';
 import { STATUS_TAGIHAN } from '../../lib/constants';
@@ -122,6 +125,56 @@ function Periode() {
   );
 }
 
+function Tunggakan() {
+  const { pengaturan } = useSettings();
+  const s = useAsync(tunggakanIpl, []);
+  const [blok, setBlok] = useState('');
+  const [cari, setCari] = useState('');
+  const semua = s.data || [];
+  const ring = useMemo(() => ringkasTunggakan(semua), [semua]);
+  const rows = useMemo(() => semua.filter((t) => (!blok || (t.blok || '-') === blok)
+    && (!cari || `${t.kode} ${t.nama || ''} ${t.gang_nama || ''}`.toLowerCase().includes(cari.trim().toLowerCase()))), [semua, blok, cari]);
+  const totalTampil = rows.reduce((a, t) => a + Number(t.total || 0), 0);
+  const cols = [
+    { key: 'kode', label: 'Rumah', sort: (t) => t.kode, render: (t) => <span><span className="cell-main">{t.kode}</span>{t.gang_nama && <span className="text-xs muted"> · {t.gang_nama}</span>}</span> },
+    { key: 'nama', label: 'Penghuni', sort: (t) => t.nama || '', render: (t) => t.nama || <span className="muted">-</span> },
+    { key: 'bulan', label: 'Menunggak', className: 'right', sort: (t) => t.jumlah_bulan, render: (t) => <span>{t.jumlah_bulan} bln <span className="text-xs muted">sejak {periode(t.periode_tertua, true)}</span></span> },
+    { key: 'total', label: 'Total', className: 'right', sort: (t) => Number(t.total), render: (t) => <span className="money out">{rupiah(t.total)}</span> },
+    { key: 'aksi', label: '', className: 'actions', render: (t) => {
+      const u = tautanPengingat(t, pengaturan);
+      return u
+        ? <Button size="xs" variant="secondary" icon={MessageCircle} href={u} target="_blank" rel="noopener noreferrer">Ingatkan</Button>
+        : <span className="text-xs muted">Tanpa HP</span>;
+    } },
+  ];
+  const ekspor = () => unduhBerkas(`tunggakan-ipl-${stempelTanggal()}.csv`, toCsv(rows, KOLOM_TUNGGAKAN));
+
+  if (s.loading && !s.data) return <Card pad><SkeletonRows n={4} avatar={false} /></Card>;
+  if (s.error) return <ErrorState error={s.error} onRetry={s.reload} />;
+  if (s.data === null) return <Callout tone="warn">Laporan tunggakan belum aktif. Jalankan <code>supabase/09-fitur-bendahara.sql</code> di SQL Editor Supabase.</Callout>;
+  return (
+    <div className="stack">
+      <div className="stats">
+        <Stat label="Rumah menunggak" value={ring.rumah} sub="lewat jatuh tempo" />
+        <Stat label="Total tunggakan" value={rupiah(ring.total)} />
+        <Stat label="Blok terdampak" value={Object.keys(ring.blok).length} />
+      </div>
+      <div className="toolbar">
+        <Chips value={blok} onChange={setBlok} tabs={[{ value: '', label: 'Semua', n: ring.rumah }, ...Object.entries(ring.blok).sort(([a], [b]) => a.localeCompare(b, 'id', { numeric: true })).map(([b, v]) => ({ value: b, label: `Blok ${b}`, n: v.rumah }))]} />
+        <span className="grow" />
+        <SearchInput className="sm" value={cari} onChange={setCari} placeholder="Cari rumah / nama" label="Cari tunggakan" />
+        <Button size="sm" variant="secondary" icon={Download} onClick={ekspor} disabled={!rows.length}>Ekspor CSV</Button>
+      </div>
+      <Card className="flush">
+        <DataTable columns={cols} rows={rows} rowKey="rumah_id" caption="Rumah yang menunggak IPL"
+          empty={<EmptyState icon={AlertTriangle} title={semua.length ? 'Tidak ada hasil' : 'Tidak ada tunggakan'} text={semua.length ? 'Coba ubah filter atau kata kunci.' : 'Semua tagihan yang sudah jatuh tempo telah dibayar.'} />} />
+        {rows.length > 0 && <div className="card-foot row between text-sm"><span className="muted">{rows.length} rumah</span><span>Total <b className="money out">{rupiah(totalTampil)}</b></span></div>}
+      </Card>
+      <p className="text-xs muted">Tombol Ingatkan membuka WhatsApp dengan pesan yang sudah terisi; pesan baru terkirim setelah Anda menekan kirim.</p>
+    </div>
+  );
+}
+
 export default function KelolaIpl() {
   const { stat, refresh } = useTugas();
   const { hak } = useAuth();
@@ -130,8 +183,8 @@ export default function KelolaIpl() {
     <div className="page medium">
       <PageHeader back title="Kelola IPL" desc="Verifikasi bukti transfer, terbitkan tagihan bulanan, dan catat pembayaran tunai." />
       <Callout tone="info">IPL yang Anda kelola: <b>{labelLingkupBlok(hak.ipl_blok)}</b>. IPL tiap blok hanya terlihat oleh pengurus blok tersebut.</Callout>
-      <SegTabs value={tab} onChange={setTab} tabs={[{ value: 'menunggu', label: 'Bukti transfer', count: stat?.pembayaran_menunggu }, { value: 'periode', label: 'Tagihan per bulan' }]} />
-      {tab === 'menunggu' ? <Menunggu onChanged={refresh} /> : <Periode />}
+      <SegTabs value={tab} onChange={setTab} tabs={[{ value: 'menunggu', label: 'Bukti transfer', count: stat?.pembayaran_menunggu }, { value: 'periode', label: 'Tagihan per bulan' }, { value: 'tunggakan', label: 'Tunggakan' }]} />
+      {tab === 'menunggu' ? <Menunggu onChanged={refresh} /> : tab === 'periode' ? <Periode /> : <Tunggakan />}
     </div>
   );
 }

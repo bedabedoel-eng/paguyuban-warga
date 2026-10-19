@@ -195,6 +195,49 @@ select uji.cek((select count(*) from public.transaksi_kas where status = 'menung
 select uji.cek((public.ringkasan_transaksi() ->> 'jumlah')::int = (select count(*) from public.transaksi_kas), 'ringkasan_transaksi warga mengikuti RLS');
 select uji.kembali();
 
+
+-- ---------------------------------------------------------------------
+-- 6. Laporan tunggakan & tagihan otomatis (migrasi 09)
+-- ---------------------------------------------------------------------
+-- Data: rumah A punya 2 tagihan lama belum bayar, 1 lunas, 1 menunggu verifikasi (tidak dihitung)
+delete from public.tagihan_ipl where rumah_id = (select rumah_id from public.warga where id = 'a0000000-0000-0000-0000-000000000004') and periode >= '2026-01-01';
+insert into public.tagihan_ipl (rumah_id, periode, nominal, status)
+  select w.rumah_id, p.periode, 100000, p.status
+  from public.warga w, (values ('2020-01-01'::date, 'belum_bayar'), ('2020-02-01', 'belum_bayar'), ('2020-03-01', 'lunas'), ('2020-04-01', 'menunggu_verifikasi')) p(periode, status)
+  where w.id = 'a0000000-0000-0000-0000-000000000004';
+update public.warga_kontak set nomor_hp = '6281234567890' where warga_id = 'a0000000-0000-0000-0000-000000000004';
+
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select uji.cek((select count(*) from public.tunggakan_ipl()) = 0, 'warga biasa tidak dapat memakai laporan tunggakan (hasil kosong)');
+select uji.kembali();
+
+select uji.sebagai('a0000000-0000-0000-0000-000000000002');
+select uji.cek((select count(*) from public.tunggakan_ipl()) = 0, 'Wakil Ketua bukan bendahara: laporan tunggakan kosong');
+select uji.kembali();
+
+select uji.sebagai('a0000000-0000-0000-0000-000000000003');
+select uji.cek((select jumlah_bulan from public.tunggakan_ipl() where kode = 'A-10') = 2, 'tunggakan: hanya belum_bayar lewat jatuh tempo yang dihitung (lunas & diperiksa tidak)');
+select uji.cek((select total from public.tunggakan_ipl() where kode = 'A-10') = 200000, 'tunggakan: total nominal benar');
+select uji.cek((select periode_tertua from public.tunggakan_ipl() where kode = 'A-10') = '2020-01-01', 'tunggakan: periode tertua benar');
+select uji.cek((select nama from public.tunggakan_ipl() where kode = 'A-10') = 'Warga Rumah A', 'tunggakan: nama kepala keluarga/penghuni terbaca');
+select uji.cek((select nomor_hp from public.tunggakan_ipl() where kode = 'A-10') = '6281234567890', 'tunggakan: nomor HP terbaca oleh bendahara untuk pengingat');
+select uji.harus_gagal($q$select public.buat_tagihan_otomatis()$q$, 'bendahara tidak dapat memanggil buat_tagihan_otomatis langsung', '42501');
+select uji.kembali();
+
+-- Tagihan otomatis: mati bawaan, hidup bila saklar dinyalakan, tidak ganda
+do $q$
+declare v_periode date := date_trunc('month', (now() at time zone 'Asia/Jakarta'))::date; v_harap int; v_hasil int;
+begin
+  perform uji.cek(public.buat_tagihan_otomatis() = 0, 'tagihan otomatis: saklar mati = tidak membuat apa pun');
+  update public.pengaturan set tagihan_otomatis = true where id = 1;
+  select count(*) into v_harap from public.rumah r where r.status = 'dihuni'
+    and not exists (select 1 from public.tagihan_ipl t where t.rumah_id = r.id and t.periode = v_periode);
+  v_hasil := public.buat_tagihan_otomatis();
+  perform uji.cek(v_hasil = v_harap and v_hasil > 0, 'tagihan otomatis: menerbitkan untuk rumah dihuni yang belum punya tagihan bulan ini');
+  perform uji.cek(public.buat_tagihan_otomatis() = 0, 'tagihan otomatis: dijalankan ulang tidak membuat tagihan ganda');
+  perform uji.cek((select count(*) from public.notifikasi where jenis = 'ipl' and judul like 'Tagihan IPL%') > 0, 'tagihan otomatis: warga menerima notifikasi');
+end $q$;
+
 rollback;
 \o
 \echo

@@ -115,6 +115,17 @@ function rpc(name, params) {
     ringkasan_kas: () => ({ saldo, pemasukan_bulan: 1575000, pengeluaran_bulan: 920000, menunggu_jumlah: h.lihat_kas_detail ? menunggu.length : null, menunggu_nominal: h.lihat_kas_detail ? menunggu.reduce((a, k) => a + k.jumlah, 0) : null }),
     kontak_warga: () => { const k = F.KONTAK.find((x) => x.warga_id === params.p_id); return [{ nomor_hp: k?.tampilkan_hp || h.pengurus ? k?.nomor_hp : null, email: k?.email }]; },
     buat_tagihan_ipl: () => 0,
+    tunggakan_ipl: () => {
+      if (!h.bendahara) return [];
+      const hari = new Date().toISOString().slice(0, 10);
+      const per = {};
+      F.TAGIHAN.filter((t) => t.status === 'belum_bayar' && (t.jatuh_tempo || t.periode) < hari).forEach((t) => { (per[t.rumah_id] ||= []).push(t); });
+      return Object.entries(per).map(([rid, ts]) => {
+        const r = F.RUMAH.find((x) => x.id === rid); const w = F.WARGA.find((x) => x.rumah_id === rid && x.status === 'aktif'); const k = F.KONTAK.find((x) => x.warga_id === w?.id);
+        const ps = ts.map((t) => t.periode).sort();
+        return { rumah_id: rid, kode: r.kode, blok: r.blok, gang_id: w?.gang_id || null, gang_nama: w?.gang_id ? (F.GANG.find((g) => g.id === w.gang_id)?.nama || null) : null, jumlah_bulan: ts.length, total: ts.reduce((a, t) => a + t.nominal, 0), periode_tertua: ps[0], periode_terbaru: ps[ps.length - 1], nama: w?.nama || null, nomor_hp: k?.nomor_hp || null };
+      }).sort((a, b) => b.total - a.total);
+    },
     periode_ipl_tersedia: () => [...new Set(F.TAGIHAN.map((t) => t.periode))].sort().reverse(),
     ringkasan_transaksi: () => {
       const rs = rls('transaksi_kas', [...F.KAS]).filter((k) => (!params.p_jenis || k.jenis === params.p_jenis) && (!params.p_dari || k.tanggal >= params.p_dari) && (!params.p_sampai || k.tanggal <= params.p_sampai));
