@@ -4,7 +4,7 @@ import {
   Wallet, ShieldCheck, CircleCheck, Clock, CircleAlert, ChevronRight, House, MapPin,
 } from 'lucide-react';
 import { Card, CardHead, CardBody, Button, Stat, SkeletonRows, EmptyState, Skeleton } from '../../components/ui';
-import { Roofline } from '../../components/illustrations/Logo';
+import HouseScene from '../../components/illustrations/HouseScene';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTugas } from '../../context/TugasContext';
@@ -89,7 +89,7 @@ export default function Beranda() {
           )}
           {hak.pengurus && <Button variant="accent" to="/admin">Ringkasan pengurus</Button>}
         </div>
-        <Roofline />
+        <div className="greet-scene" aria-hidden="true"><HouseScene variant="dark" /></div>
       </section>
 
       <MenuCepat items={menuCepatWarga()} />

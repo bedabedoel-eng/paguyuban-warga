@@ -57,23 +57,55 @@
 
 /* ---------- Beranda ---------- */
 .greet {
-  position: relative; overflow: hidden; border-radius: var(--r-xl); background: var(--hutan-900); color: #fff;
-  padding: 24px 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  position: relative; overflow: hidden; isolation: isolate; border-radius: var(--r-xl); color: #fff;
+  padding: 30px 32px; min-height: 176px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  background:
+    radial-gradient(520px 260px at 82% 8%, rgba(230,198,122,.38), transparent 62%),
+    radial-gradient(420px 300px at 0% 110%, rgba(46,160,110,.28), transparent 60%),
+    linear-gradient(135deg, var(--hutan-950) 0%, var(--hutan-800) 55%, #1f6b4f 100%);
+  box-shadow: 0 10px 28px -14px rgba(14,46,35,.7);
 }
-.greet .roofline { width: 520px; right: -60px; bottom: -64px; opacity: .22; }
+/* matahari emas + titik halus */
+.greet::before {
+  content: ''; position: absolute; z-index: -1; right: 9%; top: -70px; width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff3c9, var(--kunyit-300) 45%, rgba(230,198,122,0) 72%); opacity: .55;
+}
+.greet::after {
+  content: ''; position: absolute; z-index: -1; inset: 0; opacity: .5;
+  background-image: radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.4px); background-size: 18px 18px;
+  -webkit-mask-image: linear-gradient(90deg, #000, transparent 70%); mask-image: linear-gradient(90deg, #000, transparent 70%);
+}
+.greet-scene {
+  position: absolute; z-index: -1; right: 0; bottom: 0; width: min(58%, 520px); height: 100%; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 38%); mask-image: linear-gradient(90deg, transparent, #000 38%);
+  opacity: .95;
+}
 .greet .t { flex: 1 1 280px; min-width: 0; position: relative; z-index: 1; }
-.greet .hello { color: #a9c4b7; font-size: var(--fs-sm); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.greet h1 { color: #fff; font-size: var(--fs-3xl); margin-top: 4px; overflow-wrap: anywhere; }
-.greet .role { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 4px 10px 4px 8px; border-radius: var(--r-full); background: rgba(255,255,255,.1); color: #e8f1ec; font-size: var(--fs-xs); font-weight: 600; }
+.greet .hello { color: #cfe3d8; font-size: var(--fs-sm); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.greet .hello > span:first-child { font-weight: 700; color: var(--kunyit-300); }
+.greet h1 { color: #fff; font-size: var(--fs-3xl); margin-top: 4px; overflow-wrap: anywhere; letter-spacing: -.02em; text-shadow: 0 2px 14px rgba(0,0,0,.25); }
+.greet .role {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 5px 12px 5px 9px; border-radius: var(--r-full);
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #f2f8f4; font-size: var(--fs-xs); font-weight: 600;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
 .greet .role svg { color: var(--kunyit-300); }
-.greet .side { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; }
-.greet .weather { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-lg); background: rgba(255,255,255,.08); }
+.greet .side { position: relative; z-index: 1; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.greet .weather {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: var(--r-lg);
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
 .greet .weather b { font-family: var(--font-display); font-size: var(--fs-xl); }
-.greet .weather span { display: block; font-size: var(--fs-xs); color: #a9c4b7; }
+.greet .weather span { display: block; font-size: var(--fs-xs); color: #cfe3d8; }
 @media (max-width: 767px) {
-  .greet { padding: 20px; border-radius: var(--r-lg); gap: 14px; }
+  .greet { padding: 22px 20px; border-radius: var(--r-lg); gap: 14px; min-height: 0; }
   .greet h1 { font-size: var(--fs-2xl); }
-  .greet .roofline { width: 360px; bottom: -48px; right: -90px; }
+  .greet-scene { width: 100%; opacity: .55; }
+  .greet::before { right: -40px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .greet::before { animation: greet-glow 7s ease-in-out infinite alternate; }
+  @keyframes greet-glow { from { transform: translateY(0) scale(1); } to { transform: translateY(10px) scale(1.06); } }
 }
 
 /* Tugas pengurus */
