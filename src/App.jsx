@@ -20,6 +20,7 @@ const DetailWarga = lazy(() => import('./features/warga/DetailWarga'));
 const TagihanIpl = lazy(() => import('./features/ipl/TagihanIpl'));
 const BayarIpl = lazy(() => import('./features/ipl/BayarIpl'));
 const RiwayatIpl = lazy(() => import('./features/ipl/RiwayatIpl'));
+const Polling = lazy(() => import('./features/polling/Polling'));
 const Pengumuman = lazy(() => import('./features/pengumuman/Pengumuman'));
 const DetailPengumuman = lazy(() => import('./features/pengumuman/DetailPengumuman'));
 const FormPengumuman = lazy(() => import('./features/pengumuman/FormPengumuman'));
@@ -80,6 +81,7 @@ export default function App() {
                     <Route path="ipl" element={<TagihanIpl />} />
                     <Route path="ipl/bayar" element={<BayarIpl />} />
                     <Route path="ipl/riwayat" element={<RiwayatIpl />} />
+                    <Route path="polling" element={<Polling />} />
                     <Route path="pengumuman" element={<Pengumuman />} />
                     <Route path="pengumuman/:id" element={<DetailPengumuman />} />
                     <Route path="kegiatan" element={<Kegiatan />} />

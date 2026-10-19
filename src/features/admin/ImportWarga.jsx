@@ -8,7 +8,7 @@ import { parseCsv, CONTOH_CSV } from '../../lib/csv';
 import { normalizeHp, formatHp } from '../../lib/phone';
 import { importWarga } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
-import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
+import { POLA_NOMOR_RUMAH, gangDiBlok, normalisasiAlamat } from '../../lib/alamat';
 import { pernahMenikah } from '../../lib/constants';
 import { normalisasiLinkFoto } from '../../lib/image';
 
@@ -19,8 +19,9 @@ const ALIAS = {
   nama: ['nama', 'nama lengkap', 'name'],
   hp: ['hp', 'no hp', 'nomor hp', 'no_hp', 'nomor_hp', 'telepon', 'telp', 'wa', 'whatsapp'],
   blok: ['blok', 'block'],
+  sub: ['sub_blok', 'sub blok', 'subblok', 'sub', 'kluster', 'cluster', 'klaster'],
   no_rumah: ['no_rumah', 'no rumah', 'nomor rumah', 'nomor_rumah', 'no', 'nomor'],
-  rumah: ['rumah', 'blok_rumah', 'blok rumah', 'alamat'],
+  rumah: ['rumah', 'blok_rumah', 'blok rumah', 'alamat', 'alamat rumah'],
   gang: ['jalan', 'gang', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
   pekerjaan: ['pekerjaan', 'keahlian', 'profesi'],
   kepala_keluarga: ['kepala_keluarga', 'kepala keluarga', 'kk'],
@@ -48,13 +49,10 @@ function olahBaris(rows, blokKode, gang = []) {
   const sudah = new Set();
   const list = data.map((r, n) => {
     const ambil = (k) => (idx[k] >= 0 ? String(r[idx[k]] ?? '').trim() : '');
-    let blok = ambil('blok').toUpperCase();
-    let no = ambil('no_rumah').toUpperCase();
-    if ((!blok || !no) && idx.rumah >= 0) {
-      const r = ambil('rumah').toUpperCase().replace(/^BLOK/, '').replace(/\s+/g, '');
-      const m = r.match(/^([A-Z0-9]{1,5})-(.+)$/) || r.match(/^([A-Z]{1,5})([0-9].*)$/);
-      if (m) { blok = blok || m[1]; no = no || m[2]; }
-    }
+    // Blok "A3" + nomor "5", "Blok A 3 No.5", "A3-5", dst. dinormalkan menjadi blok A, sub-blok 3, nomor 5
+    const al = normalisasiAlamat({ blok: ambil('blok'), sub: ambil('sub'), no: ambil('no_rumah'), rumah: ambil('rumah') }, blokKode);
+    const { blok, sub, nomor } = al;
+    const no = al.no_rumah;
     const hp = normalizeHp(ambil('hp'));
     const nama = ambil('nama');
     const namaGang = ambil('gang');
@@ -69,14 +67,15 @@ function olahBaris(rows, blokKode, gang = []) {
     if (nama.length < 2) galat = 'Nama kosong/terlalu pendek';
     else if (!hp) galat = 'Nomor HP tidak valid';
     else if (!blokKode.includes(blok)) galat = `Blok "${blok || '-'}" tidak dikenal`;
-    else if (!POLA_NOMOR_RUMAH.test(no)) galat = 'Nomor rumah tidak valid';
+    else if (!nomor) galat = 'Nomor rumah kosong';
+    else if (!POLA_NOMOR_RUMAH.test(no)) galat = 'Nomor rumah tidak valid (maks. 10 karakter termasuk sub-blok)';
     else if (namaGang && !g) galat = `Jalan "${namaGang}" belum ada di Blok ${blok}`;
     else if (sudah.has(hp)) galat = 'Nomor HP ganda di berkas';
     else if (nikah === '?') galat = `Status pernikahan "${nikahMentah}" tidak dikenal`;
     else if (anak && (!/^\d{1,2}$/.test(anak) || Number(anak) > 30)) galat = 'Jumlah anak: angka 0 sampai 30';
     else if (galatFoto) galat = galatFoto;
     if (hp) sudah.add(hp);
-    return { baris: n + 2, nama, hp, blok, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', foto, galat };
+    return { baris: n + 2, nama, hp, blok, sub_blok: sub, nomor, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', foto, galat };
   });
   return { kurang: [], list };
 }
@@ -144,7 +143,9 @@ export default function ImportWarga() {
     { key: 'baris', label: 'Baris', sort: (x) => x.baris, render: (x) => <span className="num muted">{x.baris}</span> },
     { key: 'nama', label: 'Nama', sort: (x) => x.nama, render: (x) => <span className="cell-main">{x.nama || '—'}</span> },
     { key: 'hp', label: 'Nomor HP', render: (x) => <span className="num nowrap">{x.hp ? formatHp(x.hp) : '—'}</span> },
-    { key: 'rumah', label: 'Alamat', render: (x) => <span>{x.blok}-{x.no_rumah}{x.gang ? <span className="muted"> · {x.gang}</span> : ''}</span> },
+    { key: 'blok', label: 'Blok', sort: (x) => x.blok, render: (x) => <span>{x.blok || '—'}</span> },
+    { key: 'sub', label: 'Sub-blok', sort: (x) => x.sub_blok, render: (x) => <span>{x.sub_blok || <span className="muted">-</span>}</span> },
+    { key: 'nomor', label: 'No.', sort: (x) => x.nomor, render: (x) => <span>{x.nomor || '—'}{x.gang ? <span className="muted"> · {x.gang}</span> : ''}</span> },
     { key: 'st', label: 'Status', sort: (x) => (x.galat ? 0 : 1), render: (x) => (x.galat ? <Badge tone="bad">{x.galat}</Badge> : <Badge tone="ok">Siap</Badge>) },
   ];
 
@@ -155,7 +156,7 @@ export default function ImportWarga() {
         <div className="steps">
           <div className="step"><span className="n">1</span><div className="body">
             <h3>Siapkan berkas</h3>
-            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b> (boleh 3/5). Opsional <b>jalan</b> (nama jalan persis seperti di menu Blok & jalan), <b>pekerjaan</b>, <b>kepala_keluarga</b> (ya/tidak), <b>status_pernikahan</b> (belum menikah / menikah / cerai hidup / cerai mati), <b>jumlah_anak</b> (diisi bila sudah menikah), dan <b>foto</b> (tautan gambar https). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
+            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b>. Sub-blok boleh di kolom sendiri (<b>sub_blok</b>), mis. blok <b>A</b>, sub_blok <b>3</b>, no_rumah <b>5</b>; penulisan gabungan seperti <b>A3</b> + <b>5</b>, <b>3/5</b>, atau satu kolom <b>alamat</b> berisi “Blok A3 No.5” juga dipahami dan dipisah otomatis, sehingga hasilnya bisa direkap per blok, sub-blok, dan nomor. Opsional <b>jalan</b> (nama jalan persis seperti di menu Blok & jalan), <b>pekerjaan</b>, <b>kepala_keluarga</b> (ya/tidak), <b>status_pernikahan</b> (belum menikah / menikah / cerai hidup / cerai mati), <b>jumlah_anak</b> (diisi bila sudah menikah), dan <b>foto</b> (tautan gambar https). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
             <div style={{ marginTop: 10 }}><Button size="sm" variant="secondary" icon={Download} onClick={unduhContoh}>Unduh contoh CSV</Button></div>
           </div></div>
           <div className="step"><span className="n">2</span><div className="body">

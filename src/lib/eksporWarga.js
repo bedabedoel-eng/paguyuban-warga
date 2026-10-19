@@ -1,7 +1,7 @@
 import { toCsv, unduhBerkas, stempelTanggal } from './csv';
-import { cariGang } from './alamat';
+import { cariGang, pecahNomor } from './alamat';
 
-/** Kolom ekspor warga. Urutan awal sama dengan berkas import sehingga hasil ekspor bisa diimpor ulang. */
+/** Kolom ekspor warga. Urutan awal sama dengan berkas import sehingga hasil ekspor bisa diimpor ulang. Alamat dipisah: blok, sub_blok, no_rumah (untuk rekap). */
 /** 6281234567890 -> 0812-3456-7890 (tanpa "+", aman dari penanda rumus Excel dan terbaca saat diimpor ulang) */
 const hpLokal = (hp) => {
   const d = String(hp || '').replace(/\D/g, '');
@@ -13,7 +13,8 @@ export const KOLOM_EKSPOR_WARGA = (gang) => [
   { key: 'nama', label: 'nama' },
   { key: 'hp', label: 'hp', nilai: (w) => hpLokal(w.kontak?.nomor_hp) },
   { key: 'blok', label: 'blok' },
-  { key: 'no_rumah', label: 'no_rumah' },
+  { key: 'sub_blok', label: 'sub_blok', nilai: (w) => pecahNomor(w.no_rumah).sub },
+  { key: 'no_rumah', label: 'no_rumah', nilai: (w) => pecahNomor(w.no_rumah).nomor },
   { key: 'jalan', label: 'jalan', nilai: (w) => cariGang(gang, w.gang_id)?.nama || '' },
   { key: 'pekerjaan', label: 'pekerjaan' },
   { key: 'kepala_keluarga', label: 'kepala_keluarga', nilai: (w) => (w.kepala_keluarga ? 'ya' : 'tidak') },

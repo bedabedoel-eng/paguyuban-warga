@@ -28,10 +28,10 @@ export function parseCsv(text) {
 }
 
 /** Contoh berkas untuk diunduh admin. */
-export const CONTOH_CSV = 'nama,hp,blok,no_rumah,jalan,pekerjaan,kepala_keluarga,status_pernikahan,jumlah_anak,foto\n'
-  + 'Budi Santoso,081234567890,C,3/5,Jl. Zamrud,Guru,ya,menikah,2,https://contoh.id/budi.jpg\n'
-  + 'Siti Aminah,081298765432,C,3/5,Jl. Zamrud,Ibu Rumah Tangga,tidak,menikah,2,\n'
-  + 'Agus Wijaya,085611112222,A,12,,Wiraswasta,ya,belum menikah,,\n';
+export const CONTOH_CSV = 'nama,hp,blok,sub_blok,no_rumah,jalan,pekerjaan,kepala_keluarga,status_pernikahan,jumlah_anak,foto\n'
+  + 'Budi Santoso,081234567890,C,3,5,Jl. Zamrud,Guru,ya,menikah,2,https://contoh.id/budi.jpg\n'
+  + 'Siti Aminah,081298765432,C,3,5,Jl. Zamrud,Ibu Rumah Tangga,tidak,menikah,2,\n'
+  + 'Agus Wijaya,085611112222,A,,12,,Wiraswasta,ya,belum menikah,,\n';
 
 /** Cegah rumus tersembunyi saat berkas dibuka di Excel / Sheets (CSV injection). */
 const ANGKA_NEGATIF = /^-\d+([.,]\d+)?$/; // mis. -50000 atau -12,5: angka murni, bukan rumus

@@ -16,3 +16,4 @@ export { default as FotoInput } from './FotoInput';
 export { default as PernikahanFields, galatAnak, kolomPernikahan } from './PernikahanFields';
 export { default as SasaranField } from './SasaranField';
 export { default as ErrorBoundary } from './ErrorBoundary';
+export { default as NomorRumahFields } from './NomorRumahFields';

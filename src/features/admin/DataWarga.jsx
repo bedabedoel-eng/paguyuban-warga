@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Pencil, FileUp, Users, KeyRound, Trash2, Download } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Badge, Button, Card, EmptyState, ErrorState, SkeletonRows, Input, Modal, PinInput, PhoneInput, Select, SearchInput, Checkbox, Callout, DataTable, IconButton, FotoInput, PernikahanFields, galatAnak, kolomPernikahan, useConfirm } from '../../components/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorState, SkeletonRows, Input, Modal, PinInput, PhoneInput, Select, SearchInput, Checkbox, Callout, DataTable, IconButton, FotoInput, PernikahanFields, NomorRumahFields, galatAnak, kolomPernikahan, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -15,7 +15,7 @@ import { STATUS_WARGA, STATUS_PERNIKAHAN, pernahMenikah, labelPernikahan } from 
 import { FOTO_AWAL, fotoBerubah, terapkanFoto } from '../../lib/foto';
 import { tanggal } from '../../lib/format';
 import { kelolaWilayah, namaWilayah, labelJabatan } from '../../lib/akses';
-import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
+import { POLA_NOMOR_RUMAH, gangDiBlok, pecahNomor } from '../../lib/alamat';
 import { eksporWarga } from '../../lib/eksporWarga';
 
 function EditWarga({ w, onClose, onSaved }) {
@@ -75,7 +75,7 @@ function EditWarga({ w, onClose, onSaved }) {
           <div className="form-grid">
             <Input fieldClass="span-2" label="Nama lengkap" value={f.nama} onChange={set('nama')} maxLength={80} disabled={terkunci} />
             <Select label="Blok" value={f.blok} onChange={gantiBlok} placeholder="Pilih" options={opsiBlok} disabled={terkunci || !hak.kelola_anggota} />
-            <Input label="Nomor rumah" value={f.no_rumah} onChange={set('no_rumah')} maxLength={10} placeholder="Contoh: 3/5" disabled={terkunci} />
+            <NomorRumahFields value={f.no_rumah} onChange={(v) => setF((s) => ({ ...s, no_rumah: v }))} disabled={terkunci} />
             {(opsiGang.length > 0 || f.gang_id) && (
               <Select fieldClass="span-2" label="Jalan" value={f.gang_id} onChange={set('gang_id')}
                 placeholder={hak.kelola_anggota ? 'Belum dipilih' : undefined}
@@ -124,7 +124,7 @@ function EditWarga({ w, onClose, onSaved }) {
 
 export default function DataWarga() {
   const { hak } = useAuth();
-  const { blok, gang, alamatPendek } = useSettings();
+  const { blok, gang, namaGang } = useSettings();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
@@ -161,7 +161,10 @@ export default function DataWarga() {
     { key: 'nama', label: 'Nama', mobileLabel: '', sort: (w) => w.nama, render: (w) => (
       <div className="row"><Avatar nama={w.nama} path={w.foto_path} size={36} /><div className="grow" style={{ textAlign: 'left' }}><div className="cell-main">{w.nama}</div><div className="cell-sub">{w.pekerjaan || (w.kepala_keluarga ? 'Kepala keluarga' : 'Anggota keluarga')}</div></div></div>
     ) },
-    { key: 'rumah', label: 'Alamat', sort: (w) => (w.blok ? `${w.blok} ${w.no_rumah || ''}` : ''), render: (w) => <span>{w.blok ? alamatPendek(w) : '—'}</span> },
+    { key: 'blok', label: 'Blok', sort: (w) => w.blok || '~', render: (w) => <span>{w.blok || '—'}</span> },
+    { key: 'sub', label: 'Sub-blok', sort: (w) => pecahNomor(w.no_rumah).sub || '~', render: (w) => <span>{pecahNomor(w.no_rumah).sub || <span className="muted">-</span>}</span> },
+    { key: 'nomor', label: 'No.', sort: (w) => pecahNomor(w.no_rumah).nomor || '~', render: (w) => <span>{pecahNomor(w.no_rumah).nomor || '—'}</span> },
+    { key: 'jalan', label: 'Jalan', sort: (w) => namaGang(w.gang_id) || '~', render: (w) => <span>{namaGang(w.gang_id) || <span className="muted">-</span>}</span> },
     { key: 'nikah', label: 'Pernikahan', sort: (w) => w.kontak?.status_pernikahan || '', render: (w) => <span className="text-sm">{labelPernikahan(w.kontak) || '—'}</span> },
     { key: 'hp', label: 'Nomor HP', render: (w) => <span className="num nowrap">{w.kontak?.nomor_hp ? formatHp(w.kontak.nomor_hp) : '—'}</span> },
     { key: 'bergabung', label: 'Bergabung', sort: (w) => w.bergabung_at, render: (w) => <span className="nowrap text-sm">{w.bergabung_at ? tanggal(w.bergabung_at, { pendek: true }) : '—'}</span> },

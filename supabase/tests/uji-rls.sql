@@ -238,6 +238,119 @@ begin
   perform uji.cek((select count(*) from public.notifikasi where jenis = 'ipl' and judul like 'Tagihan IPL%') > 0, 'tagihan otomatis: warga menerima notifikasi');
 end $q$;
 
+-- ---------------------------------------------------------------------
+-- 7. Polling warga & rekap alamat (migrasi 10)
+-- ---------------------------------------------------------------------
+create table uji.kv (k text primary key, v text);
+grant all on uji.kv to public;
+insert into auth.users (id, aud, role, email, raw_user_meta_data)
+values ('a0000000-0000-0000-0000-000000000006', 'authenticated', 'authenticated', 'wargaa2@uji.local', '{"nama":"Warga Rumah A (2)"}');
+update public.warga set status = 'aktif', blok = 'A', no_rumah = '10' where id = 'a0000000-0000-0000-0000-000000000006';
+
+-- hak membuat polling
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select uji.harus_gagal($q$select public.buat_polling('Cat pagar', null, array['Putih','Hijau'], now() + interval '2 days')$q$, 'warga biasa tidak dapat membuat polling', '42501');
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000003');
+select uji.harus_gagal($q$select public.buat_polling('Cat pagar', null, array['Putih','Hijau'], now() + interval '2 days')$q$, 'bendahara (bukan pengelola info) tidak dapat membuat polling', '42501');
+select uji.kembali();
+
+-- validasi pembuatan
+select uji.sebagai('a0000000-0000-0000-0000-000000000001');
+select uji.harus_gagal($q$select public.buat_polling('Satu pilihan', null, array['Ya'], now() + interval '2 days')$q$, 'polling dengan satu pilihan ditolak');
+select uji.harus_gagal($q$select public.buat_polling('Pilihan ganda sama', null, array['Ya','ya'], now() + interval '2 days')$q$, 'pilihan kembar ditolak');
+select uji.harus_gagal($q$select public.buat_polling('Sudah lewat', null, array['Ya','Tidak'], now() - interval '1 day')$q$, 'batas waktu lampau ditolak');
+
+insert into uji.kv select 'p1', public.buat_polling('Iuran keamanan naik?', 'Usulan kenaikan Rp 10.000', array['Setuju','Tidak'], now() + interval '2 days', 'A');
+select uji.cek((select count(*) from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1')) = 2, 'polling dibuat beserta pilihannya');
+select uji.cek((select count(*) from public.notifikasi where warga_id = 'a0000000-0000-0000-0000-000000000001' and judul = 'Polling baru') = 0, 'pembuat tidak menerima notifikasi polling sendiri');
+select uji.kembali();
+select uji.cek((select count(*) from public.notifikasi where warga_id = 'a0000000-0000-0000-0000-000000000004' and judul = 'Polling baru') = 1, 'warga di sasaran menerima notifikasi polling');
+select uji.cek((select count(*) from public.notifikasi where warga_id = 'a0000000-0000-0000-0000-000000000005' and judul = 'Polling baru') = 0, 'warga di luar sasaran tidak diberi notifikasi');
+
+-- sasaran: warga blok B tidak melihat dan tidak bisa memilih
+select uji.sebagai('a0000000-0000-0000-0000-000000000005');
+select uji.cek((select count(*) from public.polling) = 0, 'warga blok B tidak melihat polling blok A');
+select uji.cek(jsonb_array_length(public.daftar_polling()) = 0, 'daftar_polling kosong untuk warga di luar sasaran');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi limit 1)])$q$, 'warga di luar sasaran tidak dapat memilih', '42501');
+select uji.kembali();
+
+-- warga A: hasil tersembunyi sebelum memilih; suara tidak bisa diakses langsung
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select uji.cek((public.daftar_polling() -> 0 ->> 'hasil_terlihat')::boolean = false, 'hasil disembunyikan sebelum memilih');
+select uji.cek((public.daftar_polling() -> 0 -> 'opsi' -> 0 ->> 'jumlah') is null, 'jumlah per pilihan tidak bocor sebelum memilih');
+select uji.harus_gagal($q$select count(*) from public.polling_suara$q$, 'tabel suara tidak dapat dibaca langsung', '42501');
+select uji.harus_gagal($q$insert into public.polling_suara (polling_id, opsi_id, warga_id) select polling_id, id, auth.uid() from public.polling_opsi limit 1$q$, 'suara tidak dapat disisipkan langsung', '42501');
+select uji.harus_gagal($q$update public.polling set tutup_at = now() + interval '90 days'$q$, 'polling tidak dapat diubah langsung', '42501');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[gen_random_uuid()])$q$, 'pilihan palsu ditolak');
+select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1') and urutan = 1)]);
+select uji.cek((public.daftar_polling() -> 0 ->> 'sudah_memilih')::boolean, 'status sudah memilih terbaca');
+select uji.cek((public.daftar_polling() -> 0 -> 'opsi' -> 0 ->> 'jumlah')::int = 1, 'setelah memilih, hasil terlihat');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1') and urutan = 2)])$q$, 'tidak dapat memilih dua kali', '23505');
+select uji.kembali();
+
+-- satu rumah satu suara
+select uji.sebagai('a0000000-0000-0000-0000-000000000006');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1') and urutan = 2)])$q$, 'anggota rumah yang sama tidak dapat memberi suara kedua', '23505');
+select uji.kembali();
+
+-- pilihan ganda pada polling satu pilihan ditolak; Ketua memilih
+select uji.sebagai('a0000000-0000-0000-0000-000000000001');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), (select array_agg(id) from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1')))$q$, 'polling satu pilihan menolak dua pilihan sekaligus');
+select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1') and urutan = 2)]);
+select uji.cek((public.daftar_polling() -> 0 ->> 'hak_suara')::int = 4, 'hak suara = jumlah rumah aktif di sasaran (4 rumah blok A)');
+select uji.cek((public.daftar_polling() -> 0 ->> 'pemilih')::int = 2, 'jumlah pemilih (rumah) benar');
+select uji.kembali();
+
+-- bendahara tidak memilih -> hasil tetap tersembunyi; Wakil (pengelola) boleh melihat
+select uji.sebagai('a0000000-0000-0000-0000-000000000003');
+select uji.cek((public.daftar_polling() -> 0 ->> 'hasil_terlihat')::boolean = false, 'peserta yang belum memilih tidak melihat hasil');
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000002');
+select uji.cek((public.daftar_polling() -> 0 ->> 'hasil_terlihat')::boolean, 'pengelola sasaran dapat memantau hasil');
+select uji.kembali();
+
+-- menutup polling
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select uji.harus_gagal($q$select public.tutup_polling((select v::uuid from uji.kv where k = 'p1'))$q$, 'warga bukan pembuat tidak dapat menutup polling', '42501');
+select uji.harus_gagal($q$select public.hapus_polling((select v::uuid from uji.kv where k = 'p1'))$q$, 'warga bukan pembuat tidak dapat menghapus polling', '42501');
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000001');
+select public.tutup_polling((select v::uuid from uji.kv where k = 'p1'));
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000003');
+select uji.cek((public.daftar_polling() -> 0 ->> 'selesai')::boolean and (public.daftar_polling() -> 0 ->> 'hasil_terlihat')::boolean, 'setelah ditutup hasil terlihat oleh semua peserta');
+select uji.harus_gagal($q$select public.beri_suara((select v::uuid from uji.kv where k = 'p1'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p1') and urutan = 1)])$q$, 'polling yang sudah ditutup menolak suara baru');
+select uji.kembali();
+
+-- polling pilihan ganda, satu warga satu suara
+select uji.sebagai('a0000000-0000-0000-0000-000000000001');
+insert into uji.kv select 'p2', public.buat_polling('Kegiatan 17 Agustus', null, array['Lomba anak','Jalan sehat','Bazar'], now() + interval '3 days', null, null, true, false);
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select public.beri_suara((select v::uuid from uji.kv where k = 'p2'), (select array_agg(id) from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p2') and urutan <= 2));
+select uji.kembali();
+select uji.sebagai('a0000000-0000-0000-0000-000000000006');
+select public.beri_suara((select v::uuid from uji.kv where k = 'p2'), array[(select id from public.polling_opsi where polling_id = (select v::uuid from uji.kv where k = 'p2') and urutan = 3)]);
+select uji.cek((select (x ->> 'pemilih')::int from jsonb_array_elements(public.daftar_polling()) x where x ->> 'id' = (select v from uji.kv where k = 'p2')) = 2, 'per warga: dua anggota satu rumah masing-masing satu suara');
+select uji.cek((select sum((o ->> 'jumlah')::int) from jsonb_array_elements(public.daftar_polling()) x, jsonb_array_elements(x -> 'opsi') o where x ->> 'id' = (select v from uji.kv where k = 'p2')) = 3, 'pilihan ganda: total suara = 3');
+select uji.kembali();
+
+-- hapus polling oleh pembuat
+select uji.sebagai('a0000000-0000-0000-0000-000000000001');
+select public.hapus_polling((select v::uuid from uji.kv where k = 'p2'));
+select uji.kembali();
+select uji.cek((select count(*) from public.polling_suara where polling_id = (select v::uuid from uji.kv where k = 'p2')) = 0, 'hapus polling ikut menghapus suara');
+
+-- rekap alamat: blok, sub_blok, nomor terpisah
+update public.warga set no_rumah = '3/5' where id = 'a0000000-0000-0000-0000-000000000002';
+select uji.cek((select sub_blok || '|' || nomor from public.rekap_warga where id = 'a0000000-0000-0000-0000-000000000002') = '3|5', 'rekap_warga: "3/5" dipecah jadi sub_blok 3, nomor 5');
+select uji.cek((select sub_blok is null and nomor = '3' from public.rekap_warga where id = 'a0000000-0000-0000-0000-000000000003'), 'rekap_warga: nomor tanpa sub-blok');
+select uji.cek((select sub_blok || '|' || nomor from public.rekap_rumah where kode = 'A-3/5') = '3|5', 'rekap_rumah: kode A-3/5 dipecah');
+select uji.sebagai('a0000000-0000-0000-0000-000000000004');
+select uji.cek((select count(*) from public.rekap_warga) > 0, 'rekap_warga dapat dibaca (mengikuti RLS)');
+select uji.kembali();
+
 rollback;
 \o
 \echo

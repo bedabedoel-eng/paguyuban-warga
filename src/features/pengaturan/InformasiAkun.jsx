@@ -1,3 +1,4 @@
+import { teksRumah } from '../../lib/alamat';
 import PageHeader from '../../components/layout/PageHeader';
 import { Badge, Button, Card } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -15,7 +16,7 @@ export default function InformasiAkun() {
         <Card pad>
           <div className="kv"><span>Nama</span><span>{warga.nama}</span></div>
           <div className="kv"><span>Nomor HP (login)</span><span>{kontak?.nomor_hp ? formatHp(kontak.nomor_hp) : '-'}</span></div>
-          <div className="kv"><span>Rumah</span><span>Blok {warga.blok} No. {warga.no_rumah}</span></div>
+          <div className="kv"><span>Rumah</span><span>{teksRumah(warga) || '-'}</span></div>
           <div className="kv"><span>Peran</span><span><Badge tone="green">{PERAN[warga.role]}</Badge></span></div>
           {jabatan && <div className="kv"><span>Jabatan</span><span>{jabatan}</span></div>}
           <div className="kv"><span>Metode masuk</span><span>{google ? 'Google' : 'Nomor HP + PIN'}</span></div>

@@ -1,7 +1,7 @@
 import {
   House, Receipt, CalendarDays, Megaphone, MessageSquareText, Users, Wallet, UsersRound, LayoutDashboard, LayoutGrid,
   UserCheck, IdCard, Inbox, Building2, FileCheck2, BadgeCheck, FolderArchive, Settings2, FileUp, Network, Signpost,
-  Bell, PhoneCall, UserRound, Settings, PlusCircle, CalendarPlus, FilePlus2, HandCoins,
+  Bell, PhoneCall, UserRound, Settings, PlusCircle, CalendarPlus, FilePlus2, HandCoins, Vote,
 } from 'lucide-react';
 
 /**
@@ -16,6 +16,7 @@ export function navGroups(hak) {
       { to: '/ipl', label: 'Tagihan IPL', desc: 'Bayar & riwayat', icon: Receipt, tone: 'ok', also: ['/ipl'] },
       { to: '/pengumuman', label: 'Pengumuman', desc: 'Kabar dari pengurus', icon: Megaphone, tone: 'info' },
       { to: '/kegiatan', label: 'Kegiatan', desc: 'Agenda lingkungan', icon: CalendarDays, tone: 'violet' },
+      { to: '/polling', label: 'Polling', desc: 'Suara warga', icon: Vote, tone: 'info' },
       { to: '/aspirasi', label: 'Aspirasi saya', desc: 'Laporan & usulan', icon: MessageSquareText, tone: 'warn' },
       { to: '/warga', label: 'Direktori warga', desc: 'Kenali tetangga', icon: Users, tone: '' },
       { to: '/keuangan', label: 'Kas paguyuban', desc: 'Laporan terbuka', icon: Wallet, tone: 'gold' },

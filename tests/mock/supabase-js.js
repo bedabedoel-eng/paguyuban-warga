@@ -31,6 +31,12 @@ const AUDIT = [
   { id: 1, waktu: new Date(Date.now() - 2 * 86400e3).toISOString(), pelaku_id: 'u-bendahara', pelaku_nama: 'Bendahara', tabel: 'transaksi_kas', aksi: 'INSERT', baris_id: k0.id, sebelum: null, sesudah: k0 },
 ];
 TABLES.audit_log = AUDIT;
+// Polling contoh (state di memori; berubah saat memberi suara)
+const hariLagi = (n) => new Date(Date.now() + n * 86400e3).toISOString();
+const POLLS = [
+  { id: 'pl-1', judul: 'Setujukah iuran keamanan naik Rp 10.000 mulai Januari?', deskripsi: 'Untuk menambah honor dua petugas keamanan malam.', blok: null, gang_id: null, pilih_banyak: false, per_rumah: true, tutup_at: hariLagi(3), ditutup_at: null, created_at: hariLagi(-1), pembuat: 'Hendra Wijaya', selesai: false, sudah_memilih: false, hak_suara: 20, pemilih: 8, opsi: [['Setuju', 5], ['Tidak setuju', 2], ['Abstain', 1]] },
+  { id: 'pl-2', judul: 'Kegiatan 17 Agustus', deskripsi: null, blok: null, gang_id: null, pilih_banyak: true, per_rumah: false, tutup_at: hariLagi(-10), ditutup_at: null, created_at: hariLagi(-20), pembuat: 'Hendra Wijaya', selesai: true, sudah_memilih: true, hak_suara: 42, pemilih: 30, opsi: [['Lomba anak', 24], ['Jalan sehat', 18], ['Bazar', 11]] },
+].map((p) => ({ ...p, opsi: p.opsi.map(([teks, jumlah], i) => ({ id: `${p.id}-o${i}`, teks, jumlah })) }));
 const delay = (v) => new Promise((r) => setTimeout(() => r(v), 60));
 
 // Pembatasan baris sederhana meniru RLS untuk tampilan per peran
@@ -126,6 +132,18 @@ function rpc(name, params) {
         return { rumah_id: rid, kode: r.kode, blok: r.blok, gang_id: w?.gang_id || null, gang_nama: w?.gang_id ? (F.GANG.find((g) => g.id === w.gang_id)?.nama || null) : null, jumlah_bulan: ts.length, total: ts.reduce((a, t) => a + t.nominal, 0), periode_tertua: ps[0], periode_terbaru: ps[ps.length - 1], nama: w?.nama || null, nomor_hp: k?.nomor_hp || null };
       }).sort((a, b) => b.total - a.total);
     },
+    daftar_polling: () => POLLS.map((p) => {
+      const lihat = p.selesai || p.sudah_memilih || !!h.kelola_info;
+      return { ...p, bisa_kelola: !!h.ketua, hasil_terlihat: lihat, pemilih: lihat ? p.pemilih : null, opsi: p.opsi.map((o) => ({ ...o, jumlah: lihat ? o.jumlah : null })) };
+    }),
+    beri_suara: () => {
+      const p = POLLS.find((x) => x.id === params.p_polling);
+      if (p && !p.sudah_memilih) { p.sudah_memilih = true; p.pemilih += 1; p.opsi.forEach((o) => { if (params.p_opsi.includes(o.id)) o.jumlah += 1; }); }
+      return null;
+    },
+    buat_polling: () => 'pl-baru',
+    tutup_polling: () => { const p = POLLS.find((x) => x.id === params.p_id); if (p) p.selesai = true; return null; },
+    hapus_polling: () => null,
     periode_ipl_tersedia: () => [...new Set(F.TAGIHAN.map((t) => t.periode))].sort().reverse(),
     ringkasan_transaksi: () => {
       const rs = rls('transaksi_kas', [...F.KAS]).filter((k) => (!params.p_jenis || k.jenis === params.p_jenis) && (!params.p_dari || k.tanggal >= params.p_dari) && (!params.p_sampai || k.tanggal <= params.p_sampai));

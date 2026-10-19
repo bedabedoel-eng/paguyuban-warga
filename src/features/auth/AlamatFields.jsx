@@ -1,8 +1,8 @@
-import { Input, Select } from '../../components/ui';
+import { Select, NomorRumahFields } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { gangDiBlok } from '../../lib/alamat';
 
-/** Isian alamat: blok -> jalan (bila blok punya gang) -> nomor rumah. */
+/** Isian alamat: blok -> sub-blok + nomor rumah -> jalan (bila blok punya gang). */
 export default function AlamatFields({ f, setF, errors = {} }) {
   const { blok, gang } = useSettings();
   const opsiGang = f.blok ? gangDiBlok(gang, f.blok) : [];
@@ -15,8 +15,9 @@ export default function AlamatFields({ f, setF, errors = {} }) {
       <div className="form-grid">
         <Select label="Blok" placeholder="Pilih" value={f.blok} onChange={gantiBlok} error={errors.blok}
           options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
-        <Input label="Nomor rumah" value={f.noRumah} onChange={(e) => setF((s) => ({ ...s, noRumah: e.target.value }))}
-          error={errors.noRumah} maxLength={10} placeholder="Contoh: 3/5" hint={errors.noRumah ? undefined : 'Sesuai alamat, mis. 12 atau 3/5'} />
+      </div>
+      <div className="form-grid">
+        <NomorRumahFields value={f.noRumah} onChange={(v) => setF((s) => ({ ...s, noRumah: v }))} error={errors.noRumah} />
       </div>
       {opsiGang.length > 0 && (
         <Select label="Jalan" placeholder="Pilih nama jalan" value={f.gang || ''} error={errors.gang}
