@@ -15,7 +15,8 @@ import { Callout } from '../../components/ui';
 
 function Menunggu({ onChanged }) {
   const toast = useToast();
-  const s = useAsync(pembayaranMenunggu, []);
+  const [batas, setBatas] = useState(50);
+  const s = useAsync(() => pembayaranMenunggu({ batas }), [batas]);
   const [tolak, setTolak] = useState(null);
   const [alasan, setAlasan] = useState('');
   const [busy, setBusy] = useState(null);
@@ -29,10 +30,10 @@ function Menunggu({ onChanged }) {
   async function lihat(p) { const u = await signedUrl('bukti', p.bukti_path); if (u) window.open(u, '_blank', 'noopener'); else toast.error('Bukti tidak dapat dibuka'); }
   if (s.loading && !s.data) return <Card pad><SkeletonRows n={3} /></Card>;
   if (s.error) return <ErrorState error={s.error} onRetry={s.reload} />;
-  if (!s.data.length) return <Card><EmptyState icon={FileCheck2} title="Semua bukti sudah diperiksa" text="Bukti transfer baru dari warga akan muncul di sini." /></Card>;
+  if (!s.data.rows.length) return <Card><EmptyState icon={FileCheck2} title="Semua bukti sudah diperiksa" text="Bukti transfer baru dari warga akan muncul di sini." /></Card>;
   return (
     <div className="grid-2">
-      {s.data.map((p) => (
+      {s.data.rows.map((p) => (
         <Card key={p.id} className="flush">
           <button type="button" className="thumb" style={{ width: '100%', height: 180, borderRadius: 0, border: 0, cursor: 'zoom-in' }} onClick={() => lihat(p)} aria-label="Buka bukti transfer">
             <StorageImage bucket="bukti" path={p.bukti_path} fallback={<span className="thumb-fallback"><Receipt size={28} /></span>} />
@@ -50,6 +51,12 @@ function Menunggu({ onChanged }) {
           </CardBody>
         </Card>
       ))}
+      {s.data.total > s.data.rows.length && (
+        <div className="row between wrap" style={{ gridColumn: '1 / -1' }}>
+          <span className="text-sm muted">Menampilkan {s.data.rows.length} dari {s.data.total} bukti menunggu</span>
+          <Button variant="secondary" loading={s.loading} onClick={() => setBatas((b) => b + 50)}>Muat lagi</Button>
+        </div>
+      )}
       <Modal open={!!tolak} onClose={() => setTolak(null)} title="Tolak bukti pembayaran" desc={tolak && `${tolak.warga?.nama} · ${rupiah(tolak.jumlah)}`}
         footer={<><Button variant="secondary" onClick={() => setTolak(null)}>Batal</Button><Button variant="danger" loading={busy === tolak?.id} onClick={tolakIni}>Tolak bukti</Button></>}>
         <Textarea label="Alasan (dikirim ke warga)" value={alasan} onChange={(e) => setAlasan(e.target.value)} maxLength={300} style={{ minHeight: 90 }} placeholder="Contoh: nominal transfer tidak sesuai tagihan" />

@@ -23,6 +23,14 @@ const TABLES = {
   tagihan_ipl: F.TAGIHAN, pembayaran_ipl: F.PEMBAYARAN, transaksi_kas: F.KAS, pengumuman: F.PENGUMUMAN, kegiatan: F.KEGIATAN,
   laporan: F.LAPORAN, notifikasi: F.NOTIF, aktivitas: F.AKTIVITAS, dokumen: F.DOKUMEN, kontak_darurat: F.DARURAT,
 };
+// Data contoh log audit (dibuat dari transaksi manual pertama supaya tampil nyata)
+const k0 = F.KAS.find((k) => k.sumber === 'manual') || F.KAS[0];
+const AUDIT = [
+  { id: 3, waktu: new Date(Date.now() - 3600e3).toISOString(), pelaku_id: 'u-bendahara', pelaku_nama: 'Bendahara', tabel: 'transaksi_kas', aksi: 'DELETE', baris_id: 'x-hapus', sebelum: { ...k0, id: 'x-hapus', keterangan: 'Beli lampu taman (salah input)', sumber: 'manual' }, sesudah: null },
+  { id: 2, waktu: new Date(Date.now() - 86400e3).toISOString(), pelaku_id: 'u-bendahara', pelaku_nama: 'Bendahara', tabel: 'transaksi_kas', aksi: 'UPDATE', baris_id: k0.id, sebelum: k0, sesudah: { ...k0, jumlah: k0.jumlah + 5000 } },
+  { id: 1, waktu: new Date(Date.now() - 2 * 86400e3).toISOString(), pelaku_id: 'u-bendahara', pelaku_nama: 'Bendahara', tabel: 'transaksi_kas', aksi: 'INSERT', baris_id: k0.id, sebelum: null, sesudah: k0 },
+];
+TABLES.audit_log = AUDIT;
 const delay = (v) => new Promise((r) => setTimeout(() => r(v), 60));
 
 // Pembatasan baris sederhana meniru RLS untuk tampilan per peran
@@ -32,6 +40,7 @@ function rls(table, rows) {
   if (table === 'laporan') return h.pimpinan ? rows : h.humas ? rows.filter((l) => h.wilayah.includes(l.pelapor.gang_id) || l.pelapor_id === uid()) : rows.filter((l) => l.pelapor_id === uid());
   if (table === 'tagihan_ipl' && !h.bendahara) return rows.filter((t) => t.rumah_id === m?.rumah_id);
   if (table === 'transaksi_kas' && !h.lihat_kas_detail) return rows.filter((t) => t.status === 'disetujui');
+  if (table === 'audit_log' && !h.lihat_kas_detail) return [];
   if (table === 'dokumen' && !h.pengurus) return rows.filter((d) => d.publik);
   if ((table === 'pengumuman' || table === 'kegiatan') && !h.kelola_anggota) return rows.filter((x) => ((!x.blok || x.blok === m?.blok) && (!x.gang_id || x.gang_id === m?.gang_id)) || h.wilayah?.includes(x.gang_id));
   if (table === 'pembayaran_ipl' && !h.bendahara) return [];
@@ -40,8 +49,8 @@ function rls(table, rows) {
 }
 
 class Q {
-  constructor(table) { this.t = table; this.f = []; this.o = []; this.lim = null; this.mode = 'select'; this.one = false; this.maybe = false; this.head = false; this.payload = null; }
-  select(_c, opts) { if (this.mode === 'select') this.mode = 'select'; this.ret = true; if (opts?.head) this.head = true; return this; }
+  constructor(table) { this.t = table; this.f = []; this.o = []; this.lim = null; this.mode = 'select'; this.one = false; this.maybe = false; this.head = false; this.payload = null; this.rng = null; this.cnt = false; }
+  select(_c, opts) { if (this.mode === 'select') this.mode = 'select'; this.ret = true; if (opts?.head) this.head = true; if (opts?.count) this.cnt = true; return this; }
   eq(k, v) { this.f.push((r) => String(r[k]) === String(v)); return this; }
   neq(k, v) { this.f.push((r) => r[k] !== v); return this; }
   in(k, v) { this.f.push((r) => v.includes(r[k])); return this; }
@@ -52,6 +61,8 @@ class Q {
   lte(k, v) { this.f.push((r) => r[k] <= v); return this; }
   lt(k, v) { this.f.push((r) => r[k] < v); return this; }
   order(k, { ascending = true } = {}) { this.o.push([k, ascending]); return this; }
+  not(k, op, v) { if (op === 'is') this.f.push((r) => (r[k] ?? null) !== v); else this.f.push((r) => r[k] !== v); return this; }
+  range(a, b) { this.rng = [a, b]; return this; }
   limit(n) { this.lim = n; return this; }
   single() { this.one = true; return this; }
   maybeSingle() { this.one = true; this.maybe = true; return this; }
@@ -67,9 +78,12 @@ class Q {
     let rows = rls(this.t, [...(TABLES[this.t] || [])]).filter((r) => this.f.every((fn) => fn(r)));
     for (const [k, asc] of [...this.o].reverse()) rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1));
     if (this.head) return delay({ data: null, count: rows.length, error: null });
+    const total = rows.length;
+    if (this.rng) rows = rows.slice(this.rng[0], this.rng[1] + 1);
     if (this.lim) rows = rows.slice(0, this.lim);
+    const cnt = this.cnt ? { count: total } : {};
     if (this.one) { if (!rows.length && !this.maybe) return delay({ data: null, error: { message: 'Data tidak ditemukan', code: 'PGRST116' } }); return delay({ data: rows[0] || null, error: null }); }
-    return delay({ data: rows, error: null });
+    return delay({ data: rows, ...cnt, error: null });
   }
 }
 
@@ -101,6 +115,13 @@ function rpc(name, params) {
     ringkasan_kas: () => ({ saldo, pemasukan_bulan: 1575000, pengeluaran_bulan: 920000, menunggu_jumlah: h.lihat_kas_detail ? menunggu.length : null, menunggu_nominal: h.lihat_kas_detail ? menunggu.reduce((a, k) => a + k.jumlah, 0) : null }),
     kontak_warga: () => { const k = F.KONTAK.find((x) => x.warga_id === params.p_id); return [{ nomor_hp: k?.tampilkan_hp || h.pengurus ? k?.nomor_hp : null, email: k?.email }]; },
     buat_tagihan_ipl: () => 0,
+    periode_ipl_tersedia: () => [...new Set(F.TAGIHAN.map((t) => t.periode))].sort().reverse(),
+    ringkasan_transaksi: () => {
+      const rs = rls('transaksi_kas', [...F.KAS]).filter((k) => (!params.p_jenis || k.jenis === params.p_jenis) && (!params.p_dari || k.tanggal >= params.p_dari) && (!params.p_sampai || k.tanggal <= params.p_sampai));
+      const sum = (j) => rs.filter((k) => k.jenis === j && k.status === 'disetujui').reduce((a, k) => a + k.jumlah, 0);
+      return { jumlah: rs.length, pemasukan: sum('pemasukan'), pengeluaran: sum('pengeluaran') };
+    },
+    pulihkan_transaksi: () => 'pulih-1',
   };
   const fn = R[name];
   return delay({ data: fn ? fn() : null, error: null });

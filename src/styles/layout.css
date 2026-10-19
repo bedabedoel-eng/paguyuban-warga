@@ -148,3 +148,13 @@
 }
 /* Bila header HP sudah punya tombol aksi, aksi di kepala halaman tidak diulang */
 @media (max-width: 767px) { .page-head.has-m-act { display: none; } }
+
+/* ---------- Pita status aplikasi (offline / pembaruan) ---------- */
+.status-app { position: fixed; z-index: 190; left: 50%; transform: translateX(-50%); top: 12px; display: flex; flex-direction: column; gap: 6px; width: min(560px, calc(100vw - 24px)); pointer-events: none; }
+.status-app-row { pointer-events: auto; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--r-md, 12px); font-size: var(--fs-sm, 14px); box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.status-app-row > svg { flex: none; }
+.status-app-row > span { flex: 1; }
+.status-app-row.off { background: #5c3d00; color: #fff; }
+.status-app-row.baru { background: #0e2e23; color: #fff; }
+.status-app-row button { background: #fff; color: #0e2e23; border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer; }
+.status-app-row button:hover { background: #e8f3ee; }

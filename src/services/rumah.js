@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
-import { unwrap } from './_util';
+import { unwrap, ambilSemua } from './_util';
 
-export const daftarRumah = async () => unwrap(await supabase.from('rumah').select('*').order('blok').order('nomor'));
+export const daftarRumah = async () => ambilSemua(() => supabase.from('rumah').select('*').order('blok').order('nomor').order('id'));
 export const simpanRumah = async (r) => {
   const { id, kode, created_at, ...data } = r;
   return unwrap(id

@@ -7,7 +7,12 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
   root: fileURLToPath(new URL('..', import.meta.url)),
   plugins: [react()],
-  resolve: { alias: { '@supabase/supabase-js': fileURLToPath(new URL('./mock/supabase-js.js', import.meta.url)) } },
+  resolve: {
+    alias: {
+      '@supabase/supabase-js': fileURLToPath(new URL('./mock/supabase-js.js', import.meta.url)),
+      'virtual:pwa-register': fileURLToPath(new URL('./mock/pwa-register.js', import.meta.url)),
+    },
+  },
   define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://mock.supabase.co'),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('mock-key'),

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, TrendingDown, TrendingUp, Trash2, Pencil, Wallet, Check, X, BadgeCheck, Clock } from 'lucide-react';
+import { Plus, TrendingDown, TrendingUp, Trash2, Pencil, Wallet, Check, X, BadgeCheck, Clock, Undo2 } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
 import { Badge, Button, Card, CardHead, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, LineTabs, SegTabs, Select, Input, Textarea, Chips, Callout, IconButton, SortSelect, useConfirm } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useTugas } from '../../context/TugasContext';
 import { useAsync } from '../../hooks/useAsync';
-import { ringkasanKas, daftarTransaksi, simpanTransaksi, hapusTransaksi, putuskanPengeluaran, arusKasBulanan } from '../../services/kas';
+import { ringkasanKas, daftarTransaksi, transaksiHalaman, ringkasanTransaksi, riwayatAudit, pulihkanTransaksi, simpanTransaksi, hapusTransaksi, putuskanPengeluaran, arusKasBulanan } from '../../services/kas';
 import BarChart12 from '../beranda/IplChart';
 import { rupiah, tanggal, awalBulan, isoDate, periode, relatif } from '../../lib/format';
 import { KATEGORI_KAS, STATUS_KAS } from '../../lib/constants';
@@ -110,17 +110,20 @@ function Transaksi({ hak, onEdit, onHapus, reloadKey }) {
   const [bulan, setBulan] = useState('');
   const dari = bulan || undefined;
   const sampai = bulan ? isoDate(new Date(Number(bulan.slice(0, 4)), Number(bulan.slice(5, 7)), 0)) : undefined;
-  const trx = useAsync(() => daftarTransaksi({ jenis, dari, sampai }), [jenis, bulan, reloadKey]);
+  const [batas, setBatas] = useState(100);
+  useEffect(() => { setBatas(100); }, [jenis, bulan]);
+  const trx = useAsync(() => transaksiHalaman({ jenis, dari, sampai, batas }), [jenis, bulan, reloadKey, batas]);
+  const total = useAsync(() => ringkasanTransaksi({ jenis, dari, sampai }).catch(() => null), [jenis, bulan, reloadKey]);
   const opsiBulan = useMemo(() => Array.from({ length: 12 }, (_, i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); return { value: awalBulan(d), label: periode(d) }; }), []);
   const [urut, setUrut] = useState('baru');
   const rows = useMemo(() => {
-    const d = trx.data || [];
+    const d = trx.data?.rows || [];
     if (urut === 'lama') return urutkan(d, (t) => `${t.tanggal} ${t.created_at}`, 'asc');
     if (urut === 'besar') return urutkan(d, (t) => Number(t.jumlah), 'desc');
     if (urut === 'kecil') return urutkan(d, (t) => Number(t.jumlah), 'asc');
     return urutkan(d, (t) => `${t.tanggal} ${t.created_at}`, 'desc');
   }, [trx.data, urut]);
-  const tot = (j) => rows.filter((t) => t.jenis === j && (t.status || 'disetujui') === 'disetujui').reduce((a, t) => a + Number(t.jumlah), 0);
+  const totLokal = (j) => rows.filter((t) => t.jenis === j && (t.status || 'disetujui') === 'disetujui').reduce((a, t) => a + Number(t.jumlah), 0);
   return (
     <div className="stack">
       <div className="toolbar">
@@ -135,7 +138,72 @@ function Transaksi({ hak, onEdit, onHapus, reloadKey }) {
             <div className="rows">{rows.map((t) => <BarisTrx key={t.id} t={t} hak={hak} onEdit={onEdit} onHapus={onHapus} />)}</div>
           )}
         </CardBody>
-        {rows.length > 0 && <div className="card-foot row wrap between text-sm"><span>Masuk <b className="money in">{rupiah(tot('pemasukan'))}</b></span><span>Keluar <b className="money out">{rupiah(tot('pengeluaran'))}</b></span></div>}
+        {rows.length > 0 && (
+          <div className="card-foot row wrap between text-sm">
+            <span>Masuk <b className="money in">{rupiah(total.data ? total.data.pemasukan : totLokal('pemasukan'))}</b></span>
+            <span className="muted">Menampilkan {rows.length} dari {trx.data?.total ?? rows.length}</span>
+            <span>Keluar <b className="money out">{rupiah(total.data ? total.data.pengeluaran : totLokal('pengeluaran'))}</b></span>
+          </div>
+        )}
+        {trx.data && trx.data.total > rows.length && (
+          <div className="card-foot row center"><Button variant="secondary" loading={trx.loading} onClick={() => setBatas((b) => b + 100)}>Muat lagi</Button></div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+const AKSI_AUDIT = { INSERT: 'Ditambah', UPDATE: 'Diubah', DELETE: 'Dihapus' };
+
+function Riwayat({ hak, onChanged, reloadKey }) {
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [aksi, setAksi] = useState('');
+  const [batas, setBatas] = useState(50);
+  useEffect(() => { setBatas(50); }, [aksi]);
+  const s = useAsync(() => riwayatAudit({ batas, aksi }), [aksi, batas, reloadKey]);
+  const [busy, setBusy] = useState(null);
+  async function pulihkan(a) {
+    const t = a.sebelum || {};
+    if (!(await confirm({ title: 'Pulihkan transaksi?', text: `${t.keterangan || t.kategori} · ${rupiah(t.jumlah)} akan dikembalikan ke catatan kas. Pengeluaran besar tetap menunggu persetujuan Ketua.`, okLabel: 'Pulihkan' }))) return;
+    setBusy(a.id);
+    try { await pulihkanTransaksi(a.id); toast.success('Transaksi dipulihkan'); s.reload(); onChanged(); } catch (e) { toast.error(e); } finally { setBusy(null); }
+  }
+  const rows = s.data?.rows || [];
+  return (
+    <div className="stack">
+      <Callout tone="neutral">Semua penambahan, perubahan, dan penghapusan transaksi tercatat di sini dan tidak dapat diubah. Transaksi manual yang terhapus dapat dipulihkan oleh bendahara.</Callout>
+      <div className="toolbar">
+        <Chips value={aksi} onChange={setAksi} tabs={[{ value: '', label: 'Semua' }, { value: 'DELETE', label: 'Dihapus' }, { value: 'UPDATE', label: 'Diubah' }, { value: 'INSERT', label: 'Ditambah' }]} />
+      </div>
+      <Card>
+        <CardBody>
+          {s.loading && !s.data ? <SkeletonRows n={5} /> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !rows.length ? <EmptyState compact icon={Clock} title="Belum ada riwayat" /> : (
+            <div className="rows">
+              {rows.map((a) => {
+                const t = a.sesudah || a.sebelum || {};
+                const bisaPulih = a.aksi === 'DELETE' && hak.bendahara && t.sumber === 'manual';
+                return (
+                  <div className="rowi" key={a.id}>
+                    <span className={`ico sm round ${a.aksi === 'DELETE' ? 'bad' : 'ok'}`}>{a.aksi === 'DELETE' ? <Trash2 size={15} /> : a.aksi === 'UPDATE' ? <Pencil size={15} /> : <Plus size={15} />}</span>
+                    <span className="rowi-main">
+                      <span className="rowi-title">{AKSI_AUDIT[a.aksi]}: {t.keterangan || t.kategori}</span>
+                      <span className="rowi-sub">{a.pelaku_nama || 'Sistem'} · {t.kategori} · {tanggal(t.tanggal)} · {relatif(a.waktu)}</span>
+                    </span>
+                    <span className="money">{rupiah(t.jumlah)}</span>
+                    {bisaPulih && <Button size="sm" variant="secondary" icon={Undo2} loading={busy === a.id} onClick={() => pulihkan(a)}>Pulihkan</Button>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardBody>
+        {s.data && (
+          <div className="card-foot row wrap between text-sm">
+            <span className="muted">Menampilkan {rows.length} dari {s.data.total}</span>
+            {s.data.total > rows.length && <Button variant="secondary" loading={s.loading} onClick={() => setBatas((b) => b + 50)}>Muat lagi</Button>}
+          </div>
+        )}
       </Card>
     </div>
   );
@@ -144,7 +212,7 @@ function Transaksi({ hak, onEdit, onHapus, reloadKey }) {
 function Persetujuan({ hak, onChanged, reloadKey }) {
   const toast = useToast();
   const s = useAsync(() => daftarTransaksi({ status: 'menunggu' }), [reloadKey]);
-  const riwayat = useAsync(async () => (await daftarTransaksi({ jenis: 'pengeluaran', limit: 50 })).filter((t) => t.disetujui_at && t.disetujui_oleh && t.status !== 'menunggu' && t.disetujui_oleh !== t.dibuat_oleh).slice(0, 8), [reloadKey]);
+  const riwayat = useAsync(async () => (await daftarTransaksi({ jenis: 'pengeluaran', limit: 50, diputuskan: true })).filter((t) => t.disetujui_at && t.disetujui_oleh && t.status !== 'menunggu' && t.disetujui_oleh !== t.dibuat_oleh).slice(0, 8), [reloadKey]);
   const [tolak, setTolak] = useState(null);
   const [alasan, setAlasan] = useState('');
   const [busy, setBusy] = useState(null);
@@ -210,6 +278,7 @@ export default function Keuangan() {
   const nav = useNavigate();
   const tabs = [{ value: 'ringkasan', label: 'Ringkasan' }, { value: 'transaksi', label: 'Transaksi' }];
   if (hak.lihat_kas_detail) tabs.push({ value: 'persetujuan', label: 'Persetujuan', count: stat?.pengeluaran_menunggu });
+  if (hak.lihat_kas_detail) tabs.push({ value: 'riwayat', label: 'Riwayat perubahan' });
   const tab = tabs.some((t) => t.value === (tabParam || params.get('tab'))) ? (tabParam || params.get('tab')) : 'ringkasan';
   const [form, setForm] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -236,6 +305,7 @@ export default function Keuangan() {
       {tab === 'transaksi' && <Callout tone="neutral">Saldo dan total kas terbuka untuk semua warga. Rincian iuran IPL per rumah hanya terlihat oleh pemilik rumah dan pengurus blok yang bersangkutan.</Callout>}
       {tab === 'transaksi' && <Transaksi hak={hak} onEdit={setForm} onHapus={hapus} reloadKey={reloadKey} />}
       {tab === 'persetujuan' && <Persetujuan hak={hak} onChanged={segarkan} reloadKey={reloadKey} />}
+      {tab === 'riwayat' && <Riwayat hak={hak} onChanged={segarkan} reloadKey={reloadKey} />}
       {form && <FormKas awal={form.id ? form : null} onClose={() => setForm(null)} onSaved={() => { setForm(null); segarkan(); }} />}
     </div>
   );

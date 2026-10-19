@@ -9,11 +9,25 @@ import './styles/components.css';
 import './styles/layout.css';
 import './styles/pages.css';
 import App from './App';
+import ErrorBoundary, { muatUlangSekali, bersihkanPenjagaMuat } from './components/ui/ErrorBoundary';
+import { daftarkanPwa } from './lib/pwa';
+
+// Berkas halaman hilang setelah rilis baru: muat ulang sekali agar mendapat versi terbaru.
+window.addEventListener('vite:preloadError', (e) => {
+  e.preventDefault();
+  muatUlangSekali();
+});
+// Penjaga dibersihkan setelah aplikasi stabil sebentar.
+window.setTimeout(bersihkanPenjagaMuat, 10000);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary level="app">
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
+
+daftarkanPwa();

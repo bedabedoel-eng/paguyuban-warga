@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { unwrap } from './_util';
+import { unwrap, ambilSemua, perPotong } from './_util';
 // Domain email internal untuk login nomor HP (harus sama dengan yang dipakai saat pendaftaran)
 const AUTH_EMAIL_DOMAIN = (import.meta.env.VITE_AUTH_EMAIL_DOMAIN || 'akun.paguyuban.local').trim().toLowerCase();
 
@@ -31,7 +31,7 @@ export async function daftarWarga({ q = '', blok = '', gang = '', noRumah = '', 
 }
 
 export async function filterDirektori() {
-  const rows = unwrap(await supabase.from('warga').select('blok,no_rumah,pekerjaan').eq('status', 'aktif').limit(2000));
+  const rows = await ambilSemua(() => supabase.from('warga').select('blok,no_rumah,pekerjaan').eq('status', 'aktif').order('id'));
   const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id', { numeric: true }));
   return { nomor: uniq(rows.map((r) => r.no_rumah)), pekerjaan: uniq(rows.map((r) => r.pekerjaan)), rows };
 }
@@ -56,20 +56,23 @@ export async function ubahKontak(uid, data) {
 /* ----- Admin / pengurus ----- */
 export async function wargaMenunggu() {
   // RLS hanya mengembalikan pendaftar di wilayah kewenangan pengguna
-  const w = unwrap(await supabase.from('warga').select(KOLOM_WARGA).in('status', ['menunggu']).order('created_at'));
-  const k = w.length ? unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', w.map((x) => x.id))) : [];
+  const w = await ambilSemua(() => supabase.from('warga').select(KOLOM_WARGA).in('status', ['menunggu']).order('created_at').order('id'));
+  const k = await perPotong(w.map((x) => x.id), async (ids) => unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', ids)));
   const km = Object.fromEntries(k.map((x) => [x.warga_id, x]));
   return w.map((x) => ({ ...x, kontak: km[x.id] || null }));
 }
 
 export async function semuaWarga({ status = '', q = '', blok = '', gang = '' } = {}) {
-  let query = supabase.from('warga').select(KOLOM_WARGA).order('nama').limit(1000);
-  if (status) query = query.eq('status', status);
-  if (blok) query = query.eq('blok', blok);
-  if (gang) query = query.eq('gang_id', gang);
-  if (q) query = query.ilike('nama', `%${q.replace(/[%_,()]/g, ' ')}%`);
-  const w = unwrap(await query);
-  const k = w.length ? unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', w.map((x) => x.id))) : [];
+  const buat = () => {
+    let query = supabase.from('warga').select(KOLOM_WARGA).order('nama').order('id');
+    if (status) query = query.eq('status', status);
+    if (blok) query = query.eq('blok', blok);
+    if (gang) query = query.eq('gang_id', gang);
+    if (q) query = query.ilike('nama', `%${q.replace(/[%_,()]/g, ' ')}%`);
+    return query;
+  };
+  const w = await ambilSemua(buat);
+  const k = await perPotong(w.map((x) => x.id), async (ids) => unwrap(await supabase.from('warga_kontak').select('*').in('warga_id', ids)));
   const km = Object.fromEntries(k.map((x) => [x.warga_id, x]));
   return w.map((x) => ({ ...x, kontak: km[x.id] || null }));
 }
@@ -86,7 +89,7 @@ export const hapusWarga = async (id) => unwrap(await supabase.rpc('hapus_warga',
 
 /** Jumlah warga aktif per blok & jalan (untuk halaman Blok & jalan). */
 export async function sebaranWarga() {
-  const rows = unwrap(await supabase.from('warga').select('blok,gang_id').eq('status', 'aktif').limit(5000));
+  const rows = await ambilSemua(() => supabase.from('warga').select('blok,gang_id').eq('status', 'aktif').order('id'));
   const gang = {}; const tanpaGang = {}; const blok = {};
   for (const r of rows) {
     if (r.blok) blok[r.blok] = (blok[r.blok] || 0) + 1;
