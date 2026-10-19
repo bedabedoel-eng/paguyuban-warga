@@ -1,6 +1,6 @@
 import { Select, NomorRumahFields } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
-import { gangDiBlok } from '../../lib/alamat';
+import { gangDiBlok, gangDariNomor } from '../../lib/alamat';
 
 /** Isian alamat: blok -> sub-blok + nomor rumah -> jalan (bila blok punya gang). */
 export default function AlamatFields({ f, setF, errors = {} }) {
@@ -17,7 +17,12 @@ export default function AlamatFields({ f, setF, errors = {} }) {
           options={blok.map((b) => ({ value: b.kode, label: b.nama }))} />
       </div>
       <div className="form-grid">
-        <NomorRumahFields value={f.noRumah} onChange={(v) => setF((s) => ({ ...s, noRumah: v }))} error={errors.noRumah} />
+        <NomorRumahFields value={f.noRumah} error={errors.noRumah}
+          onChange={(v) => setF((s) => {
+            // Jalan belum dipilih: tebak dari cakupan nomor jalan di blok ini (hanya bila tepat satu cocok).
+            const tebak = !s.gang && s.blok ? gangDariNomor(gang, s.blok, v)?.id : null;
+            return { ...s, noRumah: v, ...(tebak ? { gang: tebak } : {}) };
+          })} />
       </div>
       {opsiGang.length > 0 && (
         <Select label="Jalan" placeholder="Pilih nama jalan" value={f.gang || ''} error={errors.gang}

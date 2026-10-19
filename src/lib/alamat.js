@@ -95,3 +95,25 @@ export function normalisasiAlamat({ blok = '', sub = '', no = '', rumah = '' } =
   else if (n.includes('/')) n = pecahNomor(n).nomor;
   return { blok: b, sub: s, nomor: n, no_rumah: gabungNomor(s, n) };
 }
+
+/** Cakupan nomor sebuah jalan: "3, 4" -> ['3','4']; "1-20" -> ['1-20'] */
+export const daftarNomorGang = (g) => String(g?.nomor || '').split(/[,;]/).map((t) => t.trim().toUpperCase()).filter(Boolean);
+
+/**
+ * Jalan yang cocok untuk sebuah rumah berdasarkan cakupan nomor jalan di blok itu.
+ * Dengan sub-blok (3/5) dicocokkan ke sub-blok; tanpa sub-blok dicocokkan ke nomor rumah.
+ * Rentang "1-20" dicocokkan ke nomor rumah. Hanya mengembalikan jalan bila tepat satu yang cocok.
+ */
+export function gangDariNomor(gang = [], blok, noRumah) {
+  if (!blok || !noRumah) return null;
+  const { sub, nomor } = pecahNomor(noRumah);
+  const b = String(blok).toUpperCase();
+  const bersih = (t) => (t.startsWith(b) && /^\d/.test(t.slice(b.length)) ? t.slice(b.length) : t);
+  const cocok = gangDiBlok(gang, blok).filter((g) => daftarNomorGang(g).some((tok) => {
+    const t = bersih(tok);
+    const r = t.match(/^(\d+)-(\d+)$/);
+    if (r) return /^\d+$/.test(nomor) && Number(nomor) >= Number(r[1]) && Number(nomor) <= Number(r[2]);
+    return sub ? t === sub : t === nomor;
+  }));
+  return cocok.length === 1 ? cocok[0] : null;
+}

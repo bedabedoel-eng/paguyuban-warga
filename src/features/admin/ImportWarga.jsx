@@ -8,7 +8,7 @@ import { parseCsv, CONTOH_CSV } from '../../lib/csv';
 import { normalizeHp, formatHp } from '../../lib/phone';
 import { importWarga } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
-import { POLA_NOMOR_RUMAH, gangDiBlok, normalisasiAlamat } from '../../lib/alamat';
+import { POLA_NOMOR_RUMAH, gangDiBlok, gangDariNomor, normalisasiAlamat } from '../../lib/alamat';
 import { pernahMenikah } from '../../lib/constants';
 import { normalisasiLinkFoto } from '../../lib/image';
 
@@ -56,7 +56,8 @@ function olahBaris(rows, blokKode, gang = []) {
     const hp = normalizeHp(ambil('hp'));
     const nama = ambil('nama');
     const namaGang = ambil('gang');
-    const g = namaGang ? gangDiBlok(gang, blok).find((x) => x.nama.trim().toLowerCase() === namaGang.toLowerCase()) : null;
+    let g = namaGang ? gangDiBlok(gang, blok).find((x) => x.nama.trim().toLowerCase() === namaGang.toLowerCase()) : null;
+    if (!namaGang && !g && blokKode.includes(blok) && POLA_NOMOR_RUMAH.test(no)) g = gangDariNomor(gang, blok, no);
     const nikahMentah = ambil('status_pernikahan').toLowerCase();
     const nikah = nikahMentah ? PETA_NIKAH[nikahMentah] || '?' : '';
     const anak = ambil('jumlah_anak');

@@ -12,6 +12,8 @@ import { sebaranWarga } from '../../services/warga';
 import ImportWilayah, { KOLOM_WILAYAH } from './ImportWilayah';
 import { toCsv, unduhBerkas, stempelTanggal } from '../../lib/csv';
 
+const g_ada_nomor = (daftar, id) => !!daftar.find((x) => x.id === id)?.nomor;
+
 /** Daftar jalan di setiap blok. Dikelola pimpinan & sekretaris. */
 export default function WilayahGang() {
   const { hak } = useAuth();
@@ -37,7 +39,7 @@ export default function WilayahGang() {
   async function simpanUbah() {
     if (ubah.nama.trim().length < 2) return toast.error('Nama terlalu pendek');
     setBusy(true);
-    try { await simpanGang({ id: ubah.id, nama: ubah.nama.trim(), blok: ubah.blok || null }); setUbah(null); await reload(); toast.success('Jalan diperbarui'); }
+    try { await simpanGang({ id: ubah.id, nama: ubah.nama.trim(), blok: ubah.blok || null, ...(ubah.nomor || g_ada_nomor(gang, ubah.id) ? { nomor: (ubah.nomor || '').trim() || null } : {}) }); setUbah(null); await reload(); toast.success('Jalan diperbarui'); }
     catch (e) { toast.error(e); } finally { setBusy(false); }
   }
   async function hapus(g) {
@@ -50,10 +52,10 @@ export default function WilayahGang() {
     const baris = [];
     for (const b of blok) {
       const gb = gang.filter((g) => g.blok === b.kode);
-      if (!gb.length) baris.push({ blok: b.kode, nama_blok: b.nama, gang: '', warga: sebar.data?.blok?.[b.kode] || 0 });
-      for (const g of gb) baris.push({ blok: b.kode, nama_blok: b.nama, gang: g.nama, warga: jml(g.id) });
+      if (!gb.length) baris.push({ blok: b.kode, nomor: '', gang: '', warga: sebar.data?.blok?.[b.kode] || 0 });
+      for (const g of gb) baris.push({ blok: b.kode, nomor: g.nomor || '', gang: g.nama, warga: jml(g.id) });
     }
-    for (const g of gang.filter((x) => !x.blok)) baris.push({ blok: '', nama_blok: '', gang: g.nama, warga: jml(g.id) });
+    for (const g of gang.filter((x) => !x.blok)) baris.push({ blok: '', nomor: g.nomor || '', gang: g.nama, warga: jml(g.id) });
     if (!baris.length) return toast.error('Belum ada data untuk diekspor');
     unduhBerkas(`blok-jalan-${stempelTanggal()}.csv`, toCsv(baris, [...KOLOM_WILAYAH, { key: 'warga', label: 'warga_aktif' }]));
     toast.success(`${baris.length} baris diekspor ke CSV`);
@@ -64,7 +66,7 @@ export default function WilayahGang() {
     <div className="rowi">
       <span className="ico sm"><Signpost size={16} /></span>
       <span className="rowi-main"><span className="rowi-title">{g.nama}</span>
-        <span className="rowi-sub">{sebar.data ? `${jml(g.id)} warga aktif` : '…'}</span></span>
+        <span className="rowi-sub">{g.nomor ? `Nomor ${g.nomor} · ` : ''}{sebar.data ? `${jml(g.id)} warga aktif` : '…'}</span></span>
       <span className="rowi-end">
         <Button size="xs" variant="ghost" to={`/admin/warga?gang=${g.id}`} icon={Users}>Warga</Button>
         <IconButton small icon={Pencil} size={15} label={`Ubah ${g.nama}`} onClick={() => setUbah({ ...g, blok: g.blok || '' })} />
@@ -111,6 +113,8 @@ export default function WilayahGang() {
         {ubah && (
           <div className="stack">
             <Input label="Nama jalan" value={ubah.nama} maxLength={60} onChange={(e) => setUbah((s) => ({ ...s, nama: e.target.value }))} />
+            <Input label="Nomor (opsional)" value={ubah.nomor || ''} maxLength={80} placeholder="mis. 3, 4 atau 1-20" onChange={(e) => setUbah((s) => ({ ...s, nomor: e.target.value }))}
+              hint="Sub-blok atau rentang nomor rumah yang berada di jalan ini. Dipakai untuk mengisi jalan otomatis saat impor warga dan pendaftaran." />
             <Select label="Blok" value={ubah.blok} onChange={(e) => setUbah((s) => ({ ...s, blok: e.target.value }))}
               options={[{ value: '', label: 'Lintas blok' }, ...blok.map((b) => ({ value: b.kode, label: b.nama }))]}
               hint="Pilih Lintas blok bila jalan ini melewati beberapa blok." />

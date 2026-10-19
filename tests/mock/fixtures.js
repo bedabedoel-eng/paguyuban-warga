@@ -11,9 +11,9 @@ export const BLOK = [
 ];
 // Satu blok berisi beberapa gang / jalan
 export const GANG = [
-  ['g-melati', 'Jl. Melati', 'A'], ['g-mawar', 'Jl. Mawar', 'A'], ['g-kenanga', 'Jl. Kenanga', 'B'],
+  ['g-melati', 'Jl. Melati', 'A', '3, 4'], ['g-mawar', 'Jl. Mawar', 'A', '1'], ['g-kenanga', 'Jl. Kenanga', 'B'],
   ['g-zamrud', 'Jl. Zamrud', 'C'], ['g-safir', 'Jl. Safir', 'C'], ['g-cempaka', 'Jl. Cempaka', 'D'],
-].map(([id, nama, blok], i) => ({ id, nama, blok, urutan: i + 1, created_at: new Date().toISOString() }));
+].map(([id, nama, blok, nomor], i) => ({ id, nama, blok, nomor: nomor || null, urutan: i + 1, created_at: new Date().toISOString() }));
 
 export const PENGATURAN = {
   id: 1, nama_paguyuban: 'Paguyuban Warga Digital', tagline: 'Rukun, terbuka, dan saling menjaga',

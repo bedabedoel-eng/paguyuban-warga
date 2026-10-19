@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { POLA_NOMOR_RUMAH, pecahNomor, gabungNomor, teksRumah, alamatLengkap, normalisasiAlamat } from '../../src/lib/alamat.js';
+import { gangDariNomor, daftarNomorGang, POLA_NOMOR_RUMAH, pecahNomor, gabungNomor, teksRumah, alamatLengkap, normalisasiAlamat } from '../../src/lib/alamat.js';
 
 const BLOK = ['A', 'B', 'C', 'D'];
 const hasil = (x) => { const r = normalisasiAlamat(x, BLOK); return `${r.blok}|${r.sub}|${r.nomor}|${r.no_rumah}`; };
@@ -44,4 +44,26 @@ test('blok tidak dikenal dibiarkan agar divalidasi pemanggil', () => {
 test('pola nomor rumah: sub-blok wajib diikuti nomor', () => {
   for (const ok of ['12', '3/5', '7A', 'C.3', '10-B', 'A3/12']) assert.ok(POLA_NOMOR_RUMAH.test(ok), ok);
   for (const bad of ['3/', '/5', '', '3/5/7', '12345678901', ' 5']) assert.ok(!POLA_NOMOR_RUMAH.test(bad), bad);
+});
+
+test('jalan otomatis dari cakupan nomor', () => {
+  const g = [
+    { id: 'melati', nama: 'Jl. Melati', blok: 'A', nomor: '3, 4' },
+    { id: 'mawar', nama: 'Jl. Mawar', blok: 'A', nomor: '1' },
+    { id: 'kenanga', nama: 'Jl. Kenanga', blok: 'B', nomor: '1-20' },
+    { id: 'utama', nama: 'Jl. Utama', blok: null, nomor: '' },
+  ];
+  assert.deepEqual(daftarNomorGang(g[0]), ['3', '4']);
+  assert.equal(gangDariNomor(g, 'A', '3/5').id, 'melati');
+  assert.equal(gangDariNomor(g, 'A', '4/1').id, 'melati');
+  assert.equal(gangDariNomor(g, 'A', '1/9').id, 'mawar');
+  assert.equal(gangDariNomor(g, 'A', '7/1'), null);
+  assert.equal(gangDariNomor(g, 'B', '12').id, 'kenanga');
+  assert.equal(gangDariNomor(g, 'B', '25'), null);
+  assert.equal(gangDariNomor(g, 'A', '3/5').id, 'melati');
+});
+
+test('cakupan ganda yang bertabrakan tidak menebak', () => {
+  const g = [{ id: 'x', nama: 'X', blok: 'A', nomor: '3' }, { id: 'y', nama: 'Y', blok: 'A', nomor: 'A3' }];
+  assert.equal(gangDariNomor(g, 'A', '3/5'), null);
 });
