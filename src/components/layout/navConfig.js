@@ -29,7 +29,7 @@ export function navGroups(hak) {
       kelola.push({ to: '/admin/verifikasi', label: 'Verifikasi anggota', desc: 'Pendaftar baru', icon: UserCheck, tone: 'gold', badge: 'anggota_menunggu' });
       kelola.push({ to: '/admin/warga', label: 'Data anggota', desc: 'Ubah, ekspor, cari', icon: IdCard, tone: '' });
     }
-    if (hak.kelola_anggota) kelola.push({ to: '/admin/wilayah', label: 'Blok & gang', desc: 'Wilayah, ekspor & impor', icon: Signpost, tone: 'info' });
+    if (hak.kelola_anggota) kelola.push({ to: '/admin/wilayah', label: 'Blok & jalan', desc: 'Wilayah, ekspor & impor', icon: Signpost, tone: 'info' });
     if (hak.kelola_laporan) kelola.push({ to: '/admin/laporan', label: 'Aspirasi masuk', desc: 'Tanggapi warga', icon: Inbox, tone: 'warn', badge: 'laporan_baru' });
     if (hak.bendahara) {
       kelola.push({ to: '/admin/ipl', label: 'Kelola IPL', desc: 'Tagihan & bukti bayar', icon: FileCheck2, tone: 'ok', badge: 'pembayaran_menunggu' });
@@ -95,7 +95,7 @@ export function menuCepatPengurus(hak) {
   if (hak.bendahara) k.push({ to: '/keuangan?catat=1', label: 'Catat kas', icon: HandCoins, tone: 'gold' });
   if (hak.bendahara) k.push({ to: '/admin/ipl', label: 'Terbitkan tagihan', icon: FilePlus2, tone: 'ok', dup: true });
   if (hak.kelola_anggota || hak.humas) k.push({ to: '/admin/warga', label: 'Data anggota', icon: IdCard, tone: '' });
-  if (hak.kelola_anggota) k.push({ to: '/admin/wilayah', label: 'Blok & gang', icon: Signpost, tone: 'info' });
+  if (hak.kelola_anggota) k.push({ to: '/admin/wilayah', label: 'Blok & jalan', icon: Signpost, tone: 'info' });
   if (hak.kelola_dokumen) k.push({ to: '/administrasi', label: 'Surat & notulen', icon: FolderArchive, tone: 'neutral' });
   if (hak.kelola_pengurus) k.push({ to: '/pengurus/kelola', label: 'Atur pengurus', icon: Network, tone: 'violet' });
   k.push(

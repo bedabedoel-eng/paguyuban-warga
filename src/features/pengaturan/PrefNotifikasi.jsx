@@ -6,7 +6,7 @@ import { ubahProfil } from '../../services/warga';
 
 const JENIS = [
   ['ipl', 'Tagihan & pembayaran IPL', 'Tagihan terbit, bukti diterima atau ditolak'],
-  ['pengumuman', 'Pengumuman', 'Pengumuman umum dan info khusus gang Anda'],
+  ['pengumuman', 'Pengumuman', 'Pengumuman umum dan info khusus jalan Anda'],
   ['kegiatan', 'Kegiatan', 'Kegiatan baru yang dijadwalkan'],
   ['laporan', 'Aspirasi saya', 'Tanggapan pengurus atas aspirasi Anda'],
   ['administrasi', 'Notulen & dokumen', 'Dokumen yang dibagikan pengurus'],

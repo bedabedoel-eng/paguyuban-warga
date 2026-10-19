@@ -233,6 +233,7 @@ export default function Keuangan() {
         mobileActions={hak.bendahara && <IconButton icon={Plus} label="Catat transaksi" onClick={() => setForm({})} />} />
       <LineTabs value={tab} onChange={(v) => nav(v === 'ringkasan' ? '/keuangan' : `/keuangan/${v}`, { replace: true })} tabs={tabs} />
       {tab === 'ringkasan' && <Ringkasan r={r} ring={ring} />}
+      {tab === 'transaksi' && <Callout tone="neutral">Saldo dan total kas terbuka untuk semua warga. Rincian iuran IPL per rumah hanya terlihat oleh pemilik rumah dan pengurus blok yang bersangkutan.</Callout>}
       {tab === 'transaksi' && <Transaksi hak={hak} onEdit={setForm} onHapus={hapus} reloadKey={reloadKey} />}
       {tab === 'persetujuan' && <Persetujuan hak={hak} onChanged={segarkan} reloadKey={reloadKey} />}
       {form && <FormKas awal={form.id ? form : null} onClose={() => setForm(null)} onSaved={() => { setForm(null); segarkan(); }} />}

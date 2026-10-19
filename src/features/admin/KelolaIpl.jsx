@@ -9,6 +9,9 @@ import { buatTagihan, tagihanPeriode, periodeTersedia, pembayaranMenunggu, verif
 import { signedUrl } from '../../lib/storage';
 import { awalBulan, periode, rupiah, relatif } from '../../lib/format';
 import { STATUS_TAGIHAN } from '../../lib/constants';
+import { useAuth } from '../../context/AuthContext';
+import { labelLingkupBlok } from '../../lib/akses';
+import { Callout } from '../../components/ui';
 
 function Menunggu({ onChanged }) {
   const toast = useToast();
@@ -114,10 +117,12 @@ function Periode() {
 
 export default function KelolaIpl() {
   const { stat, refresh } = useTugas();
+  const { hak } = useAuth();
   const [tab, setTab] = useState('menunggu');
   return (
     <div className="page medium">
       <PageHeader back title="Kelola IPL" desc="Verifikasi bukti transfer, terbitkan tagihan bulanan, dan catat pembayaran tunai." />
+      <Callout tone="info">IPL yang Anda kelola: <b>{labelLingkupBlok(hak.ipl_blok)}</b>. IPL tiap blok hanya terlihat oleh pengurus blok tersebut.</Callout>
       <SegTabs value={tab} onChange={setTab} tabs={[{ value: 'menunggu', label: 'Bukti transfer', count: stat?.pembayaran_menunggu }, { value: 'periode', label: 'Tagihan per bulan' }]} />
       {tab === 'menunggu' ? <Menunggu onChanged={refresh} /> : <Periode />}
     </div>

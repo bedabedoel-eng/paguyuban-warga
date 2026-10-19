@@ -47,7 +47,7 @@ export default function TagihanIpl() {
       <PageHeader title="Tagihan IPL" desc={`Iuran pengelolaan lingkungan rumah ${alamat(warga)}.`}
         actions={<Button size="sm" variant="secondary" icon={History} to="/ipl/riwayat">Riwayat</Button>} />
       {s.loading && !s.data ? <Card pad><SkeletonRows n={3} avatar={false} /></Card> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : !warga.rumah_id ? (
-        <Card><EmptyState icon={House} title="Akun belum terhubung ke rumah" text="Hubungi sekretaris atau humas gang untuk menghubungkan akun Anda dengan data rumah." /></Card>
+        <Card><EmptyState icon={House} title="Akun belum terhubung ke rumah" text="Hubungi sekretaris atau humas jalan untuk menghubungkan akun Anda dengan data rumah." /></Card>
       ) : (
         <>
           <Card pad className="bill">

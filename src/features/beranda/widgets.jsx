@@ -150,7 +150,7 @@ export function TugasGrid({ hak, stat, loading }) {
   );
 }
 
-/** Ringkasan gang/jalan untuk humas. */
+/** Ringkasan jalan untuk humas. */
 export function WilayahCards({ wilayah = [] }) {
   if (!wilayah?.length) return null;
   return (

@@ -40,3 +40,29 @@ function loadImage(file) {
     img.src = URL.createObjectURL(file);
   });
 }
+
+/**
+ * Rapikan tautan foto: wajib https, tautan berbagi Google Drive / Dropbox diubah
+ * menjadi tautan gambar langsung. Melempar Error bila tidak valid.
+ */
+export function normalisasiLinkFoto(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return '';
+  if (/^http:\/\//i.test(s)) s = `https://${s.slice(7)}`;
+  if (!/^https:\/\/[^\s]+$/i.test(s)) throw new Error('Tautan foto tidak valid. Tempel alamat gambar yang diawali https://');
+  if (s.length > 480) throw new Error('Tautan foto terlalu panjang (maks. 480 karakter)');
+  let u;
+  try { u = new URL(s); } catch { throw new Error('Tautan foto tidak valid'); }
+  if (u.hostname === 'drive.google.com') {
+    const id = (u.pathname.match(/\/file\/d\/([\w-]+)/) || [])[1] || u.searchParams.get('id');
+    if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+  }
+  if (/(^|\.)dropbox\.com$/.test(u.hostname) && u.searchParams.get('dl') === '0') {
+    u.searchParams.delete('dl');
+    u.searchParams.set('raw', '1');
+    return u.toString();
+  }
+  return s;
+}
+
+export const adaUrl = (p) => /^https?:/i.test(p || '');

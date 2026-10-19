@@ -8,7 +8,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { detailPengumuman, hapusPengumuman } from '../../services/pengumuman';
 import { removeFile } from '../../lib/storage';
 import { KATEGORI_PENGUMUMAN } from '../../lib/constants';
-import { kelolaWilayah } from '../../lib/akses';
+import { kelolaInfo } from '../../lib/akses';
 import { tanggalJam } from '../../lib/format';
 import { labelSasaran } from '../../lib/alamat';
 import { useSettings } from '../../context/SettingsContext';
@@ -25,7 +25,7 @@ export default function DetailPengumuman() {
   if (s.error && !s.data) return <div className="page narrow"><PageHeader back title="Pengumuman" /><ErrorState error={s.error} onRetry={s.reload} /></div>;
   const p = s.data;
   const k = KATEGORI_PENGUMUMAN[p.kategori] || KATEGORI_PENGUMUMAN.umum;
-  const boleh = kelolaWilayah(hak, p.gang_id);
+  const boleh = kelolaInfo(hak, p, gang);
   const target = labelSasaran(p, gang);
   async function hapus() {
     if (!(await confirm({ title: 'Hapus pengumuman?', text: 'Pengumuman ini akan hilang dari daftar semua warga.', okLabel: 'Hapus', danger: true }))) return;

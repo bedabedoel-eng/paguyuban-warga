@@ -9,6 +9,10 @@ import { normalizeHp, formatHp } from '../../lib/phone';
 import { importWarga } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
 import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
+import { pernahMenikah } from '../../lib/constants';
+import { normalisasiLinkFoto } from '../../lib/image';
+
+const PETA_NIKAH = { 'belum menikah': 'belum_menikah', belum_menikah: 'belum_menikah', lajang: 'belum_menikah', 'belum kawin': 'belum_menikah', menikah: 'menikah', 'sudah menikah': 'menikah', kawin: 'menikah', 'cerai hidup': 'cerai_hidup', cerai_hidup: 'cerai_hidup', 'cerai mati': 'cerai_mati', cerai_mati: 'cerai_mati' };
 
 const PIN_AWAL = '123456';
 const ALIAS = {
@@ -17,9 +21,12 @@ const ALIAS = {
   blok: ['blok', 'block'],
   no_rumah: ['no_rumah', 'no rumah', 'nomor rumah', 'nomor_rumah', 'no', 'nomor'],
   rumah: ['rumah', 'blok_rumah', 'blok rumah', 'alamat'],
-  gang: ['gang', 'jalan', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
+  gang: ['jalan', 'gang', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
   pekerjaan: ['pekerjaan', 'keahlian', 'profesi'],
   kepala_keluarga: ['kepala_keluarga', 'kepala keluarga', 'kk'],
+  status_pernikahan: ['status_pernikahan', 'status pernikahan', 'pernikahan', 'status nikah', 'status'],
+  jumlah_anak: ['jumlah_anak', 'jumlah anak', 'anak'],
+  foto: ['foto', 'link foto', 'link_foto', 'url foto', 'tautan foto', 'pas foto', 'pas_foto'],
 };
 
 function petaKolom(header) {
@@ -52,15 +59,24 @@ function olahBaris(rows, blokKode, gang = []) {
     const nama = ambil('nama');
     const namaGang = ambil('gang');
     const g = namaGang ? gangDiBlok(gang, blok).find((x) => x.nama.trim().toLowerCase() === namaGang.toLowerCase()) : null;
+    const nikahMentah = ambil('status_pernikahan').toLowerCase();
+    const nikah = nikahMentah ? PETA_NIKAH[nikahMentah] || '?' : '';
+    const anak = ambil('jumlah_anak');
+    let foto = '';
+    let galatFoto = '';
+    try { foto = normalisasiLinkFoto(ambil('foto')); } catch (e) { galatFoto = e.message; }
     let galat = '';
     if (nama.length < 2) galat = 'Nama kosong/terlalu pendek';
     else if (!hp) galat = 'Nomor HP tidak valid';
     else if (!blokKode.includes(blok)) galat = `Blok "${blok || '-'}" tidak dikenal`;
     else if (!POLA_NOMOR_RUMAH.test(no)) galat = 'Nomor rumah tidak valid';
-    else if (namaGang && !g) galat = `Gang "${namaGang}" belum ada di Blok ${blok}`;
+    else if (namaGang && !g) galat = `Jalan "${namaGang}" belum ada di Blok ${blok}`;
     else if (sudah.has(hp)) galat = 'Nomor HP ganda di berkas';
+    else if (nikah === '?') galat = `Status pernikahan "${nikahMentah}" tidak dikenal`;
+    else if (anak && (!/^\d{1,2}$/.test(anak) || Number(anak) > 30)) galat = 'Jumlah anak: angka 0 sampai 30';
+    else if (galatFoto) galat = galatFoto;
     if (hp) sudah.add(hp);
-    return { baris: n + 2, nama, hp, blok, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), galat };
+    return { baris: n + 2, nama, hp, blok, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', foto, galat };
   });
   return { kurang: [], list };
 }
@@ -109,7 +125,7 @@ export default function ImportWarga() {
     try {
       for (let i = 0; i < valid.length; i += 100) {
         const potong = valid.slice(i, i + 100);
-        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga })), PIN_AWAL);
+        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga, status_pernikahan, jumlah_anak, foto }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga, status_pernikahan: status_pernikahan || null, jumlah_anak: jumlah_anak || null, foto: foto || null })), PIN_AWAL);
         dibuat.push(res.dibuat || 0);
         for (const s of res.dilewati || []) dilewati.push({ ...s, baris: potong[s.baris - 1]?.baris ?? s.baris });
       }
@@ -139,7 +155,7 @@ export default function ImportWarga() {
         <div className="steps">
           <div className="step"><span className="n">1</span><div className="body">
             <h3>Siapkan berkas</h3>
-            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b> (boleh 3/5). Opsional <b>gang</b> (nama gang/jalan persis seperti di menu Blok & gang), <b>pekerjaan</b>, dan <b>kepala_keluarga</b> (ya/tidak). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
+            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b> (boleh 3/5). Opsional <b>jalan</b> (nama jalan persis seperti di menu Blok & jalan), <b>pekerjaan</b>, <b>kepala_keluarga</b> (ya/tidak), <b>status_pernikahan</b> (belum menikah / menikah / cerai hidup / cerai mati), <b>jumlah_anak</b> (diisi bila sudah menikah), dan <b>foto</b> (tautan gambar https). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
             <div style={{ marginTop: 10 }}><Button size="sm" variant="secondary" icon={Download} onClick={unduhContoh}>Unduh contoh CSV</Button></div>
           </div></div>
           <div className="step"><span className="n">2</span><div className="body">

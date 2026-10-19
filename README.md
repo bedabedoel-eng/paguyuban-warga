@@ -75,7 +75,8 @@ paguyuban-warga/
 │  ├─ 03-pin-angka.sql    # aturan PIN 6 angka (jalankan setelah 01)
 │  ├─ 04-import-warga.sql # import warga massal + wajib ganti PIN (setelah 03)
 │  ├─ 05-struktur-pengurus.sql # peran pengurus, hak per jabatan, persetujuan kas, arsip surat (setelah 04)
-│  └─ 06-nama-perumahan.sql    # nama & alamat perumahan (database yang sudah berjalan)
+│  ├─ 06-nama-perumahan.sql    # nama & alamat perumahan (database yang sudah berjalan)
+│  └─ 07-update-sensus-blok-ipl.sql # sensus (status nikah, anak), foto dari tautan, pengurus & IPL per blok (setelah 06)
 ├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
@@ -112,6 +113,7 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
    - Tempel isi `supabase/04-import-warga.sql` lalu **Run** (import warga massal dan kewajiban ganti PIN). **Jalankan sebelum men-deploy versi aplikasi yang memakainya.**
    - Tempel isi `supabase/05-struktur-pengurus.sql` lalu **Run** (peran pengurus, hak akses per jabatan, persetujuan pengeluaran, arsip surat & notulen, gang/jalan di dalam blok, pengumuman per blok/gang, nomor rumah format 3/5). Aman dijalankan ulang dan **tidak menghapus data**; jabatan lama dipetakan otomatis ke peran (mis. "Bendahara" → peran Bendahara). Setelah itu buka menu **Blok & gang**, isi daftar gang/jalan tiap blok, lalu lengkapi gang warga lama di **Data anggota** (filter per blok menunjukkan warga yang belum memilih gang). **Wajib** sebelum men-deploy versi ini. Bila suatu saat Anda menjalankan ulang `01`, jalankan ulang `05` sesudahnya.
    - Tempel isi `supabase/06-nama-perumahan.sql` lalu **Run** (hanya untuk database yang sudah berjalan: mengganti nama lingkungan menjadi *Perumahan Vila Gading Royal* dan alamat *Desa Pamegarsari, Kec. Parung, Kab. Bogor*; RT/RW dan pengaturan lain tidak disentuh). Instalasi baru tidak perlu karena `01`/`02` sudah memakainya.
+   - Tempel isi `supabase/07-update-sensus-blok-ipl.sql` lalu **Run** (jalankan **setelah 06**, sebelum men-deploy versi aplikasi ini). Menambah status pernikahan & jumlah anak, foto profil dari tautan https, serta **pengurus per blok**: pada *Pengurus > Atur pengurus* Ketua/Wakil/Sekretaris/Bendahara dapat diberi *Wilayah blok*. Data IPL (tagihan, bukti transfer, rincian di kas, statistik) hanya terlihat oleh pemilik rumah dan pengurus blok itu; pengumuman & kegiatan pengurus blok dibatasi ke bloknya. Pengurus tanpa wilayah blok tetap berlaku untuk semua blok. Aman dijalankan ulang; jalankan lagi bila `05` pernah diulang.
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)

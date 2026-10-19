@@ -14,5 +14,5 @@ export default function StorageImage({ bucket = 'konten', path, alt = '', fallba
   }, [bucket, path]);
   if (!path || failed) return fallback;
   if (!url) return fallback || <span className="skeleton" style={{ display: 'block', width: '100%', height: '100%' }} />;
-  return <img src={url} alt={alt} className={className} style={style} loading="lazy" onError={() => setFailed(true)} />;
+  return <img src={url} alt={alt} className={className} style={style} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
 }

@@ -2,7 +2,7 @@ import { Input, Select } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { gangDiBlok } from '../../lib/alamat';
 
-/** Isian alamat: blok -> gang/jalan (bila blok punya gang) -> nomor rumah. */
+/** Isian alamat: blok -> jalan (bila blok punya gang) -> nomor rumah. */
 export default function AlamatFields({ f, setF, errors = {} }) {
   const { blok, gang } = useSettings();
   const opsiGang = f.blok ? gangDiBlok(gang, f.blok) : [];
@@ -19,10 +19,10 @@ export default function AlamatFields({ f, setF, errors = {} }) {
           error={errors.noRumah} maxLength={10} placeholder="Contoh: 3/5" hint={errors.noRumah ? undefined : 'Sesuai alamat, mis. 12 atau 3/5'} />
       </div>
       {opsiGang.length > 0 && (
-        <Select label="Gang / jalan" placeholder="Pilih gang atau nama jalan" value={f.gang || ''} error={errors.gang}
+        <Select label="Jalan" placeholder="Pilih nama jalan" value={f.gang || ''} error={errors.gang}
           onChange={(e) => setF((s) => ({ ...s, gang: e.target.value }))}
           options={opsiGang.map((g) => ({ value: g.id, label: g.nama }))}
-          hint={errors.gang ? undefined : 'Pendaftaran Anda diperiksa humas gang ini.'} />
+          hint={errors.gang ? undefined : 'Pendaftaran Anda diperiksa humas jalan ini.'} />
       )}
     </>
   );

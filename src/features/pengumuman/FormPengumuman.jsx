@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Send, Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, ErrorState, ImagePicker, Input, Select, StorageImage, Textarea, Checkbox, Field, SkeletonRows, ChoiceGroup, Callout } from '../../components/ui';
+import { Button, Card, ErrorState, ImagePicker, Input, StorageImage, SasaranField, Textarea, Checkbox, Field, SkeletonRows, ChoiceGroup, Callout } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -67,10 +67,10 @@ function Isi({ awal, id }) {
           </div>
           <div className="form-section">
             <div className="form-grid">
-              <Select label="Ditujukan untuk" value={f.sasaran} onChange={set('sasaran')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
+              <SasaranField value={f.sasaran} onChange={(v) => setF((s) => ({ ...s, sasaran: v }))} hak={hak} blok={blok} gang={gang} disabled={!!id && !hak.kelola_anggota} />
               <div style={{ alignSelf: 'end', paddingBottom: 10 }}><Checkbox checked={f.disematkan} onChange={(v) => setF((s) => ({ ...s, disematkan: v }))}>Sematkan di urutan teratas</Checkbox></div>
             </div>
-            {!hak.kelola_anggota && <Callout tone="neutral">Sebagai Humas Gang, pengumuman Anda hanya tampil untuk warga gang yang Anda pegang.</Callout>}
+            {!hak.kelola_anggota && <Callout tone="neutral">Pengumuman Anda hanya tampil untuk warga di wilayah yang Anda pegang (blok atau jalan).</Callout>}
             <Field label="Gambar" optional>
               <ImagePicker file={foto} onChange={setFoto} />
               {awal?.gambar_path && !foto && !hapusFoto && (

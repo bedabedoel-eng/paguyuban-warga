@@ -30,7 +30,7 @@ export default function VerifikasiAnggota() {
 
   async function konfirmasiSetuju() {
     setBusy(true);
-    if (perluGang(setuju) && !gangPilih) { setBusy(false); return toast.error('Pilih gang/jalan rumah anggota ini'); }
+    if (perluGang(setuju) && !gangPilih) { setBusy(false); return toast.error('Pilih jalan rumah anggota ini'); }
     try {
       if (gangPilih && gangPilih !== setuju.gang_id) await ubahWargaAdmin(setuju.id, { gang_id: gangPilih });
       await setujuiAnggota(setuju.id, kk); toast.success(`${setuju.nama} sekarang anggota aktif`); setSetuju(null); s.reload(); refresh(); } catch (e) { toast.error(e); } finally { setBusy(false); }
@@ -41,7 +41,7 @@ export default function VerifikasiAnggota() {
     try { await tolakAnggota(tolak.id, alasan); toast.success('Pendaftaran ditolak'); setTolak(null); setAlasan(''); s.reload(); refresh(); } catch (e) { toast.error(e); } finally { setBusy(false); }
   }
 
-  const scope = hak.kelola_anggota ? 'semua blok dan gang' : namaWilayah(hak, gang);
+  const scope = hak.kelola_anggota ? 'semua blok dan jalan' : namaWilayah(hak, gang);
   return (
     <div className="page narrow">
       <PageHeader back title="Verifikasi anggota" desc={`Periksa nama dan alamat rumah sebelum menyetujui. Cakupan Anda: ${scope}.`} />
@@ -62,7 +62,7 @@ export default function VerifikasiAnggota() {
                   <span className="rowi-sub text-xs">Mendaftar {relatif(w.created_at)}</span>
                 </div>
                 <div className="rowi-end">
-                  {!w.blok ? <Badge tone="warn">Data belum lengkap</Badge> : perluGang(w) && <Badge tone="warn">Gang belum dipilih</Badge>}
+                  {!w.blok ? <Badge tone="warn">Data belum lengkap</Badge> : perluGang(w) && <Badge tone="warn">Jalan belum dipilih</Badge>}
                   <Button size="sm" variant="secondary" icon={X} onClick={() => setTolak(w)}>Tolak</Button>
                   <Button size="sm" icon={Check} disabled={!w.blok} onClick={() => { setKk(true); setGangPilih(w.gang_id || ''); setSetuju(w); }}>Setujui</Button>
                 </div>
@@ -77,7 +77,7 @@ export default function VerifikasiAnggota() {
         <div className="stack">
           <Callout tone="info">Rumah akan dibuat otomatis bila belum ada, dan anggota langsung menerima tagihan IPL periode berikutnya.</Callout>
           {opsiGang.length > 0 && (
-            <Select label="Gang / jalan" placeholder="Pilih gang atau jalan" value={gangPilih} onChange={(e) => setGangPilih(e.target.value)}
+            <Select label="Jalan" placeholder="Pilih jalan" value={gangPilih} onChange={(e) => setGangPilih(e.target.value)}
               options={opsiGang.map((g) => ({ value: g.id, label: g.nama }))} hint="Menentukan humas yang mendampingi warga ini." />
           )}
           <Checkbox checked={kk} onChange={setKk} hint="Matikan bila pendaftar adalah anggota keluarga lain di rumah yang sama.">Kepala keluarga di rumah ini</Checkbox>

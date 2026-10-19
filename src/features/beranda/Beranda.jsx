@@ -28,7 +28,7 @@ function IkonCuaca({ kode, size = 24 }) {
 function KartuTagihan({ ipl, rumahId }) {
   const r = ringkasIpl(ipl.data);
   if (ipl.loading && !ipl.data) return <CardBody><SkeletonRows n={2} avatar={false} /></CardBody>;
-  if (!rumahId) return <CardBody><EmptyState compact icon={House} title="Akun belum terhubung ke rumah" text="Hubungi sekretaris atau humas gang Anda." /></CardBody>;
+  if (!rumahId) return <CardBody><EmptyState compact icon={House} title="Akun belum terhubung ke rumah" text="Hubungi sekretaris atau humas jalan Anda." /></CardBody>;
   if (!r.terbaru) return <CardBody><EmptyState compact icon={Receipt} title="Belum ada tagihan" text="Tagihan muncul setelah bendahara menerbitkannya." /></CardBody>;
   const adaTunggakan = r.belum.length > 0;
   const st = adaTunggakan ? 'belum_bayar' : r.menunggu.length ? 'menunggu_verifikasi' : 'lunas';
@@ -64,6 +64,7 @@ export default function Beranda() {
   const persen = totalIpl ? Math.round((s.ipl_lunas / totalIpl) * 100) : 0;
   const kas = d.kas.data || {};
   const statLoading = !stat;
+  const iplTampak = s.ipl_terlihat !== false; // IPL hanya terlihat oleh pengurus blok masing-masing
 
   return (
     <div className="page">
@@ -107,7 +108,7 @@ export default function Beranda() {
       <section className="stats" aria-label="Ringkasan lingkungan">
         <Stat icon={Users} label="Warga aktif" value={angka(s.total_warga)} sub={`${angka(s.kepala_keluarga)} kepala keluarga`} loading={statLoading} to="/warga" />
         <Stat icon={House} label="Rumah dihuni" value={angka(s.rumah_dihuni)} sub={`Dari ${angka(s.total_rumah)} rumah terdata`} loading={statLoading} />
-        <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />
+        {iplTampak && <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />}
         <Stat icon={Wallet} tone="gold" label="Saldo kas" value={rupiah(s.saldo_kas)} sub="Terbuka untuk semua warga" loading={statLoading} to="/keuangan" />
       </section>
 
@@ -120,10 +121,10 @@ export default function Beranda() {
       )}
 
       <div className="grid-2">
-        <Card>
+        {iplTampak && <Card>
           <CardHead title={`Pembayaran IPL ${d.tahun}`} desc={s.periode_ipl ? `${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas · ${periode(s.periode_ipl)}` : 'Belum ada tagihan'} />
           <CardBody>{d.grafikIpl.loading && !d.grafikIpl.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikIpl.data || []} />}</CardBody>
-        </Card>
+        </Card>}
         <Card>
           <CardHead title={`Arus kas ${d.tahun}`} desc={`Saldo ${rupiah(s.saldo_kas)}`} to="/keuangan" actionLabel="Laporan" />
           <CardBody>{d.grafikKas.loading && !d.grafikKas.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikKas.data || []} mode="kas" />}</CardBody>

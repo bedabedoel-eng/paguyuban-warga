@@ -38,7 +38,7 @@ export default function Aspirasi() {
     try {
       if (foto) path = await uploadFile('konten', `laporan/${user.id}`, foto);
       await buatLaporan({ kategori: kat, judul: judul.trim(), deskripsi: desk.trim(), foto_path: path });
-      toast.success('Aspirasi terkirim ke humas gang dan pimpinan paguyuban');
+      toast.success('Aspirasi terkirim ke humas jalan dan pimpinan paguyuban');
       setKat(''); setJudul(''); setDesk(''); setFoto(null);
       riwayat.reload(); setTab('riwayat');
     } catch (e2) { if (path) removeFile('konten', path).catch(() => {}); toast.error(e2); } finally { setLoading(false); }

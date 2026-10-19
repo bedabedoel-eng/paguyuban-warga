@@ -79,12 +79,12 @@ export const tolakAnggota = async (id, alasan) => unwrap(await supabase.rpc('tol
 export const ubahWargaAdmin = async (id, data) => unwrap(await supabase.from('warga').update(data).eq('id', id).select(KOLOM_WARGA).single());
 export const ubahKontakAdmin = async (id, data) => unwrap(await supabase.from('warga_kontak').update(data).eq('warga_id', id));
 export const resetSandiWarga = async (id, baru) => unwrap(await supabase.rpc('reset_sandi_warga', { p_id: id, p_baru: baru }));
-/** Import massal (admin). rows: [{nama,hp,blok,no_rumah,gang?,pekerjaan?,kepala_keluarga?}] */
+/** Import massal (admin). rows: [{nama,hp,blok,no_rumah,gang?,pekerjaan?,kepala_keluarga?,status_pernikahan?,jumlah_anak?,foto?}] */
 export const importWarga = async (rows, pin = '123456') =>
   unwrap(await supabase.rpc('import_warga', { p_rows: rows, p_domain: AUTH_EMAIL_DOMAIN, p_pin: pin }));
 export const hapusWarga = async (id) => unwrap(await supabase.rpc('hapus_warga', { p_id: id }));
 
-/** Jumlah warga aktif per blok & gang (untuk halaman Blok & gang). */
+/** Jumlah warga aktif per blok & jalan (untuk halaman Blok & jalan). */
 export async function sebaranWarga() {
   const rows = unwrap(await supabase.from('warga').select('blok,gang_id').eq('status', 'aktif').limit(5000));
   const gang = {}; const tanpaGang = {}; const blok = {};

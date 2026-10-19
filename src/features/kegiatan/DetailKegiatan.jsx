@@ -8,7 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { detailKegiatan, hapusKegiatan, daftarIkut, batalIkut } from '../../services/kegiatan';
 import { removeFile } from '../../lib/storage';
-import { kelolaWilayah } from '../../lib/akses';
+import { kelolaInfo } from '../../lib/akses';
 import { jam, tanggal, parseDate } from '../../lib/format';
 import { labelSasaran } from '../../lib/alamat';
 import { useSettings } from '../../context/SettingsContext';
@@ -28,7 +28,7 @@ export default function DetailKegiatan() {
   const ikut = k.peserta.some((p) => p.warga_id === user.id);
   const selesai = parseDate(k.selesai) < new Date();
   const penuh = k.kuota && k.peserta.length >= k.kuota;
-  const boleh = kelolaWilayah(hak, k.gang_id);
+  const boleh = kelolaInfo(hak, k, gang);
   const target = labelSasaran(k, gang);
   async function toggle() {
     setBusy(true);

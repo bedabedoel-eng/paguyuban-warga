@@ -1,0 +1,7 @@
+UPDATE PAGUYUBAN WARGA - hanya file yang berubah (47 file)
+
+1. Salin isi folder ini ke proyek Anda (timpa file dengan nama & lokasi yang sama).
+2. Supabase > SQL Editor: jalankan supabase/07-update-sensus-blok-ipl.sql (sekali, sesudah 01-06). Aman diulang.
+3. npm run build lalu deploy seperti biasa.
+4. Atur pengurus per blok di menu Pengurus > Atur pengurus (kolom "Wilayah blok").
+   Pengurus tanpa wilayah blok tetap berlaku untuk SEMUA blok.

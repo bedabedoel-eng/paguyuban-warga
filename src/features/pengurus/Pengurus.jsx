@@ -47,7 +47,7 @@ export default function Pengurus() {
       ) : (
         <>
           {g.inti.length > 0 && <section className="stack-sm"><h2>Pengurus inti</h2><div className="org">{g.inti.map((p) => <OrgCard key={p.id} p={p} />)}</div></section>}
-          {g.humas.length > 0 && <section className="stack-sm"><h2>Humas gang</h2><div className="org">{g.humas.map((p) => <OrgCard key={p.id} p={p} />)}</div></section>}
+          {g.humas.length > 0 && <section className="stack-sm"><h2>Humas jalan</h2><div className="org">{g.humas.map((p) => <OrgCard key={p.id} p={p} />)}</div></section>}
           {g.seksi.length > 0 && <section className="stack-sm"><h2>Seksi & anggota pengurus</h2><div className="org">{g.seksi.map((p) => <OrgCard key={p.id} p={p} />)}</div></section>}
         </>
       )}

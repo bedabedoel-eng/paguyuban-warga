@@ -13,7 +13,7 @@ export default function Pengaturan() {
     { to: '/pengaturan/keamanan', label: 'Keamanan', sub: 'Ubah PIN dan keluar dari perangkat lain', icon: Lock },
     { to: '/pengaturan/tentang', label: 'Tentang aplikasi', sub: 'Versi dan kebijakan penggunaan data', icon: Info },
   ];
-  if (hak.admin) items.unshift({ to: '/admin/pengaturan', label: 'Pengaturan paguyuban', sub: 'Profil paguyuban, iuran, gang, kontak darurat', icon: SlidersHorizontal });
+  if (hak.admin) items.unshift({ to: '/admin/pengaturan', label: 'Pengaturan paguyuban', sub: 'Profil paguyuban, iuran, jalan, kontak darurat', icon: SlidersHorizontal });
   return (
     <div className="page narrow">
       <PageHeader back title="Pengaturan" />

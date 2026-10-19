@@ -18,7 +18,7 @@ export default function Menunggu() {
   const nonaktif = warga?.status === 'nonaktif';
   const judul = ditolak ? 'Pendaftaran belum disetujui' : nonaktif ? 'Akun dinonaktifkan' : 'Menunggu verifikasi pengurus';
   const teks = ditolak
-    ? 'Pengurus belum dapat menyetujui pendaftaran Anda. Hubungi humas gang atau sekretaris untuk informasi lebih lanjut.'
+    ? 'Pengurus belum dapat menyetujui pendaftaran Anda. Hubungi humas jalan atau sekretaris untuk informasi lebih lanjut.'
     : nonaktif
       ? 'Akun Anda sedang dinonaktifkan. Hubungi pengurus paguyuban.'
       : `Data Anda sudah dikirim ke ${namaGang(warga?.gang_id) ? `humas ${namaGang(warga.gang_id)}, ` : ''}sekretaris, dan pimpinan paguyuban. Biasanya diperiksa dalam 1–2 hari.`;

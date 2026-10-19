@@ -1,5 +1,5 @@
 /**
- * Alamat warga. Satu blok bisa berisi beberapa gang / jalan.
+ * Alamat warga. Satu blok bisa berisi beberapa jalan.
  * Contoh: Blok C 3/5 · Jl. Zamrud
  */
 

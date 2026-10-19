@@ -12,3 +12,6 @@ export { default as Stat } from './Stat';
 export { default as DataTable } from './DataTable';
 export { ConfirmProvider, useConfirm } from './Confirm';
 export { default as FotoWarga } from './FotoWarga';
+export { default as FotoInput } from './FotoInput';
+export { default as PernikahanFields, galatAnak, kolomPernikahan } from './PernikahanFields';
+export { default as SasaranField } from './SasaranField';

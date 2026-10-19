@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, ErrorState, ImagePicker, Input, Select, StorageImage, Textarea, Checkbox, Field, SkeletonRows } from '../../components/ui';
+import { Button, Card, ErrorState, ImagePicker, Input, StorageImage, SasaranField, Textarea, Checkbox, Field, SkeletonRows } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -69,7 +69,7 @@ function Isi({ awal, id }) {
         <form className="stack" onSubmit={simpan} noValidate>
           <div className="form-section">
             <Input label="Nama kegiatan" value={f.judul} onChange={set('judul')} error={err.judul} maxLength={120} placeholder="Contoh: Senam pagi bersama" />
-            <Input label="Lokasi" value={f.lokasi} onChange={set('lokasi')} error={err.lokasi} maxLength={120} placeholder="Contoh: Lapangan Gang A" />
+            <Input label="Lokasi" value={f.lokasi} onChange={set('lokasi')} error={err.lokasi} maxLength={120} placeholder="Contoh: Lapangan Jl. Zamrud" />
             <div className="form-grid">
               <Input label="Mulai" type="datetime-local" value={f.mulai} onChange={set('mulai')} error={err.mulai} />
               <Input label="Selesai" type="datetime-local" value={f.selesai} onChange={set('selesai')} error={err.selesai} />
@@ -77,7 +77,7 @@ function Isi({ awal, id }) {
             <Textarea label="Deskripsi" optional value={f.deskripsi} onChange={set('deskripsi')} maxLength={3000} placeholder="Apa yang perlu dibawa, siapa penanggung jawab, dll." />
           </div>
           <div className="form-section">
-            <Select label="Ditujukan untuk" value={f.sasaran} onChange={set('sasaran')} options={sasaran} disabled={!!id && !hak.kelola_anggota} />
+            <SasaranField value={f.sasaran} onChange={(v) => setF((s) => ({ ...s, sasaran: v }))} hak={hak} blok={blok} gang={gang} disabled={!!id && !hak.kelola_anggota} />
             <Checkbox checked={f.perlu_daftar} onChange={(v) => setF((s) => ({ ...s, perlu_daftar: v }))} hint="Warga menekan tombol Ikut kegiatan, dan panitia melihat daftar peserta.">Warga perlu mendaftar</Checkbox>
             {f.perlu_daftar && <Input label="Kuota peserta" optional type="number" min="1" value={f.kuota} onChange={set('kuota')} error={err.kuota} hint="Kosongkan bila tanpa batas" />}
             <Field label="Gambar" optional><ImagePicker file={foto} onChange={setFoto} />

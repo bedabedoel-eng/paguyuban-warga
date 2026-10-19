@@ -113,7 +113,8 @@ update public.pengurus set peran = null where peran is null;
 alter table public.pengurus alter column peran set not null;
 create index if not exists pengurus_peran_idx on public.pengurus (peran) where aktif;
 -- Versi awal file ini memakai wilayah per blok; kini diganti gang/jalan
-alter table public.pengurus drop column if exists wilayah_blok;
+-- (dinonaktifkan oleh 07: wilayah_blok kini dipakai untuk pengurus per blok)
+-- alter table public.pengurus drop column if exists wilayah_blok;
 
 -- 1c. Pengumuman & kegiatan: untuk semua warga, satu blok, atau satu gang/jalan
 alter table public.pengumuman add column if not exists blok text references public.blok(kode) on update cascade on delete set null;

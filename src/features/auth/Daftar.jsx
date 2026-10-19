@@ -18,7 +18,7 @@ export function validasiDaftar(f, { butuhSandi = true, gang = [] } = {}) {
   else if (!/^[\p{L} .,'-]+$/u.test(f.nama.trim())) e.nama = 'Nama hanya boleh berisi huruf';
   if (!normalizeHp(f.hp)) e.hp = 'Nomor HP tidak valid (contoh 81234567890)';
   if (!f.blok) e.blok = 'Pilih blok';
-  else if (!f.gang && gangDiBlok(gang, f.blok).length) e.gang = 'Pilih gang atau jalan rumah Anda';
+  else if (!f.gang && gangDiBlok(gang, f.blok).length) e.gang = 'Pilih jalan rumah Anda';
   if (!f.noRumah.trim()) e.noRumah = 'Isi nomor rumah';
   else if (!POLA_NOMOR_RUMAH.test(f.noRumah.trim())) e.noRumah = 'Gunakan angka/huruf, boleh dengan / . - (mis. 3/5)';
   if (butuhSandi) {

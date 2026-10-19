@@ -11,7 +11,7 @@ import { pesanError } from '../../lib/errors';
 const ALIAS = {
   blok: ['blok', 'kode blok', 'kode_blok', 'block'],
   nama_blok: ['nama_blok', 'nama blok', 'nama'],
-  gang: ['gang', 'jalan', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
+  gang: ['jalan', 'gang', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
 };
 const CONTOH = [
   { blok: 'A', nama_blok: 'Blok A', gang: 'Jl. Melati' },
@@ -20,14 +20,14 @@ const CONTOH = [
   { blok: 'C', nama_blok: 'Blok C', gang: 'Jl. Safir' },
   { blok: '', nama_blok: '', gang: 'Jl. Utama (lintas blok)' },
 ];
-export const KOLOM_WILAYAH = [{ key: 'blok', label: 'blok' }, { key: 'nama_blok', label: 'nama_blok' }, { key: 'gang', label: 'gang' }];
+export const KOLOM_WILAYAH = [{ key: 'blok', label: 'blok' }, { key: 'nama_blok', label: 'nama_blok' }, { key: 'gang', label: 'jalan' }];
 
 /** Ubah isi CSV menjadi rencana: blok baru, gang baru, sudah ada, atau galat. */
 function rencana(rows, blokAda, gangAda, boleBuatBlok) {
   const [header, ...data] = rows;
   const norm = header.map((h) => String(h).trim().toLowerCase());
   const idx = Object.fromEntries(Object.entries(ALIAS).map(([k, names]) => [k, norm.findIndex((h) => names.includes(h))]));
-  if (idx.gang < 0) return { kurang: ['gang'], list: [] };
+  if (idx.gang < 0) return { kurang: ['jalan'], list: [] };
   const kodeAda = new Set(blokAda.map((b) => b.kode));
   const barisBlokBaru = new Map(); // kode -> nama
   const kunciGang = new Set(gangAda.map((g) => `${g.blok || ''}|${g.nama.trim().toLowerCase()}`));
@@ -39,7 +39,7 @@ function rencana(rows, blokAda, gangAda, boleBuatBlok) {
     const out = { baris: n + 2, blok: kode, nama_blok: nama, gang, aksi: [], galat: '' };
     if (kode && !/^[A-Z0-9]{1,5}$/.test(kode)) { out.galat = 'Kode blok: huruf/angka, maks. 5 karakter'; return out; }
     if (!kode && !gang) { out.galat = 'Baris kosong'; return out; }
-    if (gang && (gang.length < 2 || gang.length > 60)) { out.galat = 'Nama gang 2–60 karakter'; return out; }
+    if (gang && (gang.length < 2 || gang.length > 60)) { out.galat = 'Nama jalan 2–60 karakter'; return out; }
     if (kode && !kodeAda.has(kode) && !barisBlokBaru.has(kode)) {
       if (!boleBuatBlok) { out.galat = `Blok ${kode} belum ada. Minta admin menambahkannya`; return out; }
       barisBlokBaru.set(kode, nama || `Blok ${kode}`);
@@ -55,7 +55,7 @@ function rencana(rows, blokAda, gangAda, boleBuatBlok) {
   return { kurang: [], list, blokBaru: [...barisBlokBaru].map(([kode, nama]) => ({ kode, nama })) };
 }
 
-/** Impor daftar blok & gang dari CSV. Blok baru hanya dapat dibuat admin. */
+/** Impor daftar blok & jalan dari CSV. Blok baru hanya dapat dibuat admin. */
 export default function ImportWilayah({ open, onClose }) {
   const { hak } = useAuth();
   const { blok, gang, reload } = useSettings();
@@ -94,7 +94,7 @@ export default function ImportWilayah({ open, onClose }) {
       await reload();
       setHasil({ b, g });
       setPlan(null);
-      toast.success(`${g} gang${b ? ` dan ${b} blok` : ''} ditambahkan`);
+      toast.success(`${g} jalan${b ? ` dan ${b} blok` : ''} ditambahkan`);
     } catch (e) {
       toast.error(pesanError(e));
       if (b || g) { await reload(); setHasil({ b, g, terhenti: true }); setPlan(null); }
@@ -104,17 +104,17 @@ export default function ImportWilayah({ open, onClose }) {
   const cols = [
     { key: 'baris', label: 'Baris', sort: (x) => x.baris, render: (x) => <span className="num muted">{x.baris}</span> },
     { key: 'blok', label: 'Blok', sort: (x) => x.blok, render: (x) => <span className="cell-main">{x.blok || 'Lintas blok'}</span> },
-    { key: 'gang', label: 'Gang / jalan', sort: (x) => x.gang, render: (x) => x.gang || <span className="muted">—</span> },
+    { key: 'gang', label: 'Jalan', sort: (x) => x.gang, render: (x) => x.gang || <span className="muted">—</span> },
     { key: 'st', label: 'Hasil', sort: (x) => (x.galat ? 0 : x.aksi.includes('gang') ? 1 : 2), render: (x) => (x.galat ? <Badge tone="bad">{x.galat}</Badge>
-      : <span className="row wrap" style={{ gap: 6, justifyContent: 'inherit' }}>{x.aksi.includes('blok') && <Badge tone="info">Blok baru</Badge>}{x.aksi.includes('gang') ? <Badge tone="ok">Gang baru</Badge> : x.aksi.includes('ada') ? <Badge>Sudah ada</Badge> : null}</span>) },
+      : <span className="row wrap" style={{ gap: 6, justifyContent: 'inherit' }}>{x.aksi.includes('blok') && <Badge tone="info">Blok baru</Badge>}{x.aksi.includes('gang') ? <Badge tone="ok">Jalan baru</Badge> : x.aksi.includes('ada') ? <Badge>Sudah ada</Badge> : null}</span>) },
   ];
 
   return (
-    <Modal open={open} onClose={tutup} title="Impor blok & gang" desc="Tambahkan banyak gang/jalan sekaligus dari berkas CSV." wide
-      footer={<><Button variant="secondary" onClick={tutup}>Tutup</Button>{plan && <Button loading={busy} disabled={!baruGang.length && !baruBlok.length} onClick={terapkan}>Tambahkan {baruGang.length} gang{baruBlok.length ? ` & ${baruBlok.length} blok` : ''}</Button>}</>}>
+    <Modal open={open} onClose={tutup} title="Impor blok & jalan" desc="Tambahkan banyak jalan sekaligus dari berkas CSV." wide
+      footer={<><Button variant="secondary" onClick={tutup}>Tutup</Button>{plan && <Button loading={busy} disabled={!baruGang.length && !baruBlok.length} onClick={terapkan}>Tambahkan {baruGang.length} jalan{baruBlok.length ? ` & ${baruBlok.length} blok` : ''}</Button>}</>}>
       <div className="stack">
-        <p className="text-sm ink-2">Kolom: <b>blok</b> (kode, mis. C), <b>nama_blok</b> (opsional), dan <b>gang</b>. Kosongkan blok untuk jalan yang melintasi beberapa blok. Gang yang sudah ada dilewati, tidak ada data yang dihapus atau diubah.</p>
-        {!hak.admin && <Callout tone="info">Anda dapat menambah gang pada blok yang sudah ada. Blok baru hanya dapat dibuat admin.</Callout>}
+        <p className="text-sm ink-2">Kolom: <b>blok</b> (kode, mis. C), <b>nama_blok</b> (opsional), dan <b>jalan</b>. Kosongkan blok untuk jalan yang melintasi beberapa blok. Jalan yang sudah ada dilewati, tidak ada data yang dihapus atau diubah.</p>
+        {!hak.admin && <Callout tone="info">Anda dapat menambah jalan pada blok yang sudah ada. Blok baru hanya dapat dibuat admin.</Callout>}
         <div className="row wrap">
           <Button size="sm" variant="secondary" icon={Download} onClick={() => unduhBerkas('contoh-import-blok-gang.csv', toCsv(CONTOH, KOLOM_WILAYAH))}>Unduh contoh CSV</Button>
           <input ref={ref} type="file" accept=".csv,text/csv,text/plain" onChange={pilih} hidden />
@@ -125,17 +125,17 @@ export default function ImportWilayah({ open, onClose }) {
         {plan && !plan.kurang.length && (
           <>
             <div className="row wrap">
-              <Badge tone="ok">{baruGang.length} gang baru</Badge>
+              <Badge tone="ok">{baruGang.length} jalan baru</Badge>
               {baruBlok.length > 0 && <Badge tone="info">{baruBlok.length} blok baru</Badge>}
               {galat.length > 0 && <Badge tone="bad">{galat.length} baris bermasalah</Badge>}
             </div>
-            <div className="card flush"><DataTable columns={cols} rows={plan.list.slice(0, 200)} rowKey="baris" caption="Pratinjau impor blok dan gang" /></div>
+            <div className="card flush"><DataTable columns={cols} rows={plan.list.slice(0, 200)} rowKey="baris" caption="Pratinjau impor blok dan jalan" /></div>
             {plan.list.length > 200 && <p className="text-sm muted">Menampilkan 200 dari {plan.list.length} baris.</p>}
           </>
         )}
         {hasil && (
           <Callout tone={hasil.terhenti ? 'warn' : 'ok'} icon={CircleCheck}>
-            {hasil.g} gang{hasil.b ? ` dan ${hasil.b} blok` : ''} berhasil ditambahkan.{hasil.terhenti ? ' Proses terhenti di tengah; impor ulang berkas yang sama akan melewati yang sudah masuk.' : ''}
+            {hasil.g} jalan{hasil.b ? ` dan ${hasil.b} blok` : ''} berhasil ditambahkan.{hasil.terhenti ? ' Proses terhenti di tengah; impor ulang berkas yang sama akan melewati yang sudah masuk.' : ''}
           </Callout>
         )}
       </div>

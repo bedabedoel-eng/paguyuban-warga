@@ -21,7 +21,7 @@ export default function Pengumuman() {
   }, [s.data, urut]);
   return (
     <div className="page narrow">
-      <PageHeader title="Pengumuman" desc="Kabar resmi dari pengurus, termasuk info khusus gang Anda."
+      <PageHeader title="Pengumuman" desc="Kabar resmi dari pengurus, termasuk info khusus jalan Anda."
         actions={hak.kelola_info && <Button size="sm" icon={Plus} to="/pengumuman/baru">Buat pengumuman</Button>} />
       <div className="toolbar">
         <Chips value={kat} onChange={setKat} tabs={[{ value: '', label: 'Semua' }, { value: 'penting', label: 'Penting' }, { value: 'kegiatan', label: 'Kegiatan' }, { value: 'info', label: 'Info' }, { value: 'umum', label: 'Umum' }]} />

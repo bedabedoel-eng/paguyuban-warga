@@ -36,6 +36,23 @@ export const STATUS_WARGA = {
   nonaktif: { label: 'Nonaktif', tone: '' },
 };
 
+export const STATUS_PERNIKAHAN = {
+  belum_menikah: { label: 'Belum menikah' },
+  menikah: { label: 'Menikah' },
+  cerai_hidup: { label: 'Cerai hidup' },
+  cerai_mati: { label: 'Cerai mati' },
+};
+
+/** Jumlah anak ditanyakan bila sudah/pernah menikah. */
+export const pernahMenikah = (s) => !!s && s !== 'belum_menikah';
+
+/** "Menikah · 2 anak" / "Belum menikah" / "" bila belum diisi. */
+export function labelPernikahan(w) {
+  const s = STATUS_PERNIKAHAN[w?.status_pernikahan]?.label;
+  if (!s) return '';
+  return pernahMenikah(w.status_pernikahan) && w.jumlah_anak != null ? `${s} · ${w.jumlah_anak} anak` : s;
+}
+
 export const STATUS_KAS = {
   disetujui: { label: 'Tercatat', tone: 'ok' },
   menunggu: { label: 'Menunggu persetujuan', tone: 'warn' },

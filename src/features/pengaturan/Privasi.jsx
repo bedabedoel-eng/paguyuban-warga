@@ -25,7 +25,7 @@ export default function Privasi() {
           {row('tampilkan_email', 'Tampilkan email ke warga', 'Hanya berlaku bila Anda mengisi email')}
         </div>
       </Card>
-      <Callout tone="neutral">Terlepas dari pengaturan ini, pengurus yang berwenang (sekretaris, pimpinan, bendahara, dan humas gang Anda) tetap dapat melihat nomor HP untuk keperluan administrasi.</Callout>
+      <Callout tone="neutral">Terlepas dari pengaturan ini, pengurus yang berwenang (sekretaris, pimpinan, bendahara, dan humas jalan Anda) tetap dapat melihat nomor HP untuk keperluan administrasi.</Callout>
       <Card><CardBody className="text-sm muted">Data tagihan dan aspirasi Anda tidak pernah tampil ke warga lain.</CardBody></Card>
     </div>
   );

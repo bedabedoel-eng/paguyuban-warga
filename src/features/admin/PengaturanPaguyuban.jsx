@@ -88,7 +88,7 @@ function Blok() {
   }
   return (
     <Card>
-      <CardHead title="Blok" desc="Satu blok dapat berisi beberapa gang atau nama jalan." action={<Link className="link text-sm" to="/admin/wilayah">Atur gang / jalan</Link>} />
+      <CardHead title="Blok" desc="Satu blok dapat berisi beberapa nama jalan." action={<Link className="link text-sm" to="/admin/wilayah">Atur jalan</Link>} />
       <div className="rows inset">
         {blok.map((b) => (
           <div className="rowi" key={b.kode}>
@@ -144,7 +144,7 @@ export default function PengaturanPaguyuban() {
   return (
     <div className="page form">
       <PageHeader back title="Pengaturan paguyuban" desc="Hanya admin. Perubahan berlaku untuk seluruh warga." />
-      <LineTabs value={tab} onChange={setTab} tabs={[{ value: 'umum', label: 'Umum & iuran' }, { value: 'blok', label: 'Blok & gang' }, { value: 'darurat', label: 'Kontak darurat' }]} />
+      <LineTabs value={tab} onChange={setTab} tabs={[{ value: 'umum', label: 'Umum & iuran' }, { value: 'blok', label: 'Blok & jalan' }, { value: 'darurat', label: 'Kontak darurat' }]} />
       {tab === 'umum' ? <Umum /> : tab === 'blok' ? <Blok /> : <Darurat />}
     </div>
   );

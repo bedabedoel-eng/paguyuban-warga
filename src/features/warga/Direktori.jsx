@@ -16,7 +16,7 @@ const SIMPAN = 'direktori_tampilan';
 const bacaTampilan = () => { try { return localStorage.getItem(SIMPAN) === 'daftar' ? 'daftar' : 'foto'; } catch { return 'foto'; } };
 
 const URUTAN = [
-  { value: 'wilayah', label: 'Per blok & gang' },
+  { value: 'wilayah', label: 'Per blok & jalan' },
   { value: 'nama', label: 'Nama A–Z' },
   { value: 'nama_z', label: 'Nama Z–A' },
   { value: 'rumah', label: 'Nomor rumah' },
@@ -80,7 +80,7 @@ export default function Direktori() {
       default: return urutkan(d, (w) => w.nama);
     }
   }, [list.data, urut]);
-  // Per blok, lalu per gang/jalan di dalam blok (hanya saat urutan "Per blok & gang")
+  // Per blok, lalu per jalan di dalam blok (hanya saat urutan "Per blok & jalan")
   const grup = useMemo(() => {
     if (urut !== 'wilayah') return null;
     const m = new Map();
@@ -124,7 +124,7 @@ export default function Direktori() {
         mobileActions={bisaEkspor ? <IconButton icon={Download} label="Ekspor CSV" onClick={ekspor} /> : undefined} />
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Cari nama warga" label="Cari nama warga" />
-        <Select className="sm" placeholder="Semua blok & gang" value={fw} onChange={(e) => setFw(e.target.value)} options={opsiWilayah} aria-label="Filter blok atau gang" />
+        <Select className="sm" placeholder="Semua blok & jalan" value={fw} onChange={(e) => setFw(e.target.value)} options={opsiWilayah} aria-label="Filter blok atau jalan" />
         <Select className="sm" placeholder="Semua pekerjaan" value={fk} onChange={(e) => setFk(e.target.value)} options={opsi.data?.pekerjaan || []} aria-label="Filter pekerjaan" />
         <SortSelect value={urut} onChange={setUrut} options={URUTAN} />
       </div>

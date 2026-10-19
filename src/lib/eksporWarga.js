@@ -14,9 +14,12 @@ export const KOLOM_EKSPOR_WARGA = (gang) => [
   { key: 'hp', label: 'hp', nilai: (w) => hpLokal(w.kontak?.nomor_hp) },
   { key: 'blok', label: 'blok' },
   { key: 'no_rumah', label: 'no_rumah' },
-  { key: 'gang', label: 'gang', nilai: (w) => cariGang(gang, w.gang_id)?.nama || '' },
+  { key: 'jalan', label: 'jalan', nilai: (w) => cariGang(gang, w.gang_id)?.nama || '' },
   { key: 'pekerjaan', label: 'pekerjaan' },
   { key: 'kepala_keluarga', label: 'kepala_keluarga', nilai: (w) => (w.kepala_keluarga ? 'ya' : 'tidak') },
+  { key: 'status_pernikahan', label: 'status_pernikahan', nilai: (w) => (w.kontak || w).status_pernikahan || '' },
+  { key: 'jumlah_anak', label: 'jumlah_anak', nilai: (w) => (w.kontak || w).jumlah_anak ?? '' },
+  { key: 'foto', label: 'foto', nilai: (w) => (/^https:/i.test(w.foto_path || '') ? w.foto_path : '') },
   { key: 'status', label: 'status' },
   { key: 'bergabung', label: 'bergabung', nilai: (w) => (w.bergabung_at ? String(w.bergabung_at).slice(0, 10) : '') },
 ];
