@@ -34,8 +34,11 @@ export const CONTOH_CSV = 'nama,hp,blok,no_rumah,jalan,pekerjaan,kepala_keluarga
   + 'Agus Wijaya,085611112222,A,12,,Wiraswasta,ya,belum menikah,,\n';
 
 /** Cegah rumus tersembunyi saat berkas dibuka di Excel / Sheets (CSV injection). */
+const ANGKA_NEGATIF = /^-\d+([.,]\d+)?$/; // mis. -50000 atau -12,5: angka murni, bukan rumus
 const aman = (v) => {
+  if (typeof v === 'number') return String(v);
   const s = v == null ? '' : String(v);
+  if (ANGKA_NEGATIF.test(s)) return s;
   return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
 };
 
@@ -61,4 +64,6 @@ export function unduhBerkas(nama, isi, tipe = 'text/csv;charset=utf-8') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export const stempelTanggal = () => new Date().toISOString().slice(0, 10);
+/** Tanggal hari ini menurut jam perangkat (bukan UTC), mis. 2026-10-20 pukul 05.00 WIB. */
+export const stempelTanggal = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

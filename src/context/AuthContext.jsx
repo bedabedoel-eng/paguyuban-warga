@@ -40,10 +40,16 @@ export function AuthProvider({ children }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       const uid = s?.user?.id || null;
-      if (uid !== uidRef.current || event === 'USER_UPDATED') {
+      const berganti = uid !== uidRef.current;
+      if (berganti || event === 'USER_UPDATED') {
         uidRef.current = uid;
         // jangan await di dalam callback (hindari deadlock supabase-js)
-        setTimeout(async () => { setLoading(true); await muatProfil(uid); setLoading(false); }, 0);
+        // Layar muat hanya saat pengguna berganti; pembaruan akun (mis. ganti PIN) memuat ulang profil diam-diam.
+        setTimeout(async () => {
+          if (berganti) setLoading(true);
+          await muatProfil(uid);
+          if (berganti) setLoading(false);
+        }, 0);
       }
     });
     return () => { alive = false; sub.subscription.unsubscribe(); };

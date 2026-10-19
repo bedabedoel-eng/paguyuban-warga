@@ -7,6 +7,7 @@
 --   2. ringkasan_transaksi()    jumlah baris + total masuk/keluar sesuai filter, tidak terpotong paginasi
 --   3. audit_log + trigger      semua perubahan transaksi kas (tambah/ubah/hapus) dan penghapusan tagihan IPL
 --   4. pulihkan_transaksi()     mengembalikan transaksi kas manual yang terhapus (tetap lewat aturan persetujuan Ketua)
+--   5. tanggal bawaan kas & dokumen memakai zona Asia/Jakarta (bukan UTC)
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -127,6 +128,13 @@ begin
     'memulihkan transaksi ' || (a.sebelum ->> 'kategori') || ' Rp ' || (a.sebelum ->> 'jumlah'), false);
   return v_id;
 end $$;
+
+-- ---------------------------------------------------------------------
+-- 4b. Tanggal bawaan memakai zona Asia/Jakarta (current_date di Supabase berbasis UTC,
+--     sehingga pukul 00.00-07.00 WIB tercatat sebagai kemarin)
+-- ---------------------------------------------------------------------
+alter table public.transaksi_kas alter column tanggal set default ((now() at time zone 'Asia/Jakarta')::date);
+alter table public.dokumen alter column tanggal set default ((now() at time zone 'Asia/Jakarta')::date);
 
 -- ---------------------------------------------------------------------
 -- 5. Hak eksekusi

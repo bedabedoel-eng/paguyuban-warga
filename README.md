@@ -79,7 +79,9 @@ paguyuban-warga/
 │  ├─ 07-update-sensus-blok-ipl.sql # sensus (status nikah, anak), foto dari tautan, pengurus & IPL per blok (setelah 06)
 │  ├─ 08-perbaikan-prioritas.sql # log audit kas + pulihkan transaksi, daftar periode & total transaksi di database (setelah 07)
 │  └─ tests/               # uji RLS per peran (jalankan di Postgres LOKAL, bukan proyek Supabase): jalankan.sh
-├─ public/                # favicon, manifest PWA, _redirects, _headers (Cloudflare)
+├─ public/                # favicon, manifest PWA, _headers (header keamanan & cache; tanpa _redirects, lihat bagian 8)
+├─ wrangler.jsonc         # Cloudflare Workers Assets: aset dist/ + fallback SPA
+├─ .github/workflows/     # CI: npm test, build, dan uji RLS di Postgres
 ├─ src/
 │  ├─ main.jsx, App.jsx   # entry + seluruh rute
 │  ├─ routes/guards.jsx   # penjaga rute (login, aktif, hak per peran)
@@ -95,7 +97,7 @@ paguyuban-warga/
 │  │  ├─ auth/ beranda/ warga/ ipl/ keuangan/ pengumuman/ kegiatan/
 │  │  └─ laporan/ pengurus/ administrasi/ profil/ pengaturan/ menu/ notifikasi/ admin/
 │  └─ styles/             # tokens (warna, huruf, jarak), base, components, layout, pages
-├─ tests/                 # data contoh + konfigurasi Vite untuk uji tampilan tanpa Supabase
+├─ tests/                 # unit/ (npm test) + mock/ & konfigurasi Vite untuk uji tampilan tanpa Supabase (npm run dev:mock)
 ├─ .env.example
 └─ vite.config.js
 ```
@@ -116,7 +118,7 @@ Menambah modul baru: buat tabel + kebijakan RLS di SQL, tambahkan `src/services/
    - Tempel isi `supabase/05-struktur-pengurus.sql` lalu **Run** (peran pengurus, hak akses per jabatan, persetujuan pengeluaran, arsip surat & notulen, gang/jalan di dalam blok, pengumuman per blok/gang, nomor rumah format 3/5). Aman dijalankan ulang dan **tidak menghapus data**; jabatan lama dipetakan otomatis ke peran (mis. "Bendahara" → peran Bendahara). Setelah itu buka menu **Blok & gang**, isi daftar gang/jalan tiap blok, lalu lengkapi gang warga lama di **Data anggota** (filter per blok menunjukkan warga yang belum memilih gang). **Wajib** sebelum men-deploy versi ini. Bila suatu saat Anda menjalankan ulang `01`, jalankan ulang `05` sesudahnya.
    - Tempel isi `supabase/06-nama-perumahan.sql` lalu **Run** (hanya untuk database yang sudah berjalan: mengganti nama lingkungan menjadi *Perumahan Vila Gading Royal* dan alamat *Desa Pamegarsari, Kec. Parung, Kab. Bogor*; RT/RW dan pengaturan lain tidak disentuh). Instalasi baru tidak perlu karena `01`/`02` sudah memakainya.
    - Tempel isi `supabase/07-update-sensus-blok-ipl.sql` lalu **Run** (jalankan **setelah 06**, sebelum men-deploy versi aplikasi ini). Menambah status pernikahan & jumlah anak, foto profil dari tautan https, serta **pengurus per blok**: pada *Pengurus > Atur pengurus* Ketua/Wakil/Sekretaris/Bendahara dapat diberi *Wilayah blok*. Data IPL (tagihan, bukti transfer, rincian di kas, statistik) hanya terlihat oleh pemilik rumah dan pengurus blok itu; pengumuman & kegiatan pengurus blok dibatasi ke bloknya. Pengurus tanpa wilayah blok tetap berlaku untuk semua blok. Aman dijalankan ulang; jalankan lagi bila `05` pernah diulang.
-   - Tempel isi `supabase/08-perbaikan-prioritas.sql` lalu **Run** (jalankan **setelah 07**; aman diulang). Menambah **log audit kas** (setiap tambah/ubah/hapus transaksi kas dan hapus tagihan IPL tercatat: siapa, kapan, isi sebelum/sesudah; tidak bisa diubah atau dihapus lewat aplikasi), fitur **Pulihkan transaksi** (tab *Riwayat perubahan* di Kas paguyuban, untuk bendahara; pengeluaran besar yang dipulihkan kembali menunggu persetujuan Ketua), serta fungsi `periode_ipl_tersedia` dan `ringkasan_transaksi` agar daftar periode dan total kas tetap benar walau data banyak. Aplikasi tetap berjalan bila `08` belum dijalankan, hanya tanpa riwayat perubahan.
+   - Tempel isi `supabase/08-perbaikan-prioritas.sql` lalu **Run** (jalankan **setelah 07**; aman diulang). Menambah **log audit kas** (setiap tambah/ubah/hapus transaksi kas dan hapus tagihan IPL tercatat: siapa, kapan, isi sebelum/sesudah; tidak bisa diubah atau dihapus lewat aplikasi), fitur **Pulihkan transaksi** (tab *Riwayat perubahan* di Kas paguyuban, untuk bendahara; pengeluaran besar yang dipulihkan kembali menunggu persetujuan Ketua), serta fungsi `periode_ipl_tersedia` dan `ringkasan_transaksi` agar daftar periode dan total kas tetap benar walau data banyak. Juga membuat tanggal bawaan kas & dokumen memakai zona Asia/Jakarta (bukan UTC). Aplikasi tetap berjalan bila `08` belum dijalankan, hanya tanpa riwayat perubahan.
    - Buka `supabase/02-data-awal.sql`, **sesuaikan** (nama paguyuban, RT/RW, alamat, tarif IPL, rekening, daftar blok, kontak darurat), tempel, lalu **Run**. Semua ini juga bisa diubah nanti dari menu Admin.
 4. **Ambil kunci**: **Project Settings > API Keys** (atau *Data API*). Salin:
    - **Project URL** (`https://xxxx.supabase.co`)
@@ -189,7 +191,7 @@ Buat repository kosong terlebih dahulu di GitHub (disarankan **Private**). `.git
 
 ## 8. Deploy ke Cloudflare Pages + domain sendiri
 
-1. <https://dash.cloudflare.com> > **Workers & Pages > Create > Pages > Connect to Git** > pilih repository.
+1. <https://dash.cloudflare.com> > **Workers & Pages > Create > Import a repository (Git)** > pilih repository. Repository ini memakai **Workers dengan aset statis** (`wrangler.jsonc`), bukan Pages klasik; bila dashboard Anda masih menawarkan Pages, langkah build di bawah sama. Nama proyek harus sama dengan `name` di `wrangler.jsonc`.
 2. Pengaturan build:
    - **Framework preset**: Vite (atau None)
    - **Build command**: `npm run build`
@@ -214,6 +216,8 @@ Yang sudah diuji pada pengembangan (stack Postgres + GoTrue + PostgREST asli, de
 
 - **Uji RLS per peran (`supabase/tests/`)**: 43 pemeriksaan otomatis pada Postgres lokal (migrasi 01–08 dari database kosong): warga hanya melihat tagihan rumahnya, tidak bisa menaikkan peran/status, mencatat kas, melunasi tagihan, atau menulis log audit; Wakil Ketua tidak bisa mencatat/memulihkan; pengeluaran ≥ batas oleh bendahara menunggu Ketua dan tidak bisa disetujui sendiri; log audit mencatat pelaku, nilai sebelum/sesudah, dan tidak bisa diubah/dihapus (bahkan oleh superuser); pulihkan transaksi mengembalikan baris yang sama dan tidak melewati persetujuan Ketua. Jalankan: `PGURL="postgresql://postgres@localhost:5432/uji" ./supabase/tests/jalankan.sh` pada database **kosong** (berkas `00-stub-supabase.sql` meniru skema Supabase dan jangan dijalankan di Supabase sungguhan).
 - **Ketahanan aplikasi**: *error boundary* (galat pada satu halaman tidak mematikan seluruh aplikasi; galat muat berkas setelah deploy baru memuat ulang sekali otomatis), **PWA** (service worker menyimpan cangkang aplikasi saja, data Supabase tidak pernah disimpan; banner "Versi baru tersedia → Perbarui" dan penanda offline), serta paginasi/“Muat lagi” pada daftar panjang (bukti menunggu, transaksi, riwayat) dan pembacaan per halaman agar tidak terpotong batas 1000 baris Supabase.
+
+- **Uji unit & CI**: `npm test` (ekspor CSV: angka negatif tetap angka, rumus berbahaya dinetralkan, tanggal memakai jam lokal) dan `npm run test:db` (uji RLS, butuh `PGURL`). Berkas `.github/workflows/ci.yml` menjalankan keduanya plus `npm run build` pada setiap push dan pull request.
 
 **Batasan pengujian yang jujur:** pengujian di atas memakai Postgres, GoTrue (Supabase Auth), dan PostgREST asli, tetapi **Supabase Storage dan Realtime diganti stub sederhana** yang menjalankan kebijakan RLS `storage.objects` dari SQL yang sama. Aplikasi belum dicoba langsung di proyek Supabase Anda sendiri. Karena itu lakukan pengujian manual berikut sebagai penerimaan, terutama unggah foto, ubah PIN, dan notifikasi realtime.
 

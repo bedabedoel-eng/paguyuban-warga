@@ -7,7 +7,9 @@
     "dev": "vite",
     "dev:mock": "vite --config tests/vite.mock.config.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test",
+    "test:db": "./supabase/tests/jalankan.sh"
   },
   "engines": {
     "node": ">=20"
