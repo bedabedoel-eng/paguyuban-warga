@@ -20,6 +20,7 @@ export const KOLOM_EKSPOR_WARGA = (gang) => [
   { key: 'kepala_keluarga', label: 'kepala_keluarga', nilai: (w) => (w.kepala_keluarga ? 'ya' : 'tidak') },
   { key: 'status_pernikahan', label: 'status_pernikahan', nilai: (w) => (w.kontak || w).status_pernikahan || '' },
   { key: 'jumlah_anak', label: 'jumlah_anak', nilai: (w) => (w.kontak || w).jumlah_anak ?? '' },
+  { key: 'status_hunian', label: 'status_hunian', nilai: (w) => (w.kontak || w).status_hunian || '' },
   { key: 'foto', label: 'foto', nilai: (w) => (/^https:/i.test(w.foto_path || '') ? w.foto_path : '') },
   { key: 'status', label: 'status' },
   { key: 'bergabung', label: 'bergabung', nilai: (w) => (w.bergabung_at ? String(w.bergabung_at).slice(0, 10) : '') },

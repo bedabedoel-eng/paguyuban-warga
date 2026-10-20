@@ -38,3 +38,46 @@ export function daftarkanPwa() {
     })
     .catch(() => { /* aplikasi tetap berjalan tanpa service worker */ });
 }
+
+/* ---------- Ajakan memasang aplikasi ke layar utama ---------- */
+export const EVENT_PASANG = 'pw:pasang';
+let tawaran = null; // event beforeinstallprompt (Android/Chrome/Edge)
+const KUNCI_TUNDA = 'pw:pasang-tunda';
+const TUNDA_MS = 3 * 24 * 60 * 60 * 1000; // ditawarkan lagi setelah 3 hari bila ditutup
+
+/** Sudah berjalan sebagai aplikasi terpasang? */
+export const sudahTerpasang = () =>
+  window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+export const bisaPasangLangsung = () => !!tawaran;
+export const perangkatIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const perangkatSeluler = () => /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent) || perangkatIos();
+
+export function ditundaPasang() {
+  try { const t = Number(localStorage.getItem(KUNCI_TUNDA)); return !!t && Date.now() - t < TUNDA_MS; } catch { return false; }
+}
+export function tundaPasang() {
+  try { localStorage.setItem(KUNCI_TUNDA, String(Date.now())); } catch { /* abaikan */ }
+}
+/** Perlu menampilkan ajakan pasang? Hanya di HP/tablet, belum terpasang, dan belum ditutup baru-baru ini. */
+export const perluAjakPasang = () => perangkatSeluler() && !sudahTerpasang() && !ditundaPasang();
+
+/** Munculkan dialog pasang bawaan browser. Mengembalikan true bila pengguna menyetujui. */
+export async function pasangAplikasi() {
+  if (!tawaran) return false;
+  const t = tawaran; tawaran = null;
+  t.prompt();
+  const { outcome } = await t.userChoice.catch(() => ({ outcome: 'dismissed' }));
+  window.dispatchEvent(new Event(EVENT_PASANG));
+  return outcome === 'accepted';
+}
+
+/** Tangkap event pasang sedini mungkin (dipanggil dari main.jsx, juga saat pengembangan). */
+export function pantauPasang() {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    tawaran = e;
+    window.dispatchEvent(new Event(EVENT_PASANG));
+  });
+  window.addEventListener('appinstalled', () => { tawaran = null; window.dispatchEvent(new Event(EVENT_PASANG)); });
+}

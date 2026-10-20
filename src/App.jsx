@@ -5,6 +5,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider, Loader } from './components/ui';
 import { isConfigured } from './lib/supabase';
+import AjakPasang from './components/layout/AjakPasang';
 import AppShell from './components/layout/AppShell';
 import { RequireAktif, GuestOnly, RequireLogin, RequireHak } from './routes/guards';
 import Login from './features/auth/Login';
@@ -61,6 +62,7 @@ export default function App() {
       <SettingsProvider>
         <AuthProvider>
           <ConfirmProvider>
+            <AjakPasang />
             <Suspense fallback={<Loader />}>
               <Routes>
                 <Route element={<GuestOnly />}>

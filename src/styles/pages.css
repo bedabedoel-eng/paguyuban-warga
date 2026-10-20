@@ -361,3 +361,15 @@
 .table th .sort svg { opacity: .35; flex: none; }
 .table th[aria-sort='ascending'] .sort svg, .table th[aria-sort='descending'] .sort svg { opacity: 1; color: var(--daun-700); }
 .table th.right .sort { flex-direction: row-reverse; }
+
+/* ---- Tabel data kelola (DataManager) ---- */
+.table th.pilih-col, .table td.pilih-col { width: 44px; padding-right: 0; }
+.table input.pilih { width: 18px; height: 18px; margin: 0; accent-color: var(--daun-600); cursor: pointer; vertical-align: middle; }
+.bulkbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 20px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pager-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pager-nav .select { width: auto; min-width: 0; }
+@media (max-width: 720px) {
+  .bulkbar { padding: 10px 16px; }
+  .table.stackable td.pilih-col { width: auto; padding: 0 !important; }
+}

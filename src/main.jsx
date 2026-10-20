@@ -10,7 +10,7 @@ import './styles/layout.css';
 import './styles/pages.css';
 import App from './App';
 import ErrorBoundary, { muatUlangSekali, bersihkanPenjagaMuat } from './components/ui/ErrorBoundary';
-import { daftarkanPwa } from './lib/pwa';
+import { daftarkanPwa, pantauPasang } from './lib/pwa';
 
 // Berkas halaman hilang setelah rilis baru: muat ulang sekali agar mendapat versi terbaru.
 window.addEventListener('vite:preloadError', (e) => {
@@ -30,4 +30,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 );
 
+pantauPasang();
 daftarkanPwa();

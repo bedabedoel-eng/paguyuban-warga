@@ -43,6 +43,12 @@ export const STATUS_PERNIKAHAN = {
   cerai_mati: { label: 'Cerai mati' },
 };
 
+/** Status hunian: rumah yang ditempati milik sendiri atau kontrak (data sensus). */
+export const STATUS_HUNIAN = {
+  milik_sendiri: { label: 'Milik sendiri' },
+  kontrak: { label: 'Kontrak' },
+};
+
 /** Jumlah anak ditanyakan bila sudah/pernah menikah. */
 export const pernahMenikah = (s) => !!s && s !== 'belum_menikah';
 

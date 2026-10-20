@@ -158,3 +158,17 @@
 .status-app-row.baru { background: #0e2e23; color: #fff; }
 .status-app-row button { background: #fff; color: #0e2e23; border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; cursor: pointer; }
 .status-app-row button:hover { background: #e8f3ee; }
+
+/* Ajakan pasang aplikasi (PWA) */
+.ajak-pasang { position: fixed; z-index: 195; left: 50%; transform: translateX(-50%); bottom: calc(var(--safe-b, 0px) + 76px); width: min(460px, calc(100vw - 24px)); background: #0e2e23; color: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.28); display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 900px) { .ajak-pasang { bottom: 20px; left: auto; right: 20px; transform: none; } }
+.ajak-pasang-row { display: flex; align-items: center; gap: 12px; }
+.ajak-pasang-row img { border-radius: 10px; flex: none; }
+.ajak-pasang-teks { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-sm, 14px); }
+.ajak-pasang-teks span { color: rgba(255,255,255,.75); }
+.ajak-pasang-x { background: none; border: 0; color: rgba(255,255,255,.7); cursor: pointer; padding: 6px; display: grid; align-self: flex-start; }
+.ajak-pasang-aksi { display: flex; gap: 8px; }
+.ajak-pasang-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #fff; color: #0e2e23; border: 0; border-radius: 10px; padding: 11px 14px; font-weight: 700; cursor: pointer; min-height: 44px; }
+.ajak-pasang-nanti { background: none; border: 1px solid rgba(255,255,255,.35); color: #fff; border-radius: 10px; padding: 11px 14px; cursor: pointer; min-height: 44px; }
+.ajak-pasang-langkah { margin: 0; padding-left: 20px; font-size: var(--fs-sm, 14px); display: flex; flex-direction: column; gap: 6px; color: rgba(255,255,255,.9); }
+.ajak-pasang-langkah svg { vertical-align: -2px; }

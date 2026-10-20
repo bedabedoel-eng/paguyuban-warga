@@ -98,3 +98,13 @@ export async function sebaranWarga() {
   }
   return { gang, tanpaGang, blok };
 }
+
+/**
+ * Ubah status keanggotaan (aktif / nonaktif / ...). Dipakai aksi massal "Nonaktifkan" dan "Aktifkan kembali".
+ * Memeriksa baris yang benar-benar berubah karena RLS menolak dengan diam (0 baris, tanpa galat).
+ */
+export async function ubahStatusWarga(id, status) {
+  const rows = unwrap(await supabase.from('warga').update({ status }).eq('id', id).select('id'));
+  if (!rows?.length) throw new Error('Status tidak berubah. Anda mungkin tidak berwenang atas anggota ini.');
+  return rows[0];
+}
