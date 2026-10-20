@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/layout/PageHeader';
-import { SegTabs, Loader } from '../../components/ui';
+import { LineTabs, Loader } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import Direktori from './Direktori';
 
@@ -29,7 +29,7 @@ export default function Warga() {
   return (
     <div className="page">
       <PageHeader title="Warga" desc={bisaData ? 'Direktori, data anggota, dan import warga dalam satu tempat.' : 'Kenali tetangga. Nomor HP hanya tampil bila pemiliknya mengizinkan.'} />
-      {tabs.length > 1 && <SegTabs value={tab} onChange={pindah} label="Bagian menu warga" tabs={tabs} />}
+      {tabs.length > 1 && <LineTabs value={tab} onChange={pindah} label="Bagian menu warga" tabs={tabs} />}
       <Suspense fallback={<Loader />}>
         {tab === 'direktori' && <Direktori tertanam />}
         {tab === 'anggota' && <DataWarga tertanam />}

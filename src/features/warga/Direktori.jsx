@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Download, ShieldCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Avatar, Badge, Button, Card, EmptyState, ErrorState, FotoWarga, IconButton, SearchInput, Select, SegTabs, SkeletonRows, SortSelect } from '../../components/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorState, FotoWarga, IconButton, SearchInput, Select, SegTabs, Chips, SkeletonRows, SortSelect } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
@@ -93,10 +93,8 @@ export default function Direktori({ tertanam = false }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, urut, gang]);
   const judulGrup = (g) => [g.blok ? (blok.find((b) => b.kode === g.blok)?.nama || `Blok ${g.blok}`) : 'Belum ada blok', namaGang(g.gang)].filter(Boolean).join(' · ');
-  const opsiWilayah = blok.flatMap((b) => [
-    { value: `b:${b.kode}`, label: b.nama },
-    ...gang.filter((g) => g.blok === b.kode).map((g) => ({ value: `g:${g.id}`, label: `${b.nama} · ${g.nama}` })),
-  ]).concat(gang.filter((g) => !g.blok).map((g) => ({ value: `g:${g.id}`, label: g.nama })));
+  const chipBlok = fw.startsWith('b:') ? fw.slice(2) : fw.startsWith('g:') ? (gang.find((g) => g.id === fw.slice(2))?.blok || '') : '';
+  const opsiJalan = gang.filter((g) => !chipBlok || !g.blok || g.blok === chipBlok).map((g) => ({ value: `g:${g.id}`, label: g.nama }));
   const adaFilter = !!(dq || fw || fk);
 
   async function ekspor() {
@@ -121,11 +119,15 @@ export default function Direktori({ tertanam = false }) {
         : <PageHeader title="Direktori warga" desc="Kenali tetangga. Nomor HP hanya tampil bila pemiliknya mengizinkan."
             actions={bisaEkspor ? <Button size="sm" variant="secondary" icon={Download} loading={mengekspor} onClick={ekspor}>Ekspor CSV</Button> : undefined}
             mobileActions={bisaEkspor ? <IconButton icon={Download} label="Ekspor CSV" onClick={ekspor} /> : undefined} />}
-      <div className="toolbar">
+      <div className="dir-tools">
         <SearchInput value={q} onChange={setQ} placeholder="Cari nama warga" label="Cari nama warga" />
-        <Select className="sm" placeholder="Semua blok & jalan" value={fw} onChange={(e) => setFw(e.target.value)} options={opsiWilayah} aria-label="Filter blok atau jalan" />
-        <Select className="sm" placeholder="Semua pekerjaan" value={fk} onChange={(e) => setFk(e.target.value)} options={opsi.data?.pekerjaan || []} aria-label="Filter pekerjaan" />
-        <SortSelect value={urut} onChange={setUrut} options={URUTAN} />
+        <Chips label="Filter blok" value={chipBlok} onChange={(v) => setFw(v ? `b:${v}` : '')}
+          tabs={[{ value: '', label: 'Semua blok' }, ...blok.map((b) => ({ value: b.kode, label: b.nama }))]} />
+        <div className="toolbar">
+          <Select className="sm" placeholder="Semua jalan" value={fw.startsWith('g:') ? fw : ''} onChange={(e) => setFw(e.target.value || (chipBlok ? `b:${chipBlok}` : ''))} options={opsiJalan} aria-label="Filter jalan" />
+          <Select className="sm" placeholder="Semua pekerjaan" value={fk} onChange={(e) => setFk(e.target.value)} options={opsi.data?.pekerjaan || []} aria-label="Filter pekerjaan" />
+          <SortSelect value={urut} onChange={setUrut} options={URUTAN} />
+        </div>
       </div>
       <div className="row between wrap">
         <span className="dir-count" aria-live="polite">{list.data ? `${list.data.length} warga${adaFilter ? ' sesuai filter' : ' aktif'}` : ' '}</span>
@@ -135,8 +137,8 @@ export default function Direktori({ tertanam = false }) {
         <Card><EmptyState icon={Users} title="Warga tidak ditemukan" text="Coba kata kunci lain atau hapus filter."
           action={adaFilter ? <Button size="sm" variant="secondary" onClick={() => { setQ(''); setFw(''); setFk(''); }}>Hapus filter</Button> : undefined} /></Card>
       ) : grup ? grup.map((g) => (
-        <section key={`${g.blok}|${g.gang}`} className="stack-sm" aria-label={judulGrup(g)}>
-          <div className="section-head"><h2>{judulGrup(g)}</h2><span className="text-sm muted">{g.rows.length} warga</span></div>
+        <section key={`${g.blok}|${g.gang}`} className="stack-sm dir-sec" aria-label={judulGrup(g)}>
+          <div className="section-head"><h2>{judulGrup(g)}</h2><span className="dir-n">{g.rows.length} warga</span></div>
           {render(g.rows)}
         </section>
       )) : render(data)}
