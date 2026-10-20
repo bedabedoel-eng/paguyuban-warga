@@ -417,3 +417,28 @@
 .shalat-item.next { background: var(--hutan-800); color: #cfe3d8; }
 .shalat-item.next b { color: #fff; }
 .shalat-item.skel { min-height: 46px; opacity: .6; }
+
+/* Tata letak beranda: dua kolom di desktop, satu kolom berurutan di HP/tablet */
+.home-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.home-main, .home-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.h-shalat:empty { display: none; }
+.kas-saldo { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--ink); letter-spacing: -.02em; }
+.home-more { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.home-more > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 18px; font-family: var(--font-display); font-weight: 700; color: var(--ink); border-radius: var(--r-lg);
+}
+.home-more > summary::-webkit-details-marker { display: none; }
+.home-more > summary:focus-visible { outline: none; box-shadow: var(--ring); }
+.home-more > summary svg { transition: transform .2s var(--ease); color: var(--ink-3); }
+.home-more[open] > summary svg { transform: rotate(180deg); }
+.home-more-body { display: grid; gap: 20px; padding: 4px 18px 18px; }
+@media (max-width: 1023px) {
+  .home-grid { display: flex; flex-direction: column; align-items: stretch; gap: 16px; }
+  .home-main, .home-side { display: contents; }
+  .h-shalat { order: 1; } .h-tagihan { order: 2; } .h-menu { order: 3; } .h-info { order: 4; }
+  .h-agenda { order: 5; } .h-kas { order: 6; } .h-notif { order: 7; }
+  .home-more-body .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-more-body .grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) { .home-more > summary { padding: 12px 14px; } .home-more-body { padding: 2px 14px 14px; } }
