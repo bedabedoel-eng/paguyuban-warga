@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Check, Eye, X, FilePlus2, Banknote, Receipt, FileCheck2, MessageCircle, Download, AlertTriangle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Check, Eye, X, FilePlus2, Banknote, Receipt, FileCheck2, MessageCircle, AlertTriangle } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, SegTabs, StorageImage, Textarea, Select, SearchInput, Chips, DataTable, Stat, useConfirm } from '../../components/ui';
+import { Badge, Button, Card, CardBody, EmptyState, ErrorState, SkeletonRows, Modal, SegTabs, StorageImage, Textarea, Select, Stat, useConfirm } from '../../components/ui';
+import DataManager from '../../components/data/DataManager';
 import { useToast } from '../../context/ToastContext';
 import { useTugas } from '../../context/TugasContext';
 import { useAsync } from '../../hooks/useAsync';
 import { buatTagihan, tagihanPeriode, periodeTersedia, pembayaranMenunggu, verifikasiPembayaran, tandaiLunasTunai, tunggakanIpl } from '../../services/ipl';
 import { useSettings } from '../../context/SettingsContext';
 import { tautanPengingat, KOLOM_TUNGGAKAN, ringkasTunggakan } from '../../lib/tunggakan';
-import { toCsv, unduhBerkas, stempelTanggal } from '../../lib/csv';
 import { signedUrl } from '../../lib/storage';
 import { awalBulan, periode, rupiah, relatif } from '../../lib/format';
 import { STATUS_TAGIHAN } from '../../lib/constants';
@@ -68,18 +69,25 @@ function Menunggu({ onChanged }) {
   );
 }
 
+const FILTER_TAGIHAN = [{
+  key: 'status', label: 'Status tagihan', chips: true,
+  options: [{ value: 'belum_bayar', label: 'Belum bayar' }, { value: 'menunggu_verifikasi', label: 'Diperiksa' }, { value: 'lunas', label: 'Lunas' }],
+  test: (t, v) => t.status === v,
+}];
+const kodeTagihan = (t) => t.rumah?.kode || '';
+
 function Periode() {
   const toast = useToast();
   const confirm = useConfirm();
+  const [params, setParams] = useSearchParams();
   const per = useAsync(periodeTersedia, []);
-  const [pilih, setPilih] = useState(awalBulan());
-  const [filter, setFilter] = useState('');
+  const pilih = params.get('periode') || awalBulan();
+  const setPilih = (v) => setParams((p) => { const n = new URLSearchParams(p); n.set('periode', v); n.delete('hal'); return n; }, { replace: true });
   const s = useAsync(() => tagihanPeriode(pilih), [pilih]);
   const [busy, setBusy] = useState(null);
   const opsi = useMemo(() => [...new Set([awalBulan(), ...(per.data || [])])].sort().reverse(), [per.data]);
-  const data = useMemo(() => [...(s.data || [])].sort((a, b) => a.rumah.kode.localeCompare(b.rumah.kode, 'id', { numeric: true })), [s.data]);
+  const data = s.data || [];
   const n = (st) => data.filter((t) => t.status === st).length;
-  const rows = data.filter((t) => !filter || t.status === filter);
   const terkumpul = data.filter((t) => t.status === 'lunas').reduce((a, t) => a + t.nominal, 0);
   const total = data.reduce((a, t) => a + t.nominal, 0);
 
@@ -93,11 +101,11 @@ function Periode() {
     try { await tandaiLunasTunai(t.id); toast.success(`Rumah ${t.rumah?.kode} lunas`); s.reload(); } catch (e) { toast.error(e); } finally { setBusy(null); }
   }
   const cols = [
-    { key: 'rumah', label: 'Rumah', sort: (t) => t.rumah?.kode, render: (t) => <span className="cell-main">{t.rumah?.kode}</span> },
+    { key: 'rumah', label: 'Rumah', sort: kodeTagihan, render: (t) => <span className="cell-main">{t.rumah?.kode}</span> },
     { key: 'nominal', label: 'Nominal', className: 'right', sort: (t) => t.nominal, render: (t) => <span className="money">{rupiah(t.nominal)}</span> },
     { key: 'status', label: 'Status', sort: (t) => STATUS_TAGIHAN[t.status].label, render: (t) => <span className="row" style={{ gap: 6, justifyContent: 'inherit' }}><Badge tone={STATUS_TAGIHAN[t.status].tone} dot>{STATUS_TAGIHAN[t.status].label}</Badge>{t.metode === 'tunai' && <span className="text-xs muted">tunai</span>}</span> },
-    { key: 'aksi', label: '', className: 'actions', render: (t) => t.status === 'belum_bayar' && <Button size="xs" variant="secondary" icon={Banknote} loading={busy === t.id} onClick={() => tunai(t)}>Catat tunai</Button> },
   ];
+  const aksiBaris = (t) => (t.status === 'belum_bayar' ? <Button size="xs" variant="secondary" icon={Banknote} loading={busy === t.id} onClick={() => tunai(t)}>Catat tunai</Button> : null);
 
   return (
     <div className="stack">
@@ -114,13 +122,19 @@ function Periode() {
           <Stat label="Belum bayar" value={n('belum_bayar')} sub="rumah" />
         </div>
       )}
-      <Card className="flush">
-        {data.length > 0 && <div className="card-body" style={{ paddingBottom: 12 }}><Chips value={filter} onChange={setFilter} tabs={[{ value: '', label: 'Semua', n: data.length }, { value: 'belum_bayar', label: 'Belum bayar', n: n('belum_bayar') }, { value: 'menunggu_verifikasi', label: 'Diperiksa', n: n('menunggu_verifikasi') }, { value: 'lunas', label: 'Lunas', n: n('lunas') }]} /></div>}
-        {s.loading && !s.data ? <div className="card-body"><SkeletonRows n={5} avatar={false} /></div> : s.error ? <ErrorState error={s.error} onRetry={s.reload} /> : (
-          <DataTable columns={cols} rows={rows} caption={`Tagihan ${periode(pilih)}`}
-            empty={<EmptyState icon={Receipt} title={data.length ? 'Tidak ada tagihan dengan status ini' : `Belum ada tagihan ${periode(pilih)}`} text={data.length ? undefined : 'Tekan Terbitkan tagihan untuk membuatnya.'} />} />
-        )}
-      </Card>
+      <DataManager rows={s.data} loading={s.loading} error={s.error} onRetry={s.reload}
+        columns={cols} caption={`Tagihan ${periode(pilih)}`} satuan="tagihan" label={(t) => `tagihan rumah ${kodeTagihan(t)}`}
+        cari={{ placeholder: 'Cari kode rumah', ambil: kodeTagihan }} filters={FILTER_TAGIHAN} defaultSort={{ key: 'rumah', dir: 'asc' }}
+        aksiBaris={aksiBaris}
+        ekspor={{ nama: `tagihan-ipl-${String(pilih).slice(0, 7)}`, kolom: [
+          { key: 'rumah', label: 'rumah', nilai: kodeTagihan },
+          { key: 'nominal', label: 'nominal' },
+          { key: 'status', label: 'status', nilai: (t) => STATUS_TAGIHAN[t.status]?.label || t.status },
+          { key: 'metode', label: 'metode' },
+          { key: 'periode', label: 'periode', nilai: (t) => String(t.periode || '').slice(0, 7) },
+        ] }}
+        ringkasan={(rows) => `${rows.length} tagihan · ${rupiah(rows.reduce((a, t) => a + t.nominal, 0))}`}
+        kosong={{ icon: Receipt, title: `Belum ada tagihan ${periode(pilih)}`, text: 'Tekan Terbitkan tagihan untuk membuatnya.' }} />
     </div>
   );
 }
@@ -128,48 +142,42 @@ function Periode() {
 function Tunggakan() {
   const { pengaturan } = useSettings();
   const s = useAsync(tunggakanIpl, []);
-  const [blok, setBlok] = useState('');
-  const [cari, setCari] = useState('');
-  const semua = s.data || [];
+  const semua = useMemo(() => s.data || [], [s.data]);
   const ring = useMemo(() => ringkasTunggakan(semua), [semua]);
-  const rows = useMemo(() => semua.filter((t) => (!blok || (t.blok || '-') === blok)
-    && (!cari || `${t.kode} ${t.nama || ''} ${t.gang_nama || ''}`.toLowerCase().includes(cari.trim().toLowerCase()))), [semua, blok, cari]);
-  const totalTampil = rows.reduce((a, t) => a + Number(t.total || 0), 0);
+  const filter = useMemo(() => [{
+    key: 'blok', label: 'Blok', chips: true,
+    options: Object.keys(ring.blok).sort((a, b) => a.localeCompare(b, 'id', { numeric: true })).map((b) => ({ value: b, label: `Blok ${b}` })),
+    test: (t, v) => (t.blok || '-') === v,
+  }], [ring]);
   const cols = [
     { key: 'kode', label: 'Rumah', sort: (t) => t.kode, render: (t) => <span><span className="cell-main">{t.kode}</span>{t.gang_nama && <span className="text-xs muted"> · {t.gang_nama}</span>}</span> },
     { key: 'nama', label: 'Penghuni', sort: (t) => t.nama || '', render: (t) => t.nama || <span className="muted">-</span> },
     { key: 'bulan', label: 'Menunggak', className: 'right', sort: (t) => t.jumlah_bulan, render: (t) => <span>{t.jumlah_bulan} bln <span className="text-xs muted">sejak {periode(t.periode_tertua, true)}</span></span> },
     { key: 'total', label: 'Total', className: 'right', sort: (t) => Number(t.total), render: (t) => <span className="money out">{rupiah(t.total)}</span> },
-    { key: 'aksi', label: '', className: 'actions', render: (t) => {
-      const u = tautanPengingat(t, pengaturan);
-      return u
-        ? <Button size="xs" variant="secondary" icon={MessageCircle} href={u} target="_blank" rel="noopener noreferrer">Ingatkan</Button>
-        : <span className="text-xs muted">Tanpa HP</span>;
-    } },
   ];
-  const ekspor = () => unduhBerkas(`tunggakan-ipl-${stempelTanggal()}.csv`, toCsv(rows, KOLOM_TUNGGAKAN));
+  const aksiBaris = (t) => {
+    const u = tautanPengingat(t, pengaturan);
+    return u
+      ? <Button size="xs" variant="secondary" icon={MessageCircle} href={u} target="_blank" rel="noopener noreferrer">Ingatkan</Button>
+      : <span className="text-xs muted">Tanpa HP</span>;
+  };
 
-  if (s.loading && !s.data) return <Card pad><SkeletonRows n={4} avatar={false} /></Card>;
-  if (s.error) return <ErrorState error={s.error} onRetry={s.reload} />;
   if (s.data === null) return <Callout tone="warn">Laporan tunggakan belum aktif. Jalankan <code>supabase/09-fitur-bendahara.sql</code> di SQL Editor Supabase.</Callout>;
   return (
     <div className="stack">
-      <div className="stats">
-        <Stat label="Rumah menunggak" value={ring.rumah} sub="lewat jatuh tempo" />
-        <Stat label="Total tunggakan" value={rupiah(ring.total)} />
-        <Stat label="Blok terdampak" value={Object.keys(ring.blok).length} />
-      </div>
-      <div className="toolbar">
-        <Chips value={blok} onChange={setBlok} tabs={[{ value: '', label: 'Semua', n: ring.rumah }, ...Object.entries(ring.blok).sort(([a], [b]) => a.localeCompare(b, 'id', { numeric: true })).map(([b, v]) => ({ value: b, label: `Blok ${b}`, n: v.rumah }))]} />
-        <span className="grow" />
-        <SearchInput className="sm" value={cari} onChange={setCari} placeholder="Cari rumah / nama" label="Cari tunggakan" />
-        <Button size="sm" variant="secondary" icon={Download} onClick={ekspor} disabled={!rows.length}>Ekspor CSV</Button>
-      </div>
-      <Card className="flush">
-        <DataTable columns={cols} rows={rows} rowKey="rumah_id" caption="Rumah yang menunggak IPL"
-          empty={<EmptyState icon={AlertTriangle} title={semua.length ? 'Tidak ada hasil' : 'Tidak ada tunggakan'} text={semua.length ? 'Coba ubah filter atau kata kunci.' : 'Semua tagihan yang sudah jatuh tempo telah dibayar.'} />} />
-        {rows.length > 0 && <div className="card-foot row between text-sm"><span className="muted">{rows.length} rumah</span><span>Total <b className="money out">{rupiah(totalTampil)}</b></span></div>}
-      </Card>
+      {s.data && (
+        <div className="stats">
+          <Stat label="Rumah menunggak" value={ring.rumah} sub="lewat jatuh tempo" />
+          <Stat label="Total tunggakan" value={rupiah(ring.total)} />
+          <Stat label="Blok terdampak" value={Object.keys(ring.blok).length} />
+        </div>
+      )}
+      <DataManager rows={s.data} loading={s.loading} error={s.error} onRetry={s.reload} rowKey="rumah_id"
+        columns={cols} caption="Rumah yang menunggak IPL" satuan="rumah" label={(t) => `rumah ${t.kode}`}
+        cari={{ placeholder: 'Cari rumah / nama', ambil: (t) => `${t.kode} ${t.nama || ''} ${t.gang_nama || ''}` }} filters={filter}
+        aksiBaris={aksiBaris} ekspor={{ nama: 'tunggakan-ipl', kolom: KOLOM_TUNGGAKAN }}
+        ringkasan={(rows) => <>{rows.length} rumah · Total <b className="money out">{rupiah(rows.reduce((a, t) => a + Number(t.total || 0), 0))}</b></>}
+        kosong={{ icon: AlertTriangle, title: 'Tidak ada tunggakan', text: 'Semua tagihan yang sudah jatuh tempo telah dibayar.' }} />
       <p className="text-xs muted">Tombol Ingatkan membuka WhatsApp dengan pesan yang sudah terisi; pesan baru terkirim setelah Anda menekan kirim.</p>
     </div>
   );
@@ -178,7 +186,10 @@ function Tunggakan() {
 export default function KelolaIpl() {
   const { stat, refresh } = useTugas();
   const { hak } = useAuth();
-  const [tab, setTab] = useState('menunggu');
+  const [params, setParams] = useSearchParams();
+  const tab = ['menunggu', 'periode', 'tunggakan'].includes(params.get('tab')) ? params.get('tab') : 'menunggu';
+  // Tab disimpan di URL; berpindah tab membersihkan cari/filter tab sebelumnya.
+  const setTab = (v) => setParams(v === 'menunggu' ? {} : { tab: v }, { replace: true });
   return (
     <div className="page medium">
       <PageHeader back title="Kelola IPL" desc="Verifikasi bukti transfer, terbitkan tagihan bulanan, dan catat pembayaran tunai." />

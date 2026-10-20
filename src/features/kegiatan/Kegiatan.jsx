@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, MapPin, Plus, Clock, Users } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Badge, Button, Card, EmptyState, ErrorState, SegTabs, SkeletonRows, SortSelect } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, SegTabs } from '../../components/ui';
 import Kalender from './Kalender';
+import DaftarKartu from '../../components/data/DaftarKartu';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
@@ -12,7 +13,6 @@ import { statusAgenda } from '../beranda/widgets';
 import { isoDate, jam, tanggal, parseDate, BULAN_PENDEK } from '../../lib/format';
 import { useSettings } from '../../context/SettingsContext';
 import { labelSasaran } from '../../lib/alamat';
-import { urutkan } from '../../lib/sort';
 
 export function KegiatanCard({ k, uid, onChanged }) {
   const toast = useToast();
@@ -55,6 +55,13 @@ export function KegiatanCard({ k, uid, onChanged }) {
   );
 }
 
+const CARI = { placeholder: 'Cari judul atau lokasi kegiatan', ambil: (k) => `${k.judul} ${k.lokasi || ''}` };
+const URUTAN = [
+  { key: 'terdekat', label: 'Tanggal terdekat', sort: (k) => k.mulai, dir: 'asc' },
+  { key: 'terjauh', label: 'Tanggal terjauh', sort: (k) => k.mulai, dir: 'desc' },
+  { key: 'judul', label: 'Judul A–Z', sort: (k) => k.judul, dir: 'asc' },
+];
+
 export default function Kegiatan() {
   const { hak, user } = useAuth();
   const [tab, setTab] = useState('mendatang');
@@ -63,12 +70,9 @@ export default function Kegiatan() {
   const dari = new Date(bulan.getFullYear(), bulan.getMonth(), 1).toISOString();
   const sampai = new Date(bulan.getFullYear(), bulan.getMonth() + 1, 1).toISOString();
   const bln = useAsync(() => daftarKegiatan({ dari, sampai }), [dari, sampai]);
-  const list = useAsync(() => daftarKegiatan({ selesai: tab === 'selesai' }), [tab]);
+  const list = useAsync(() => daftarKegiatan({ selesai: tab === 'selesai', limit: 500 }), [tab]);
   const adaSet = useMemo(() => new Set((bln.data || []).map((k) => isoDate(parseDate(k.mulai)))), [bln.data]);
-  const [urut, setUrut] = useState('');
-  const mode = urut || (tab === 'selesai' ? 'terjauh' : 'terdekat');
   const mentah = hari ? (bln.data || []).filter((k) => isoDate(parseDate(k.mulai)) === hari) : list.data;
-  const tampil = useMemo(() => (mentah ? (mode === 'judul' ? urutkan(mentah, (k) => k.judul) : urutkan(mentah, (k) => k.mulai, mode === 'terjauh' ? 'desc' : 'asc')) : mentah), [mentah, mode]);
   const state = hari ? bln : list;
   const refresh = () => { bln.reload(); list.reload(); };
   return (
@@ -81,12 +85,12 @@ export default function Kegiatan() {
           <Kalender bulan={bulan} onBulan={(b) => { setBulan(b); setHari(null); }} terpilih={hari} onPilih={setHari} adaKegiatan={adaSet} />
         </div>
         <div className="stack">
-          {!hari && <div className="row end"><SortSelect value={mode} onChange={setUrut} options={[{ value: 'terdekat', label: 'Tanggal terdekat' }, { value: 'terjauh', label: 'Tanggal terjauh' }, { value: 'judul', label: 'Judul A–Z' }]} /></div>}
           {hari && <div className="row between"><h2>{tanggal(hari, { hari: true })}</h2><button type="button" className="link" onClick={() => setHari(null)}>Tampilkan semua</button></div>}
-          {state.loading && !state.data ? <Card pad><SkeletonRows n={3} /></Card> : state.error ? <ErrorState error={state.error} onRetry={state.reload} /> : !tampil?.length ? (
-            <Card><EmptyState icon={CalendarDays} title={hari ? 'Tidak ada kegiatan di tanggal ini' : tab === 'selesai' ? 'Belum ada kegiatan yang lewat' : 'Belum ada kegiatan terjadwal'}
-              action={hak.kelola_info && !hari && tab === 'mendatang' && <Button size="sm" icon={Plus} to="/kegiatan/baru">Jadwalkan kegiatan</Button>} /></Card>
-          ) : tampil.map((k) => <KegiatanCard key={k.id} k={k} uid={user.id} onChanged={refresh} />)}
+          <DaftarKartu key={tab} rows={mentah} loading={state.loading} error={state.error} onRetry={state.reload} satuan="kegiatan" bungkus="kartu"
+            cari={CARI} urutan={URUTAN} defaultUrutan={tab === 'selesai' ? 'terjauh' : 'terdekat'}
+            kosong={<EmptyState icon={CalendarDays} title={hari ? 'Tidak ada kegiatan di tanggal ini' : tab === 'selesai' ? 'Belum ada kegiatan yang lewat' : 'Belum ada kegiatan terjadwal'}
+              action={hak.kelola_info && !hari && tab === 'mendatang' && <Button size="sm" icon={Plus} to="/kegiatan/baru">Jadwalkan kegiatan</Button>} />}
+            renderItem={(k) => <KegiatanCard key={k.id} k={k} uid={user.id} onChanged={refresh} />} />
         </div>
       </div>
       {hak.kelola_info && <Link to="/kegiatan/baru" className="fab"><Plus size={20} />Jadwalkan</Link>}

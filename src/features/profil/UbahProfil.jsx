@@ -2,18 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
-import { Button, Card, Input, Textarea, FotoInput, PernikahanFields, galatAnak, kolomPernikahan, Callout } from '../../components/ui';
+import { Button, Card, Input, Select, Textarea, FotoInput, PernikahanFields, galatAnak, kolomPernikahan, Callout } from '../../components/ui';
 import FotoWarga from '../../components/ui/FotoWarga';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { ubahProfil, ubahKontak } from '../../services/warga';
 import { FOTO_AWAL, terapkanFoto } from '../../lib/foto';
+import { STATUS_HUNIAN } from '../../lib/constants';
 
 export default function UbahProfil() {
   const { warga, kontak, user, setWarga, setKontak } = useAuth();
   const toast = useToast();
   const nav = useNavigate();
-  const [f, setF] = useState({ nama: warga.nama, pekerjaan: warga.pekerjaan || '', hobi: warga.hobi || '', keluarga: warga.keluarga || '', tentang: warga.tentang || '', email: kontak?.email || '', status_pernikahan: kontak?.status_pernikahan || '', jumlah_anak: kontak?.jumlah_anak ?? '' });
+  const [f, setF] = useState({ nama: warga.nama, pekerjaan: warga.pekerjaan || '', hobi: warga.hobi || '', keluarga: warga.keluarga || '', tentang: warga.tentang || '', email: kontak?.email || '', status_pernikahan: kontak?.status_pernikahan || '', jumlah_anak: kontak?.jumlah_anak ?? '', status_hunian: kontak?.status_hunian || '' });
   const [foto, setFoto] = useState(FOTO_AWAL);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,7 @@ export default function UbahProfil() {
       const foto_path = await terapkanFoto(foto, { folder: `avatar/${user.id}`, lama: warga.foto_path, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 } });
       const w = await ubahProfil(user.id, { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, hobi: f.hobi.trim() || null, keluarga: f.keluarga.trim() || null, tentang: f.tentang.trim() || null, foto_path });
       setWarga(w);
-      setKontak(await ubahKontak(user.id, { email: f.email.trim() || null, ...kolomPernikahan(f.status_pernikahan, f.jumlah_anak) }));
+      setKontak(await ubahKontak(user.id, { email: f.email.trim() || null, ...kolomPernikahan(f.status_pernikahan, f.jumlah_anak), status_hunian: f.status_hunian || null }));
       toast.success('Profil disimpan');
       nav('/profil');
     } catch (e2) { toast.error(e2); } finally { setLoading(false); }
@@ -59,9 +60,11 @@ export default function UbahProfil() {
             <PernikahanFields status={f.status_pernikahan} anak={f.jumlah_anak} errors={errors}
               onStatus={(v) => setF((s) => ({ ...s, status_pernikahan: v, jumlah_anak: v && v !== 'belum_menikah' ? s.jumlah_anak : '' }))}
               onAnak={(v) => setF((s) => ({ ...s, jumlah_anak: v }))} />
+            <Select label="Rumah yang ditempati" optional value={f.status_hunian} onChange={set('status_hunian')} placeholder="Belum diisi"
+              options={Object.entries(STATUS_HUNIAN).map(([value, v]) => ({ value, label: v.label }))} />
           </div>
           <Textarea label="Tentang saya" optional value={f.tentang} onChange={set('tentang')} maxLength={500} />
-          <Callout tone="neutral">Nomor HP, jalan, dan nomor rumah dikelola sekretaris atau admin agar data tagihan tetap akurat. Status pernikahan dan jumlah anak hanya terlihat oleh Anda dan pengurus (untuk data sensus warga).</Callout>
+          <Callout tone="neutral">Nomor HP, jalan, dan nomor rumah dikelola sekretaris atau admin agar data tagihan tetap akurat. Status pernikahan, jumlah anak, dan status rumah (milik sendiri/kontrak) hanya terlihat oleh Anda dan pengurus (untuk data sensus warga).</Callout>
           <div className="form-actions">
             <Button variant="secondary" onClick={() => nav(-1)}>Batal</Button>
             <Button type="submit" icon={Save} loading={loading}>Simpan profil</Button>
