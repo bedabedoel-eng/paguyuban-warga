@@ -69,18 +69,23 @@ export function semuaMenu(hak, { unread = 0 } = {}) {
 
 const SEMUA_MENU = { to: '/menu', label: 'Semua menu', icon: LayoutGrid, tone: 'dark', semua: true };
 
-/** 7 pintasan + tombol "Semua menu" = 8 kotak untuk dashboard warga. */
-export function menuCepatWarga() {
-  return [
-    { to: '/ipl', label: 'Tagihan IPL', icon: Receipt, tone: 'ok' },
+/**
+ * 7 pintasan + tombol "Semua menu" = 8 kotak untuk Beranda.
+ * Menu yang sudah ada di bilah bawah (Tagihan, Warga, Kelola/Kegiatan, Profil) tidak diulang di sini.
+ * Pengurus punya "Kelola" di bilah bawah sebagai ganti "Kegiatan", jadi Kegiatan masuk di sini untuk mereka.
+ */
+export function menuCepatWarga(hak = {}) {
+  const k = [
     { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone, tone: 'info' },
-    { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays, tone: 'violet' },
-    { to: '/warga', label: 'Direktori warga', icon: Users, tone: '' },
+    ...(hak.pengurus ? [{ to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays, tone: 'violet' }] : []),
+    { to: '/polling', label: 'Polling', icon: Vote, tone: 'info' },
     { to: '/aspirasi', label: 'Aspirasi', icon: MessageSquareText, tone: 'warn' },
     { to: '/keuangan', label: 'Kas paguyuban', icon: Wallet, tone: 'gold' },
+    { to: '/pengurus', label: 'Pengurus', icon: UsersRound, tone: 'violet' },
     { to: '/kontak-darurat', label: 'Kontak darurat', icon: PhoneCall, tone: 'bad' },
-    SEMUA_MENU,
+    { to: '/pengaturan', label: 'Pengaturan', icon: Settings, tone: 'neutral' },
   ];
+  return [...k.slice(0, 7), SEMUA_MENU];
 }
 
 /** 8 kotak untuk dashboard pengurus: pekerjaan sesuai kewenangan lebih dulu, lalu isi dengan menu umum. */
@@ -97,12 +102,13 @@ export function menuCepatPengurus(hak) {
   if (hak.kelola_anggota) k.push({ to: '/admin/wilayah', label: 'Blok & jalan', icon: Signpost, tone: 'info' });
   if (hak.kelola_dokumen) k.push({ to: '/administrasi', label: 'Surat & notulen', icon: FolderArchive, tone: 'neutral' });
   if (hak.kelola_pengurus) k.push({ to: '/pengurus/kelola', label: 'Atur pengurus', icon: Network, tone: 'violet' });
+  // Isi cadangan; Tagihan, Warga, dan Profil sudah ada di bilah bawah sehingga tidak diulang.
   k.push(
-    { to: '/warga', label: (hak.kelola_anggota || hak.humas) ? 'Warga' : 'Direktori warga', icon: Users, tone: '' },
     { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone, tone: 'info' },
     { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays, tone: 'violet' },
     { to: '/keuangan', label: 'Kas paguyuban', icon: Wallet, tone: 'gold' },
-    { to: '/ipl', label: 'Tagihan IPL', icon: Receipt, tone: 'ok' },
+    { to: '/polling', label: 'Polling', icon: Vote, tone: 'info' },
+    { to: '/aspirasi', label: 'Aspirasi', icon: MessageSquareText, tone: 'warn' },
     { to: '/pengurus', label: 'Pengurus', icon: UsersRound, tone: 'violet' },
   );
   const pakai = new Set();

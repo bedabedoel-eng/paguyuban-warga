@@ -92,7 +92,7 @@ export default function Beranda() {
         <div className="greet-scene" aria-hidden="true"><HouseScene variant="dark" /></div>
       </section>
 
-      <MenuCepat items={menuCepatWarga()} />
+      <MenuCepat items={menuCepatWarga(hak)} />
 
       {hak.pengurus && (
         <section className="stack-sm" aria-labelledby="tugas-h">
