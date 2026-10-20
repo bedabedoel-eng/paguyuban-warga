@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   Sun, CloudSun, Cloud, CloudRain, CalendarDays, Megaphone, Bell, Phone, Users, Receipt,
-  Wallet, ShieldCheck, CircleCheck, Clock, CircleAlert, ChevronRight, House, MapPin,
+  Wallet, ShieldCheck, Sunrise, Sunset, Moon, CircleCheck, Clock, CircleAlert, ChevronRight, House, MapPin,
 } from 'lucide-react';
 import { Card, CardHead, CardBody, Button, Stat, SkeletonRows, EmptyState, Skeleton } from '../../components/ui';
 import HouseScene from '../../components/illustrations/HouseScene';
@@ -16,7 +16,17 @@ import JadwalShalat from './JadwalShalat';
 import BarChart12 from './IplChart';
 import { menuCepatWarga } from '../../components/layout/navConfig';
 import { labelCuaca } from '../../services/dashboard';
-import { rupiah, angka, tanggal, periode, salam } from '../../lib/format';
+import { rupiah, angka, tanggal, periode, salam, tanggalHijriah } from '../../lib/format';
+
+const HARI_PANJANG = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const BULAN_PANJANG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+function IkonSalam({ size = 16 }) {
+  const h = new Date().getHours();
+  if (h < 11) return <Sunrise size={size} aria-hidden="true" />;
+  if (h < 15) return <Sun size={size} aria-hidden="true" />;
+  if (h < 18) return <Sunset size={size} aria-hidden="true" />;
+  return <Moon size={size} aria-hidden="true" />;
+}
 import { kodeRumah } from '../../lib/alamat';
 
 function IkonCuaca({ kode, size = 24 }) {
@@ -65,6 +75,8 @@ export default function Beranda() {
   const persen = totalIpl ? Math.round((s.ipl_lunas / totalIpl) * 100) : 0;
   const kas = d.kas.data || {};
   const statLoading = !stat;
+  const hoy = new Date();
+  const hijri = tanggalHijriah(hoy);
   const iplTampak = s.ipl_terlihat !== false; // IPL hanya terlihat oleh pengurus blok masing-masing
 
   return (
@@ -75,8 +87,14 @@ export default function Beranda() {
       </div>
 
       <section className="greet">
+        <div className="greet-date" role="group" aria-label={`Hari ini ${tanggal(new Date(), { hari: true })}`}>
+          <span className="dow">{HARI_PANJANG[hoy.getDay()]}</span>
+          <b className="dd">{hoy.getDate()}</b>
+          <span className="mm">{BULAN_PANJANG[hoy.getMonth()]} {hoy.getFullYear()}</span>
+          {hijri && <span className="hj">{hijri}</span>}
+        </div>
         <div className="t">
-          <div className="hello"><span>{salam()}</span><span aria-hidden="true">·</span><span>{tanggal(new Date(), { hari: true })}</span></div>
+          <div className="hello"><IkonSalam /><span>{salam()}</span></div>
           <h1>{warga?.nama}</h1>
           <span className="role">
             <ShieldCheck size={14} />{peranLabel}{warga?.blok ? ` · ${alamat(warga)}` : ''}

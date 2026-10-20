@@ -81,8 +81,20 @@
   opacity: .95;
 }
 .greet .t { flex: 1 1 280px; min-width: 0; position: relative; z-index: 1; }
-.greet .hello { color: #cfe3d8; font-size: var(--fs-sm); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.greet .hello > span:first-child { font-weight: 700; color: var(--kunyit-300); }
+.greet .hello { color: var(--kunyit-300); font-size: var(--fs-md); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.greet .hello svg { flex: none; }
+/* Kotak tanggal: angka besar agar terbaca sekilas */
+.greet-date {
+  position: relative; z-index: 1; flex: none; display: grid; justify-items: center; align-content: center; gap: 1px; text-align: center;
+  min-width: 118px; padding: 12px 16px 11px; border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.09)); border: 1px solid rgba(255,255,255,.3);
+  box-shadow: 0 8px 22px -12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.greet-date .dow { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--kunyit-300); }
+.greet-date .dd { font-family: var(--font-display); font-size: 3.1rem; line-height: 1; font-weight: 800; color: #fff; letter-spacing: -.03em; text-shadow: 0 2px 14px rgba(0,0,0,.3); }
+.greet-date .mm { font-size: var(--fs-sm); font-weight: 700; color: #fff; }
+.greet-date .hj { margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,.25); font-size: 11px; color: #d6e8de; width: 100%; }
 .greet h1 { color: #fff; font-size: var(--fs-3xl); margin-top: 4px; overflow-wrap: anywhere; letter-spacing: -.02em; text-shadow: 0 2px 14px rgba(0,0,0,.25); }
 .greet .role {
   display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 5px 12px 5px 9px; border-radius: var(--r-full);
@@ -102,6 +114,8 @@
   .greet h1 { font-size: var(--fs-2xl); }
   .greet-scene { width: 100%; opacity: .55; }
   .greet::before { right: -40px; }
+  .greet-date { min-width: 96px; padding: 9px 12px 8px; }
+  .greet-date .dd { font-size: 2.4rem; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .greet::before { animation: greet-glow 7s ease-in-out infinite alternate; }

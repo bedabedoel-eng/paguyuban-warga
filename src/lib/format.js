@@ -73,4 +73,12 @@ export function salam(d = new Date()) {
   return 'Selamat malam';
 }
 
+/** Tanggal Hijriah (perkiraan kalender Umm al-Qura; bisa berbeda satu hari dari penetapan Kemenag). Kosong bila peramban tidak mendukung. */
+export function tanggalHijriah(d = new Date()) {
+  try {
+    const s = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    return /\d/.test(s) ? s.replace(/\s*(H|AH)?$/, ' H') : '';
+  } catch { return ''; }
+}
+
 export const inisial = (nama = '') => nama.trim().split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase() || '').join('') || '?';
