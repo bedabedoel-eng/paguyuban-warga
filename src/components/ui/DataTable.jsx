@@ -7,10 +7,16 @@ import { urutkan } from '../../lib/sort';
  * columns: [{ key, label, render?(row), className?, mobileLabel?, sort?: (row) => nilai }]
  *   - sort: kolom bisa diurutkan (klik judul; di HP lewat pilihan "Urutkan").
  * defaultSort: { key, dir: 'asc' | 'desc' }
+ * Mode terkendali (dipakai DataManager): beri `sort` + `onSort(sortBaru | null)`; baris tidak diurutkan di sini
+ * karena pemanggil sudah mengurutkannya (mis. sebelum dibagi per halaman).
+ * Kolom boleh memakai `header` (node) sebagai pengganti `label` di judul kolom, mis. kotak centang.
  */
-export default function DataTable({ columns, rows, rowKey = 'id', empty, caption, defaultSort }) {
-  const [urut, setUrut] = useState(defaultSort || null);
-  const kolom = urut ? columns.find((c) => c.key === urut.key && c.sort) : null;
+export default function DataTable({ columns, rows, rowKey = 'id', empty, caption, defaultSort, sort, onSort }) {
+  const terkendali = onSort !== undefined;
+  const [urutLokal, setUrutLokal] = useState(defaultSort || null);
+  const urut = terkendali ? sort : urutLokal;
+  const setUrut = terkendali ? (f) => onSort(typeof f === 'function' ? f(sort) : f) : setUrutLokal;
+  const kolom = !terkendali && urut ? columns.find((c) => c.key === urut.key && c.sort) : null;
   const data = useMemo(() => (kolom ? urutkan(rows, kolom.sort, urut.dir) : rows), [rows, kolom, urut]);
   if (!rows?.length) return empty || null;
   const bisaUrut = columns.filter((c) => c.sort);
@@ -38,7 +44,7 @@ export default function DataTable({ columns, rows, rowKey = 'id', empty, caption
                 <th key={c.key} scope="col" className={c.className} aria-sort={aktif ? (urut.dir === 'asc' ? 'ascending' : 'descending') : undefined}>
                   {c.sort
                     ? <button type="button" className="sort" onClick={() => klik(c)}>{c.label}<Ikon size={13} aria-hidden="true" /></button>
-                    : c.label}
+                    : (c.header ?? c.label)}
                 </th>
               );
             })}
