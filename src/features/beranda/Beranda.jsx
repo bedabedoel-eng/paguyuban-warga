@@ -12,6 +12,7 @@ import { useNotif } from '../../context/NotifContext';
 import { useBerandaData, ringkasIpl } from './useBerandaData';
 import { PengumumanRow, AgendaRow, NotifRow, TugasGrid, WilayahCards, FotoStrip } from './widgets';
 import MenuCepat from './MenuCepat';
+import JadwalShalat from './JadwalShalat';
 import BarChart12 from './IplChart';
 import { menuCepatWarga } from '../../components/layout/navConfig';
 import { labelCuaca } from '../../services/dashboard';
@@ -68,12 +69,13 @@ export default function Beranda() {
 
   return (
     <div className="page">
+      <div className="estate-top">
+        <MapPin size={16} aria-hidden="true" />
+        <span><b>{pengaturan.nama_lingkungan || pengaturan.nama_paguyuban}</b>{pengaturan.alamat && <span>{pengaturan.alamat}</span>}</span>
+      </div>
+
       <section className="greet">
         <div className="t">
-          <div className="estate">
-            <MapPin size={15} aria-hidden="true" />
-            <span><b>{pengaturan.nama_lingkungan || pengaturan.nama_paguyuban}</b>{pengaturan.alamat && <span>{pengaturan.alamat}</span>}</span>
-          </div>
           <div className="hello"><span>{salam()}</span><span aria-hidden="true">·</span><span>{tanggal(new Date(), { hari: true })}</span></div>
           <h1>{warga?.nama}</h1>
           <span className="role">
@@ -91,6 +93,8 @@ export default function Beranda() {
         </div>
         <div className="greet-scene" aria-hidden="true"><HouseScene variant="dark" /></div>
       </section>
+
+      <JadwalShalat lat={pengaturan.latitude} lon={pengaturan.longitude} admin={hak.admin} />
 
       <MenuCepat items={menuCepatWarga(hak)} />
 

@@ -373,3 +373,21 @@
   .bulkbar { padding: 10px 16px; }
   .table.stackable td.pilih-col { width: auto; padding: 0 !important; }
 }
+
+/* Nama perumahan di atas kartu salam */
+.estate-top { display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; color: var(--ink-2); font-size: var(--fs-xs); }
+.estate-top svg { color: var(--hutan-700); flex: none; margin-top: 2px; }
+.estate-top b { display: block; color: var(--ink); font-family: var(--font-display); font-size: var(--fs-md); }
+.estate-top span { display: block; }
+
+/* Waktu shalat */
+.shalat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; display: grid; gap: 10px; }
+.shalat-head { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); flex-wrap: wrap; }
+.shalat-head svg { color: var(--hutan-700); }
+.shalat-head .muted { margin-left: auto; font-size: var(--fs-xs); }
+.shalat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.shalat-item { display: grid; gap: 2px; justify-items: center; padding: 8px 4px; border-radius: var(--r-md); background: var(--surface-2); font-size: var(--fs-xs); color: var(--ink-2); }
+.shalat-item b { color: var(--ink); font-size: var(--fs-sm); }
+.shalat-item.next { background: var(--hutan-800); color: #cfe3d8; }
+.shalat-item.next b { color: #fff; }
+.shalat-item.skel { min-height: 46px; opacity: .6; }
