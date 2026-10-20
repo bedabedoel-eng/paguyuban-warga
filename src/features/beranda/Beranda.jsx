@@ -111,20 +111,19 @@ export default function Beranda() {
         <div className="greet-scene" aria-hidden="true"><HouseScene variant="dark" /></div>
       </section>
 
-      {hak.pengurus && (
-        <section className="stack-sm" aria-labelledby="tugas-h">
-          <div className="section-head">
-            <h2 id="tugas-h">Perlu tindakan Anda</h2>
-            <button type="button" className="link" onClick={() => { refresh(); refreshNotif(); }}>Perbarui</button>
-          </div>
-          <TugasGrid hak={hak} stat={stat} loading={statLoading} />
-          {hak.humas && <WilayahCards wilayah={s.wilayah} />}
-        </section>
-      )}
-
       {/* Desktop: kolom utama (tagihan, informasi) + kolom samping (shalat, menu, kas, notifikasi).
           HP/tablet: satu kolom dengan urutan prioritas lewat CSS (order). */}
       <div className="home-grid">
+        {hak.pengurus && (
+          <section className="stack-sm h-tugas" aria-labelledby="tugas-h">
+            <div className="section-head">
+              <h2 id="tugas-h">Perlu tindakan Anda</h2>
+              <button type="button" className="link" onClick={() => { refresh(); refreshNotif(); }}>Perbarui</button>
+            </div>
+            <TugasGrid hak={hak} stat={stat} loading={statLoading} />
+            {hak.humas && <WilayahCards wilayah={s.wilayah} />}
+          </section>
+        )}
         <div className="home-main">
           <Card className="h-tagihan">
             <CardHead title="Tagihan rumah saya" to="/ipl" actionLabel="Detail" />
