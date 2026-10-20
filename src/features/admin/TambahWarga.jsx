@@ -3,14 +3,14 @@ import { Link2 } from 'lucide-react';
 import { Button, Callout, Checkbox, Input, Modal, NomorRumahFields, PernikahanFields, PhoneInput, Select, galatAnak, kolomPernikahan } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
-import { importWarga } from '../../services/warga';
+import { importWarga, isiStatusHunian } from '../../services/warga';
 import { normalizeHp } from '../../lib/phone';
 import { normalisasiLinkFoto } from '../../lib/image';
-import { pernahMenikah } from '../../lib/constants';
+import { pernahMenikah, STATUS_HUNIAN } from '../../lib/constants';
 import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
 
 const PIN_AWAL = '123456';
-const KOSONG = { nama: '', hp: '', blok: '', no_rumah: '', gang_id: '', pekerjaan: '', kepala_keluarga: false, status_pernikahan: '', jumlah_anak: '', foto: '' };
+const KOSONG = { nama: '', hp: '', blok: '', no_rumah: '', gang_id: '', pekerjaan: '', kepala_keluarga: false, status_pernikahan: '', jumlah_anak: '', status_hunian: '', foto: '' };
 
 /**
  * Tambah satu warga secara manual (khusus admin). Memakai fungsi database yang sama dengan Import CSV,
@@ -47,7 +47,10 @@ export default function TambahWarga({ onClose, onSaved }) {
         kepala_keluarga: f.kepala_keluarga ? 'ya' : '', status_pernikahan: n.status_pernikahan, jumlah_anak: n.jumlah_anak ?? null, foto: foto || null,
       }], PIN_AWAL);
       if (!res.dibuat) throw new Error(res.dilewati?.[0]?.alasan || 'Warga tidak dapat dibuat');
-      toast.success(`${nama} ditambahkan. PIN awal ${PIN_AWAL}`);
+      let hunianGagal = false;
+      if (f.status_hunian) { try { await isiStatusHunian([{ hp, status_hunian: f.status_hunian }]); } catch { hunianGagal = true; } }
+      if (hunianGagal) toast.error('Warga dibuat, tetapi status rumah belum tersimpan. Isi lewat Ubah (pastikan SQL 12 sudah dijalankan).');
+      else toast.success(`${nama} ditambahkan. PIN awal ${PIN_AWAL}`);
       onSaved();
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }
@@ -69,6 +72,8 @@ export default function TambahWarga({ onClose, onSaved }) {
             <PernikahanFields status={f.status_pernikahan} anak={f.jumlah_anak}
               onStatus={(v) => setF((s) => ({ ...s, status_pernikahan: v, jumlah_anak: pernahMenikah(v) ? s.jumlah_anak : '' }))}
               onAnak={(v) => setF((s) => ({ ...s, jumlah_anak: v }))} />
+            <Select label="Rumah yang ditempati" optional value={f.status_hunian} onChange={set('status_hunian')} placeholder="Belum diisi"
+              options={Object.entries(STATUS_HUNIAN).map(([value, v]) => ({ value, label: v.label }))} />
             <div className="span-2">
               <Checkbox checked={f.kepala_keluarga} onChange={(v) => setF((s) => ({ ...s, kepala_keluarga: v }))}>Kepala keluarga</Checkbox>
               <p className="text-xs muted">Bila tidak dicentang dan rumah ini belum punya kepala keluarga, warga pertama di rumah itu otomatis menjadi kepala keluarga.</p>
@@ -77,7 +82,7 @@ export default function TambahWarga({ onClose, onSaved }) {
               hint="Foto dari perangkat bisa diunggah lewat tombol Ubah setelah warga ditambahkan." />
           </div>
         </div>
-        <Callout tone="info">PIN awal <b className="num">{PIN_AWAL}</b>. Warga diminta membuat PIN baru saat pertama masuk. Rumah yang ditempati (milik sendiri/kontrak) dapat diisi lewat tombol Ubah.</Callout>
+        <Callout tone="info">PIN awal <b className="num">{PIN_AWAL}</b>. Warga diminta membuat PIN baru saat pertama masuk.</Callout>
       </div>
     </Modal>
   );

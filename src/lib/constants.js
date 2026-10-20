@@ -49,6 +49,12 @@ export const STATUS_HUNIAN = {
   kontrak: { label: 'Kontrak' },
 };
 
+/** Penulisan bebas di berkas CSV → nilai database status_hunian. */
+export const PETA_HUNIAN = {
+  milik_sendiri: 'milik_sendiri', 'milik sendiri': 'milik_sendiri', milik: 'milik_sendiri', sendiri: 'milik_sendiri', pribadi: 'milik_sendiri', 'hak milik': 'milik_sendiri',
+  kontrak: 'kontrak', kontrakan: 'kontrak', sewa: 'kontrak', 'sewa/kontrak': 'kontrak', kos: 'kontrak',
+};
+
 /** Jumlah anak ditanyakan bila sudah/pernah menikah. */
 export const pernahMenikah = (s) => !!s && s !== 'belum_menikah';
 

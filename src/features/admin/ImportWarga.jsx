@@ -6,10 +6,10 @@ import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { parseCsv, CONTOH_CSV } from '../../lib/csv';
 import { normalizeHp, formatHp } from '../../lib/phone';
-import { importWarga } from '../../services/warga';
+import { importWarga, isiStatusHunian } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
 import { POLA_NOMOR_RUMAH, gangDiBlok, gangDariNomor, normalisasiAlamat } from '../../lib/alamat';
-import { pernahMenikah } from '../../lib/constants';
+import { pernahMenikah, PETA_HUNIAN } from '../../lib/constants';
 import { normalisasiLinkFoto } from '../../lib/image';
 
 const PETA_NIKAH = { 'belum menikah': 'belum_menikah', belum_menikah: 'belum_menikah', lajang: 'belum_menikah', 'belum kawin': 'belum_menikah', menikah: 'menikah', 'sudah menikah': 'menikah', kawin: 'menikah', 'cerai hidup': 'cerai_hidup', cerai_hidup: 'cerai_hidup', 'cerai mati': 'cerai_mati', cerai_mati: 'cerai_mati' };
@@ -27,6 +27,7 @@ const ALIAS = {
   kepala_keluarga: ['kepala_keluarga', 'kepala keluarga', 'kk'],
   status_pernikahan: ['status_pernikahan', 'status pernikahan', 'pernikahan', 'status nikah', 'status'],
   jumlah_anak: ['jumlah_anak', 'jumlah anak', 'anak'],
+  status_hunian: ['status_hunian', 'status hunian', 'hunian', 'rumah ditempati', 'status rumah', 'kepemilikan'],
   foto: ['foto', 'link foto', 'link_foto', 'url foto', 'tautan foto', 'pas foto', 'pas_foto'],
 };
 
@@ -61,6 +62,8 @@ function olahBaris(rows, blokKode, gang = []) {
     const nikahMentah = ambil('status_pernikahan').toLowerCase();
     const nikah = nikahMentah ? PETA_NIKAH[nikahMentah] || '?' : '';
     const anak = ambil('jumlah_anak');
+    const hunianMentah = ambil('status_hunian').toLowerCase();
+    const hunian = hunianMentah ? PETA_HUNIAN[hunianMentah] || '?' : '';
     let foto = '';
     let galatFoto = '';
     try { foto = normalisasiLinkFoto(ambil('foto')); } catch (e) { galatFoto = e.message; }
@@ -74,9 +77,10 @@ function olahBaris(rows, blokKode, gang = []) {
     else if (sudah.has(hp)) galat = 'Nomor HP ganda di berkas';
     else if (nikah === '?') galat = `Status pernikahan "${nikahMentah}" tidak dikenal`;
     else if (anak && (!/^\d{1,2}$/.test(anak) || Number(anak) > 30)) galat = 'Jumlah anak: angka 0 sampai 30';
+    else if (hunian === '?') galat = `Rumah ditempati "${hunianMentah}" tidak dikenal (isi milik sendiri atau kontrak)`;
     else if (galatFoto) galat = galatFoto;
     if (hp) sudah.add(hp);
-    return { baris: n + 2, nama, hp, blok, sub_blok: sub, nomor, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', foto, galat };
+    return { baris: n + 2, nama, hp, blok, sub_blok: sub, nomor, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', status_hunian: hunian === '?' ? '' : hunian, foto, galat };
   });
   return { kurang: [], list };
 }
@@ -122,15 +126,20 @@ export default function ImportWarga({ tertanam = false }) {
     setLoading(true);
     const dibuat = [];
     const dilewati = [];
+    let hunianGagal = false;
     try {
       for (let i = 0; i < valid.length; i += 100) {
         const potong = valid.slice(i, i + 100);
         const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga, status_pernikahan, jumlah_anak, foto }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga, status_pernikahan: status_pernikahan || null, jumlah_anak: jumlah_anak || null, foto: foto || null })), PIN_AWAL);
         dibuat.push(res.dibuat || 0);
         for (const s of res.dilewati || []) dilewati.push({ ...s, baris: potong[s.baris - 1]?.baris ?? s.baris });
+        // Status rumah ditempati: hanya untuk baris yang benar-benar dibuat (bukan yang dilewati server)
+        const lewat = new Set((res.dilewati || []).map((x) => x.baris));
+        const pasangan = potong.map((x, n) => ({ hp: x.hp, status_hunian: x.status_hunian, ok: !lewat.has(n + 1) })).filter((x) => x.ok && x.status_hunian);
+        if (pasangan.length) { try { await isiStatusHunian(pasangan); } catch { hunianGagal = true; } }
       }
       const total = dibuat.reduce((a, b) => a + b, 0);
-      setLaporan({ dibuat: total, dilewati });
+      setLaporan({ dibuat: total, dilewati, hunianGagal });
       setData(null);
       toast.success(`${total} akun warga dibuat`);
     } catch (e) {
@@ -157,7 +166,7 @@ export default function ImportWarga({ tertanam = false }) {
         <div className="steps">
           <div className="step"><span className="n">1</span><div className="body">
             <h3>Siapkan berkas</h3>
-            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b>. Sub-blok boleh di kolom sendiri (<b>sub_blok</b>), mis. blok <b>A</b>, sub_blok <b>3</b>, no_rumah <b>5</b>; penulisan gabungan seperti <b>A3</b> + <b>5</b>, <b>3/5</b>, atau satu kolom <b>alamat</b> berisi “Blok A3 No.5” juga dipahami dan dipisah otomatis, sehingga hasilnya bisa direkap per blok, sub-blok, dan nomor. Opsional <b>jalan</b> (nama jalan persis seperti di menu Blok & jalan), <b>pekerjaan</b>, <b>kepala_keluarga</b> (ya/tidak), <b>status_pernikahan</b> (belum menikah / menikah / cerai hidup / cerai mati), <b>jumlah_anak</b> (diisi bila sudah menikah), dan <b>foto</b> (tautan gambar https). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
+            <p className="text-sm ink-2">Kolom wajib <b>nama, hp, blok, no_rumah</b>. Sub-blok boleh di kolom sendiri (<b>sub_blok</b>), mis. blok <b>A</b>, sub_blok <b>3</b>, no_rumah <b>5</b>; penulisan gabungan seperti <b>A3</b> + <b>5</b>, <b>3/5</b>, atau satu kolom <b>alamat</b> berisi “Blok A3 No.5” juga dipahami dan dipisah otomatis, sehingga hasilnya bisa direkap per blok, sub-blok, dan nomor. Opsional <b>jalan</b> (nama jalan persis seperti di menu Blok & jalan), <b>pekerjaan</b>, <b>kepala_keluarga</b> (ya/tidak), <b>status_hunian</b> (milik sendiri / kontrak), <b>status_pernikahan</b> (belum menikah / menikah / cerai hidup / cerai mati), <b>jumlah_anak</b> (diisi bila sudah menikah), dan <b>foto</b> (tautan gambar https). Satu baris untuk satu orang dengan nomor HP sendiri.</p>
             <div style={{ marginTop: 10 }}><Button size="sm" variant="secondary" icon={Download} onClick={unduhContoh}>Unduh contoh CSV</Button></div>
           </div></div>
           <div className="step"><span className="n">2</span><div className="body">
@@ -194,6 +203,7 @@ export default function ImportWarga({ tertanam = false }) {
       {laporan && (
         <Card pad className="stack-sm">
           <div className="row"><CircleCheck size={20} className="t-ok" /><h2>{laporan.dibuat} akun berhasil dibuat</h2></div>
+          {laporan.hunianGagal && <Callout tone="warn">Akun sudah dibuat, tetapi sebagian status rumah ditempati belum tersimpan. Pastikan SQL 12-status-hunian sudah dijalankan, lalu isi lewat Ubah anggota.</Callout>}
           {laporan.terhenti && <Callout tone="bad">Proses terhenti di tengah jalan. Akun yang sudah dibuat tetap tersimpan; impor ulang berkas yang sama akan melewati nomor yang sudah terdaftar.</Callout>}
           {laporan.dilewati.length > 0 && (
             <>

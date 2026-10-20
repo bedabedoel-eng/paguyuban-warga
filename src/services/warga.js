@@ -85,6 +85,17 @@ export const resetSandiWarga = async (id, baru) => unwrap(await supabase.rpc('re
 /** Import massal (admin). rows: [{nama,hp,blok,no_rumah,gang?,pekerjaan?,kepala_keluarga?,status_pernikahan?,jumlah_anak?,foto?}] */
 export const importWarga = async (rows, pin = '123456') =>
   unwrap(await supabase.rpc('import_warga', { p_rows: rows, p_domain: AUTH_EMAIL_DOMAIN, p_pin: pin }));
+/**
+ * Isi "rumah yang ditempati" untuk warga yang baru diimpor (RPC import belum memuat kolom ini).
+ * pasangan: [{ hp, status_hunian }]. Hanya mengubah nomor HP yang diberikan.
+ */
+export async function isiStatusHunian(pasangan) {
+  const per = {};
+  for (const x of pasangan) if (x.hp && x.status_hunian) (per[x.status_hunian] ||= []).push(x.hp);
+  for (const [status, hps] of Object.entries(per)) {
+    await perPotong(hps, async (potong) => unwrap(await supabase.from('warga_kontak').update({ status_hunian: status }).in('nomor_hp', potong)));
+  }
+}
 export const hapusWarga = async (id) => unwrap(await supabase.rpc('hapus_warga', { p_id: id }));
 
 /** Jumlah warga aktif per blok & jalan (untuk halaman Blok & jalan). */
