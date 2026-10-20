@@ -80,7 +80,7 @@ class Q {
   async run() {
     if (this.mode === 'insert') { const row = { id: `new-${Date.now()}`, status: this.t === 'transaksi_kas' && this.payload.jenis === 'pengeluaran' && this.payload.jumlah >= 1000000 && !role()?.hak.setujui_kas ? 'menunggu' : 'disetujui', ...this.payload, created_at: new Date().toISOString() }; return delay({ data: this.one ? row : [row], error: null }); }
     if (this.mode === 'update') { const rows = (TABLES[this.t] || []).filter((r) => this.f.every((fn) => fn(r))); const row = { ...(rows[0] || {}), ...this.payload }; return delay({ data: this.one ? row : [row], error: null }); }
-    if (this.mode === 'delete') return delay({ data: null, error: null });
+    if (this.mode === 'delete') return delay({ data: this.ret ? [{ id: 'dihapus' }] : null, error: null });
     let rows = rls(this.t, [...(TABLES[this.t] || [])]).filter((r) => this.f.every((fn) => fn(r)));
     for (const [k, asc] of [...this.o].reverse()) rows.sort((a, b) => (a[k] > b[k] ? 1 : a[k] < b[k] ? -1 : 0) * (asc ? 1 : -1));
     if (this.head) return delay({ data: null, count: rows.length, error: null });
