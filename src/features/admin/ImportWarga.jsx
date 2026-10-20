@@ -81,7 +81,7 @@ function olahBaris(rows, blokKode, gang = []) {
   return { kurang: [], list };
 }
 
-export default function ImportWarga() {
+export default function ImportWarga({ tertanam = false }) {
   const { blok, gang } = useSettings();
   const toast = useToast();
   const confirm = useConfirm();
@@ -151,8 +151,8 @@ export default function ImportWarga() {
   ];
 
   return (
-    <div className="page medium">
-      <PageHeader back title="Import warga" desc="Buat banyak akun warga sekaligus dari berkas CSV (Excel > Simpan sebagai CSV)." />
+    <div className={tertanam ? 'stack' : 'page medium'}>
+      {!tertanam && <PageHeader back title="Import warga" desc="Buat banyak akun warga sekaligus dari berkas CSV (Excel > Simpan sebagai CSV)." />}
       <Card pad className="stack">
         <div className="steps">
           <div className="step"><span className="n">1</span><div className="body">

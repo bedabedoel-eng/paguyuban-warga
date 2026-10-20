@@ -1,5 +1,5 @@
-import { FileUp, UserCheck, UserX, Users } from 'lucide-react';
-import { Avatar, Badge, Button, IconButton } from '../../../components/ui';
+import { UserCheck, UserX, Users } from 'lucide-react';
+import { Avatar, Badge } from '../../../components/ui';
 import { semuaWarga, ubahStatusWarga } from '../../../services/warga';
 import { formatHp } from '../../../lib/phone';
 import { STATUS_WARGA, STATUS_PERNIKAHAN, STATUS_HUNIAN, labelPernikahan } from '../../../lib/constants';
@@ -8,6 +8,10 @@ import { kelolaWilayah, namaWilayah } from '../../../lib/akses';
 import { pecahNomor } from '../../../lib/alamat';
 import { eksporWarga } from '../../../lib/eksporWarga';
 import EditWarga from '../EditWarga';
+import TambahWarga from '../TambahWarga';
+
+/** Tanpa baris = tambah warga baru (admin), dengan baris = ubah data. */
+function FormWarga(props) { return props.baris ? <EditWarga {...props} /> : <TambahWarga {...props} />; }
 
 /**
  * Konfigurasi menu "Data anggota".
@@ -72,7 +76,8 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
     ],
 
     ubah: { bisa: bolehKelola },
-    FormKustom: EditWarga,
+    FormKustom: FormWarga,
+    tambah: { label: 'Tambah warga', bisa: !!hak.admin },
     aksiMassal: [
       { kata: 'Nonaktifkan', tombol: 'Nonaktifkan', ikon: UserX, ikonBaris: true, bisa: (w) => w.status === 'aktif' && bolehUbahStatus(w),
         dampak: 'Anggota tidak lagi tampil di direktori dan tidak dapat mengakses data paguyuban. Data dan riwayat pembayarannya tetap tersimpan, dan bisa diaktifkan kembali kapan saja.',
@@ -88,9 +93,6 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
       const kontrak = rows.filter((w) => w.kontak?.status_hunian === 'kontrak').length;
       return `${rows.length} anggota · ${kontrak} kontrak · ${menikah} menikah · ${anak} anak tercatat (data sensus)`;
     },
-    kosong: { icon: Users, title: 'Belum ada anggota', text: 'Anggota muncul setelah mendaftar dan disetujui.' },
-
-    aksiHeader: hak.admin ? <Button size="sm" variant="secondary" icon={FileUp} to="/admin/import">Import dari CSV</Button> : undefined,
-    aksiHeaderMobile: hak.admin ? <IconButton icon={FileUp} label="Import dari CSV" to="/admin/import" /> : undefined,
+    kosong: { icon: Users, title: 'Belum ada anggota', text: 'Anggota muncul setelah mendaftar dan disetujui, atau ditambahkan admin.' },
   };
 }

@@ -1,6 +1,6 @@
 import {
   House, Receipt, CalendarDays, Megaphone, MessageSquareText, Users, Wallet, UsersRound, LayoutDashboard, LayoutGrid,
-  UserCheck, IdCard, Inbox, Building2, FileCheck2, BadgeCheck, FolderArchive, Settings2, FileUp, Network, Signpost,
+  UserCheck, Inbox, Building2, FileCheck2, BadgeCheck, FolderArchive, Settings2, Network, Signpost,
   Bell, PhoneCall, UserRound, Settings, PlusCircle, CalendarPlus, FilePlus2, HandCoins, Vote,
 } from 'lucide-react';
 
@@ -9,6 +9,7 @@ import {
  * badge: kunci di statistik_dashboard untuk lencana jumlah.
  */
 export function navGroups(hak) {
+  const kelolaWarga = !!(hak.kelola_anggota || hak.humas);
   const warga = {
     label: null,
     items: [
@@ -18,7 +19,7 @@ export function navGroups(hak) {
       { to: '/kegiatan', label: 'Kegiatan', desc: 'Agenda lingkungan', icon: CalendarDays, tone: 'violet' },
       { to: '/polling', label: 'Polling', desc: 'Suara warga', icon: Vote, tone: 'info' },
       { to: '/aspirasi', label: 'Aspirasi saya', desc: 'Laporan & usulan', icon: MessageSquareText, tone: 'warn' },
-      { to: '/warga', label: 'Direktori warga', desc: 'Kenali tetangga', icon: Users, tone: '' },
+      { to: '/warga', label: kelolaWarga ? 'Warga' : 'Direktori warga', desc: kelolaWarga ? 'Direktori, data & import' : 'Kenali tetangga', icon: Users, tone: '' },
       { to: '/keuangan', label: 'Kas paguyuban', desc: 'Laporan terbuka', icon: Wallet, tone: 'gold' },
       { to: '/pengurus', label: 'Pengurus', desc: 'Susunan pengurus', icon: UsersRound, tone: 'violet', end: true },
     ],
@@ -28,7 +29,6 @@ export function navGroups(hak) {
     const kelola = [{ to: '/admin', label: 'Ringkasan pengurus', desc: 'Tugas sesuai jabatan', icon: LayoutDashboard, tone: 'gold', end: true }];
     if (hak.kelola_anggota || hak.humas) {
       kelola.push({ to: '/admin/verifikasi', label: 'Verifikasi anggota', desc: 'Pendaftar baru', icon: UserCheck, tone: 'gold', badge: 'anggota_menunggu' });
-      kelola.push({ to: '/admin/warga', label: 'Data anggota', desc: 'Ubah, ekspor, cari', icon: IdCard, tone: '' });
     }
     if (hak.kelola_anggota) kelola.push({ to: '/admin/wilayah', label: 'Blok & jalan', desc: 'Wilayah, ekspor & impor', icon: Signpost, tone: 'info' });
     if (hak.kelola_laporan) kelola.push({ to: '/admin/laporan', label: 'Aspirasi masuk', desc: 'Tanggapi warga', icon: Inbox, tone: 'warn', badge: 'laporan_baru' });
@@ -46,7 +46,6 @@ export function navGroups(hak) {
       label: 'Sistem',
       items: [
         { to: '/admin/pengaturan', label: 'Pengaturan paguyuban', desc: 'Profil, blok, tarif', icon: Settings2, tone: 'neutral' },
-        { to: '/admin/import', label: 'Import warga', desc: 'Buat akun dari CSV', icon: FileUp, tone: 'neutral' },
       ],
     });
   }
@@ -95,12 +94,11 @@ export function menuCepatPengurus(hak) {
   if (hak.kelola_info) k.push({ to: '/kegiatan/baru', label: 'Jadwalkan kegiatan', icon: CalendarPlus, tone: 'violet' });
   if (hak.bendahara) k.push({ to: '/keuangan?catat=1', label: 'Catat kas', icon: HandCoins, tone: 'gold' });
   if (hak.bendahara) k.push({ to: '/admin/ipl', label: 'Terbitkan tagihan', icon: FilePlus2, tone: 'ok', dup: true });
-  if (hak.kelola_anggota || hak.humas) k.push({ to: '/admin/warga', label: 'Data anggota', icon: IdCard, tone: '' });
   if (hak.kelola_anggota) k.push({ to: '/admin/wilayah', label: 'Blok & jalan', icon: Signpost, tone: 'info' });
   if (hak.kelola_dokumen) k.push({ to: '/administrasi', label: 'Surat & notulen', icon: FolderArchive, tone: 'neutral' });
   if (hak.kelola_pengurus) k.push({ to: '/pengurus/kelola', label: 'Atur pengurus', icon: Network, tone: 'violet' });
   k.push(
-    { to: '/warga', label: 'Direktori warga', icon: Users, tone: '' },
+    { to: '/warga', label: (hak.kelola_anggota || hak.humas) ? 'Warga' : 'Direktori warga', icon: Users, tone: '' },
     { to: '/pengumuman', label: 'Pengumuman', icon: Megaphone, tone: 'info' },
     { to: '/kegiatan', label: 'Kegiatan', icon: CalendarDays, tone: 'violet' },
     { to: '/keuangan', label: 'Kas paguyuban', icon: Wallet, tone: 'gold' },

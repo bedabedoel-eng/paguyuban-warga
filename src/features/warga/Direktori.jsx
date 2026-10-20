@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Download, FileUp, ShieldCheck } from 'lucide-react';
+import { Users, Download, ShieldCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
 import { Avatar, Badge, Button, Card, EmptyState, ErrorState, FotoWarga, IconButton, SearchInput, Select, SegTabs, SkeletonRows, SortSelect } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
@@ -52,7 +52,7 @@ function BarisDaftar({ w, alamatPendek }) {
   );
 }
 
-export default function Direktori() {
+export default function Direktori({ tertanam = false }) {
   const { hak } = useAuth();
   const { blok, gang, namaGang, alamatPendek } = useSettings();
   const toast = useToast();
@@ -115,13 +115,12 @@ export default function Direktori() {
     : <div className="people">{rows.map((w) => <BarisDaftar key={w.id} w={w} alamatPendek={alamatPendek} />)}</div>);
 
   return (
-    <div className="page">
-      <PageHeader title="Direktori warga" desc="Kenali tetangga. Nomor HP hanya tampil bila pemiliknya mengizinkan."
-        actions={bisaEkspor ? <>
-          <Button size="sm" variant="secondary" icon={Download} loading={mengekspor} onClick={ekspor}>Ekspor CSV</Button>
-          {hak.admin && <Button size="sm" variant="secondary" icon={FileUp} to="/admin/import">Impor warga</Button>}
-        </> : undefined}
-        mobileActions={bisaEkspor ? <IconButton icon={Download} label="Ekspor CSV" onClick={ekspor} /> : undefined} />
+    <div className={tertanam ? 'stack' : 'page'}>
+      {tertanam
+        ? (bisaEkspor && <div className="row wrap" style={{ justifyContent: 'flex-end' }}><Button size="sm" variant="secondary" icon={Download} loading={mengekspor} onClick={ekspor}>Ekspor CSV</Button></div>)
+        : <PageHeader title="Direktori warga" desc="Kenali tetangga. Nomor HP hanya tampil bila pemiliknya mengizinkan."
+            actions={bisaEkspor ? <Button size="sm" variant="secondary" icon={Download} loading={mengekspor} onClick={ekspor}>Ekspor CSV</Button> : undefined}
+            mobileActions={bisaEkspor ? <IconButton icon={Download} label="Ekspor CSV" onClick={ekspor} /> : undefined} />}
       <div className="toolbar">
         <SearchInput value={q} onChange={setQ} placeholder="Cari nama warga" label="Cari nama warga" />
         <Select className="sm" placeholder="Semua blok & jalan" value={fw} onChange={(e) => setFw(e.target.value)} options={opsiWilayah} aria-label="Filter blok atau jalan" />

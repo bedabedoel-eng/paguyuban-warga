@@ -26,7 +26,7 @@ import FormModal from './FormModal';
  *   ekspor, ringkasan, kosong,
  * }
  */
-export default function HalamanData({ konfig: k }) {
+export default function HalamanData({ konfig: k, tertanam = false }) {
   const [url] = useSearchParams();
   const s = useAsync(k.layanan.daftar, [k.layanan]);
   const [form, setForm] = useState(null); // { baris: row | null, nilai }
@@ -44,10 +44,12 @@ export default function HalamanData({ konfig: k }) {
 
   const labelTambah = k.tambah?.label || `Tambah ${k.satuan}`;
   return (
-    <div className={k.kelas || 'page'}>
-      <PageHeader back={k.back ?? true} title={k.judul} desc={k.desc}
-        actions={bisaTambah || k.aksiHeader ? <>{bisaTambah && <Button size="sm" icon={Plus} onClick={bukaBaru}>{labelTambah}</Button>}{k.aksiHeader}</> : undefined}
-        mobileActions={bisaTambah || k.aksiHeaderMobile ? <>{bisaTambah && <IconButton icon={Plus} label={labelTambah} onClick={bukaBaru} />}{k.aksiHeaderMobile}</> : undefined} />
+    <div className={tertanam ? 'stack' : (k.kelas || 'page')}>
+      {tertanam
+        ? (bisaTambah || k.aksiHeader) && <div className="row wrap" style={{ justifyContent: 'flex-end' }}>{bisaTambah && <Button size="sm" icon={Plus} onClick={bukaBaru}>{labelTambah}</Button>}{k.aksiHeader}</div>
+        : <PageHeader back={k.back ?? true} title={k.judul} desc={k.desc}
+            actions={bisaTambah || k.aksiHeader ? <>{bisaTambah && <Button size="sm" icon={Plus} onClick={bukaBaru}>{labelTambah}</Button>}{k.aksiHeader}</> : undefined}
+            mobileActions={bisaTambah || k.aksiHeaderMobile ? <>{bisaTambah && <IconButton icon={Plus} label={labelTambah} onClick={bukaBaru} />}{k.aksiHeaderMobile}</> : undefined} />}
       <DataManager
         rows={s.data} loading={s.loading} error={s.error} onRetry={s.reload} onSelesai={s.reload}
         rowKey={kunci} columns={k.kolom} caption={k.caption || `Daftar ${k.satuan}`} satuan={k.satuan} label={k.label}

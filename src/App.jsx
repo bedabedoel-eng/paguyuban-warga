@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
@@ -16,7 +16,7 @@ import GantiPin from './features/auth/GantiPin';
 import BelumDikonfigurasi from './features/auth/BelumDikonfigurasi';
 import Beranda from './features/beranda/Beranda';
 
-const Direktori = lazy(() => import('./features/warga/Direktori'));
+const Warga = lazy(() => import('./features/warga/Warga'));
 const DetailWarga = lazy(() => import('./features/warga/DetailWarga'));
 const TagihanIpl = lazy(() => import('./features/ipl/TagihanIpl'));
 const BayarIpl = lazy(() => import('./features/ipl/BayarIpl'));
@@ -47,13 +47,19 @@ const KontakDarurat = lazy(() => import('./features/menu/KontakDarurat'));
 const Notifikasi = lazy(() => import('./features/notifikasi/Notifikasi'));
 const DashboardAdmin = lazy(() => import('./features/admin/DashboardAdmin'));
 const VerifikasiAnggota = lazy(() => import('./features/admin/VerifikasiAnggota'));
-const DataWarga = lazy(() => import('./features/admin/DataWarga'));
 const WilayahGang = lazy(() => import('./features/admin/WilayahGang'));
 const DataRumah = lazy(() => import('./features/admin/DataRumah'));
 const KelolaIpl = lazy(() => import('./features/admin/KelolaIpl'));
 const KelolaLaporan = lazy(() => import('./features/admin/KelolaLaporan'));
-const ImportWarga = lazy(() => import('./features/admin/ImportWarga'));
 const PengaturanPaguyuban = lazy(() => import('./features/admin/PengaturanPaguyuban'));
+
+/** Tautan lama (/admin/warga, /admin/import) dialihkan ke tab yang sesuai di menu Warga, filter di URL tetap dibawa. */
+function KeWarga({ tab }) {
+  const { search } = useLocation();
+  const q = new URLSearchParams(search);
+  q.set('tab', tab);
+  return <Navigate replace to={{ pathname: '/warga', search: `?${q}` }} />;
+}
 
 export default function App() {
   if (!isConfigured) return <BelumDikonfigurasi />;
@@ -78,7 +84,7 @@ export default function App() {
                 <Route element={<RequireAktif />}>
                   <Route element={<AppShell />}>
                     <Route index element={<Beranda />} />
-                    <Route path="warga" element={<Direktori />} />
+                    <Route path="warga" element={<Warga />} />
                     <Route path="warga/:id" element={<DetailWarga />} />
                     <Route path="ipl" element={<TagihanIpl />} />
                     <Route path="ipl/bayar" element={<BayarIpl />} />
@@ -112,7 +118,7 @@ export default function App() {
                     </Route>
                     <Route element={<RequireHak hak={['kelola_anggota', 'humas']} />}>
                       <Route path="admin/verifikasi" element={<VerifikasiAnggota />} />
-                      <Route path="admin/warga" element={<DataWarga />} />
+                      <Route path="admin/warga" element={<KeWarga tab="anggota" />} />
                     </Route>
                     <Route element={<RequireHak hak="kelola_anggota" />}>
                       <Route path="admin/wilayah" element={<WilayahGang />} />
@@ -139,7 +145,7 @@ export default function App() {
                     </Route>
                     <Route element={<RequireHak hak="admin" />}>
                       <Route path="admin/pengaturan" element={<PengaturanPaguyuban />} />
-                      <Route path="admin/import" element={<ImportWarga />} />
+                      <Route path="admin/import" element={<KeWarga tab="import" />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
