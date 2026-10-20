@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
-  Sun, CloudSun, Cloud, CloudRain, CalendarDays, Megaphone, Bell, Phone, Users, Receipt,
-  Wallet, ShieldCheck, Sunrise, Sunset, Moon, CircleCheck, Clock, CircleAlert, ChevronRight, House, MapPin,
+  Sun, CloudSun, Cloud, CloudRain, CalendarDays, Megaphone, Bell, Users, Receipt,
+  Wallet, ShieldCheck, Sunrise, Sunset, Moon, CircleCheck, Clock, CircleAlert, ChevronRight, ChevronDown, House, MapPin,
 } from 'lucide-react';
 import { Card, CardHead, CardBody, Button, Stat, SkeletonRows, EmptyState, Skeleton } from '../../components/ui';
 import HouseScene from '../../components/illustrations/HouseScene';
@@ -27,7 +27,6 @@ function IkonSalam({ size = 16 }) {
   if (h < 18) return <Sunset size={size} aria-hidden="true" />;
   return <Moon size={size} aria-hidden="true" />;
 }
-import { kodeRumah } from '../../lib/alamat';
 
 function IkonCuaca({ kode, size = 24 }) {
   if (kode == null || kode === 0) return <Sun size={size} color="#e6c67a" />;
@@ -112,10 +111,6 @@ export default function Beranda() {
         <div className="greet-scene" aria-hidden="true"><HouseScene variant="dark" /></div>
       </section>
 
-      <JadwalShalat lat={pengaturan.latitude} lon={pengaturan.longitude} admin={hak.admin} />
-
-      <MenuCepat items={menuCepatWarga(hak)} />
-
       {hak.pengurus && (
         <section className="stack-sm" aria-labelledby="tugas-h">
           <div className="section-head">
@@ -127,48 +122,24 @@ export default function Beranda() {
         </section>
       )}
 
-      <section className="stats" aria-label="Ringkasan lingkungan">
-        <Stat icon={Users} label="Warga aktif" value={angka(s.total_warga)} sub={`${angka(s.kepala_keluarga)} kepala keluarga`} loading={statLoading} to="/warga" />
-        <Stat icon={House} label="Rumah dihuni" value={angka(s.rumah_dihuni)} sub={`Dari ${angka(s.total_rumah)} rumah terdata`} loading={statLoading} />
-        {iplTampak && <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />}
-        <Stat icon={Wallet} tone="gold" label="Saldo kas" value={rupiah(s.saldo_kas)} sub="Terbuka untuk semua warga" loading={statLoading} to="/keuangan" />
-      </section>
-
- 
-      {(d.tetangga.data?.length > 0) && (
-        <section className="stack-sm" aria-labelledby="tetangga-h">
-          <div className="section-head"><h2 id="tetangga-h">Kenali tetangga</h2><Link to="/warga" className="link">Direktori warga<ChevronRight size={14} /></Link></div>
-          <FotoStrip rows={d.tetangga.data} />
-        </section>
-      )}
-
-      <div className="grid-2">
-        {iplTampak && <Card>
-          <CardHead title={`Pembayaran IPL ${d.tahun}`} desc={s.periode_ipl ? `${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas · ${periode(s.periode_ipl)}` : 'Belum ada tagihan'} />
-          <CardBody>{d.grafikIpl.loading && !d.grafikIpl.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikIpl.data || []} />}</CardBody>
-        </Card>}
-        <Card>
-          <CardHead title={`Arus kas ${d.tahun}`} desc={`Saldo ${rupiah(s.saldo_kas)}`} to="/keuangan" actionLabel="Laporan" />
-          <CardBody>{d.grafikKas.loading && !d.grafikKas.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikKas.data || []} mode="kas" />}</CardBody>
-        </Card>
-      </div>
-
-      <div className="split">
-        <div className="stack">
-          <Card>
+      {/* Desktop: kolom utama (tagihan, informasi) + kolom samping (shalat, menu, kas, notifikasi).
+          HP/tablet: satu kolom dengan urutan prioritas lewat CSS (order). */}
+      <div className="home-grid">
+        <div className="home-main">
+          <Card className="h-tagihan">
             <CardHead title="Tagihan rumah saya" to="/ipl" actionLabel="Detail" />
             <KartuTagihan ipl={d.ipl} rumahId={warga?.rumah_id} />
           </Card>
-          <Card>
-            <CardHead title="Pengumuman terbaru" to="/pengumuman" />
+          <Card className="h-info">
+            <CardHead title="Pengumuman terbaru" to="/pengumuman" actionLabel="Semua" />
             <CardBody>
               {d.pengumuman.loading && !d.pengumuman.data ? <SkeletonRows n={3} />
                 : d.pengumuman.data?.length ? <div className="rows">{d.pengumuman.data.map((p) => <PengumumanRow key={p.id} p={p} />)}</div>
                   : <EmptyState compact icon={Megaphone} title="Belum ada pengumuman" />}
             </CardBody>
           </Card>
-          <Card>
-            <CardHead title="Agenda terdekat" to="/kegiatan" />
+          <Card className="h-agenda">
+            <CardHead title="Agenda terdekat" to="/kegiatan" actionLabel="Semua" />
             <CardBody>
               {d.agenda.loading && !d.agenda.data ? <SkeletonRows n={3} />
                 : d.agenda.data?.length ? <div className="rows">{d.agenda.data.map((k) => <AgendaRow key={k.id} k={k} />)}</div>
@@ -176,49 +147,63 @@ export default function Beranda() {
             </CardBody>
           </Card>
         </div>
-        <div className="stack">
-          <Card>
+
+        <div className="home-side">
+          <div className="h-shalat"><JadwalShalat lat={pengaturan.latitude} lon={pengaturan.longitude} admin={hak.admin} /></div>
+          <div className="h-menu"><MenuCepat items={menuCepatWarga(hak)} /></div>
+          <Card className="h-kas">
             <CardHead title="Kas paguyuban" desc={`Bulan ${periode(new Date())}`} to="/keuangan" actionLabel="Laporan" />
             <CardBody className="stack-sm">
               {d.kas.loading && !d.kas.data ? <Skeleton h={60} /> : (
-                <div className="flow">
-                  <div><div className="text-xs muted">Pemasukan</div><div className="v t-ok">{rupiah(kas.pemasukan_bulan)}</div></div>
-                  <div><div className="text-xs muted">Pengeluaran</div><div className="v t-bad">{rupiah(kas.pengeluaran_bulan)}</div></div>
-                </div>
+                <>
+                  <div><div className="text-xs muted">Saldo kas</div><div className="kas-saldo">{rupiah(s.saldo_kas)}</div></div>
+                  <div className="flow">
+                    <div><div className="text-xs muted">Pemasukan</div><div className="v t-ok">{rupiah(kas.pemasukan_bulan)}</div></div>
+                    <div><div className="text-xs muted">Pengeluaran</div><div className="v t-bad">{rupiah(kas.pengeluaran_bulan)}</div></div>
+                  </div>
+                </>
               )}
               {kas.menunggu_jumlah > 0 && <Link to="/keuangan/persetujuan" className="link">{kas.menunggu_jumlah} pengeluaran menunggu persetujuan Ketua<ChevronRight size={14} /></Link>}
             </CardBody>
           </Card>
-          <Card>
-            <CardHead title="Notifikasi" to="/notifikasi" />
+          <Card className="h-notif">
+            <CardHead title="Notifikasi" to="/notifikasi" actionLabel="Semua" />
             <CardBody>
               {d.notif.loading && !d.notif.data ? <SkeletonRows n={3} />
                 : d.notif.data?.length ? <div className="rows">{d.notif.data.map((n) => <NotifRow key={n.id} n={n} detail={false} />)}</div>
                   : <EmptyState compact icon={Bell} title="Tidak ada notifikasi" />}
             </CardBody>
           </Card>
-          <Card className="only-desktop">
-            <CardHead title="Kontak darurat" to="/kontak-darurat" />
-            <CardBody>
-              {d.kontak.data?.length ? (
-                <div className="rows">
-                  {d.kontak.data.slice(0, 4).map((k) => (
-                    <a key={k.id} href={`tel:${k.nomor.replace(/[^\d+]/g, '')}`} className="rowi">
-                      <span className="ico sm round bad"><Phone size={15} /></span>
-                      <span className="rowi-main"><span className="rowi-title">{k.nama}</span><span className="rowi-sub num">{k.nomor}</span></span>
-                    </a>
-                  ))}
-                </div>
-              ) : <EmptyState compact icon={Phone} title="Belum ada kontak darurat" />}
-            </CardBody>
-          </Card>
         </div>
       </div>
 
-      {(d.baru.data?.length > 0) && (
-        <section className="stack-sm" aria-labelledby="baru-h">
-          <div className="section-head"><h2 id="baru-h">Baru bergabung</h2><Link to="/warga" className="link">Lihat semua<ChevronRight size={14} /></Link></div>
-          <FotoStrip rows={d.baru.data} sub={(w) => (w.bergabung_at ? `Sejak ${tanggal(w.bergabung_at, { pendek: true })}` : kodeRumah(w))} />
+      {/* Data pelengkap dilipat agar beranda tetap ringkas */}
+      <details className="home-more">
+        <summary><span>Statistik & grafik lingkungan</span><ChevronDown size={18} aria-hidden="true" /></summary>
+        <div className="home-more-body">
+          <section className="stats" aria-label="Ringkasan lingkungan">
+            <Stat icon={Users} label="Warga aktif" value={angka(s.total_warga)} sub={`${angka(s.kepala_keluarga)} kepala keluarga`} loading={statLoading} to="/warga" />
+            <Stat icon={House} label="Rumah dihuni" value={angka(s.rumah_dihuni)} sub={`Dari ${angka(s.total_rumah)} rumah terdata`} loading={statLoading} />
+            {iplTampak && <Stat icon={Receipt} tone="ok" label={s.periode_ipl ? `IPL ${periode(s.periode_ipl)}` : 'Partisipasi IPL'} value={`${persen}%`} meter={persen} sub={`${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas`} loading={statLoading} />}
+            <Stat icon={Wallet} tone="gold" label="Saldo kas" value={rupiah(s.saldo_kas)} sub="Terbuka untuk semua warga" loading={statLoading} to="/keuangan" />
+          </section>
+          <div className="grid-2">
+            {iplTampak && <Card>
+              <CardHead title={`Pembayaran IPL ${d.tahun}`} desc={s.periode_ipl ? `${angka(s.ipl_lunas)} dari ${angka(totalIpl)} rumah lunas · ${periode(s.periode_ipl)}` : 'Belum ada tagihan'} />
+              <CardBody>{d.grafikIpl.loading && !d.grafikIpl.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikIpl.data || []} />}</CardBody>
+            </Card>}
+            <Card>
+              <CardHead title={`Arus kas ${d.tahun}`} desc={`Saldo ${rupiah(s.saldo_kas)}`} to="/keuangan" actionLabel="Laporan" />
+              <CardBody>{d.grafikKas.loading && !d.grafikKas.data ? <SkeletonRows n={3} avatar={false} /> : <BarChart12 data={d.grafikKas.data || []} mode="kas" />}</CardBody>
+            </Card>
+          </div>
+        </div>
+      </details>
+
+      {(d.tetangga.data?.length > 0) && (
+        <section className="stack-sm" aria-labelledby="tetangga-h">
+          <div className="section-head"><h2 id="tetangga-h">Kenali tetangga</h2><Link to="/warga" className="link">Direktori warga<ChevronRight size={14} /></Link></div>
+          <FotoStrip rows={d.tetangga.data} />
         </section>
       )}
     </div>
