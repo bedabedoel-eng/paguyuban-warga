@@ -15,6 +15,7 @@ export default function Tentang() {
           <h2>{pengaturan.nama_paguyuban}</h2>
           <p className="text-sm muted">{pengaturan.tagline}</p>
           <p className="text-xs muted" style={{ marginTop: 4 }}>Versi 2.0</p>
+          <p className="text-sm" style={{ marginTop: 8 }}><span className="muted">Pengembang: </span><b>Ahmad Dawami</b> <span className="muted">(C3/5)</span></p>
         </div>
       </Card>
       <Card><CardHead title="Penggunaan data" /><CardBody><Syarat /></CardBody></Card>
