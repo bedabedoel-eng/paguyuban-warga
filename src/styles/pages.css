@@ -415,6 +415,10 @@
   box-shadow: 0 10px 26px -16px rgba(30,7,75,.8);
 }
 .shalat-top { display: flex; align-items: center; gap: 12px; }
+.shalat-head { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; }
+.shalat-head svg { flex: none; color: var(--kunyit-300); }
+.shalat-head b { font-family: var(--font-display); font-size: var(--fs-lg); line-height: 1.2; color: #fff; }
+.shalat-head .muted { margin-left: auto; font-size: var(--fs-xs); font-weight: 600; color: #ddd3f2; text-align: right; }
 .shalat-ico { flex: none; width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; color: var(--kunyit-300); background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); }
 .shalat-next { min-width: 0; flex: 1; display: grid; gap: 1px; }
 .shalat-next .lbl { font-size: var(--fs-xs); color: #ddd3f2; }
