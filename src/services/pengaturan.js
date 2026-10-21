@@ -29,3 +29,6 @@ export async function simpanKontakDarurat(k) {
     : await supabase.from('kontak_darurat').insert(data).select().single());
 }
 export const hapusKontakDarurat = async (id) => unwrap(await supabase.from('kontak_darurat').delete().eq('id', id));
+
+/** Admin: apakah penerbitan tagihan IPL otomatis benar-benar bisa berjalan (saklar + pg_cron + jadwal). SQL 16. */
+export const statusTagihanOtomatis = async () => unwrap(await supabase.rpc('status_tagihan_otomatis'));

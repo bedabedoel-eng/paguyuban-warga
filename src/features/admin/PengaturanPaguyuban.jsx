@@ -9,6 +9,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { simpanPengaturan, simpanBlok, hapusBlok, daftarKontakDarurat, simpanKontakDarurat, hapusKontakDarurat } from '../../services/pengaturan';
 import { uploadFile, removeFile, publicUrl } from '../../lib/storage';
 import { rupiah } from '../../lib/format';
+import PenandaTagihanOtomatis from './PenandaTagihanOtomatis';
 
 function Umum() {
   const { pengaturan, reload } = useSettings();
@@ -80,6 +81,9 @@ function Umum() {
               <div><div className="strong">Terbitkan tagihan IPL otomatis</div><div className="text-sm muted">Setiap tanggal 1 (07.05 WIB) tagihan bulan itu dibuat untuk semua rumah dihuni dan warga diberi tahu. Perlu pg_cron aktif di Supabase (lihat panduan 09).</div></div>
               <Toggle checked={!!f.tagihan_otomatis} onChange={(v) => setF((x) => ({ ...x, tagihan_otomatis: v }))} label="Tagihan IPL otomatis" />
             </div>
+          )}
+          {'tagihan_otomatis' in pengaturan && (
+            <PenandaTagihanOtomatis mode="pengaturan" />
           )}
         </CardBody>
       </Card>

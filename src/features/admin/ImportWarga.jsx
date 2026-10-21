@@ -1,89 +1,15 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, FileUp, CircleCheck } from 'lucide-react';
 import PageHeader from '../../components/layout/PageHeader';
 import { Callout, Badge, Button, Card, DataTable, useConfirm } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { parseCsv, CONTOH_CSV } from '../../lib/csv';
-import { normalizeHp, formatHp } from '../../lib/phone';
-import { importWarga, isiStatusHunian } from '../../services/warga';
+import { formatHp } from '../../lib/phone';
+import { olahBaris } from '../../lib/importWarga';
+import { importWarga } from '../../services/warga';
 import { pesanError } from '../../lib/errors';
-import { POLA_NOMOR_RUMAH, gangDiBlok, gangDariNomor, normalisasiAlamat } from '../../lib/alamat';
-import { pernahMenikah, PETA_HUNIAN } from '../../lib/constants';
-import { normalisasiLinkFoto } from '../../lib/image';
-
-const PETA_NIKAH = { 'belum menikah': 'belum_menikah', belum_menikah: 'belum_menikah', lajang: 'belum_menikah', 'belum kawin': 'belum_menikah', menikah: 'menikah', 'sudah menikah': 'menikah', kawin: 'menikah', 'cerai hidup': 'cerai_hidup', cerai_hidup: 'cerai_hidup', 'cerai mati': 'cerai_mati', cerai_mati: 'cerai_mati' };
-
-const PIN_AWAL = '123456';
-const ALIAS = {
-  nama: ['nama', 'nama lengkap', 'name'],
-  hp: ['hp', 'no hp', 'nomor hp', 'no_hp', 'nomor_hp', 'telepon', 'telp', 'wa', 'whatsapp'],
-  blok: ['blok', 'block'],
-  sub: ['sub_blok', 'sub blok', 'subblok', 'sub', 'kluster', 'cluster', 'klaster'],
-  no_rumah: ['no_rumah', 'no rumah', 'nomor rumah', 'nomor_rumah', 'no', 'nomor'],
-  rumah: ['rumah', 'blok_rumah', 'blok rumah', 'alamat', 'alamat rumah'],
-  gang: ['jalan', 'gang', 'gang/jalan', 'gang / jalan', 'nama jalan', 'nama_jalan', 'jl'],
-  pekerjaan: ['pekerjaan', 'keahlian', 'profesi'],
-  kepala_keluarga: ['kepala_keluarga', 'kepala keluarga', 'kk'],
-  status_pernikahan: ['status_pernikahan', 'status pernikahan', 'pernikahan', 'status nikah', 'status'],
-  jumlah_anak: ['jumlah_anak', 'jumlah anak', 'anak'],
-  status_hunian: ['status_hunian', 'status hunian', 'hunian', 'rumah ditempati', 'status rumah', 'kepemilikan'],
-  foto: ['foto', 'link foto', 'link_foto', 'url foto', 'tautan foto', 'pas foto', 'pas_foto'],
-};
-
-function petaKolom(header) {
-  const norm = header.map((h) => String(h).trim().toLowerCase());
-  const idx = {};
-  for (const [k, names] of Object.entries(ALIAS)) idx[k] = norm.findIndex((h) => names.includes(h));
-  return idx;
-}
-
-/** Ubah baris CSV menjadi objek, lalu validasi di sisi aplikasi (server memeriksa ulang). */
-function olahBaris(rows, blokKode, gang = []) {
-  const [header, ...data] = rows;
-  const idx = petaKolom(header);
-  const wajib = ['nama', 'hp'];
-  const kurang = wajib.filter((k) => idx[k] < 0);
-  if (idx.blok < 0 && idx.rumah < 0) kurang.push('blok');
-  if (idx.no_rumah < 0 && idx.rumah < 0) kurang.push('no_rumah');
-  if (kurang.length) return { kurang, list: [] };
-  const sudah = new Set();
-  const list = data.map((r, n) => {
-    const ambil = (k) => (idx[k] >= 0 ? String(r[idx[k]] ?? '').trim() : '');
-    // Blok "A3" + nomor "5", "Blok A 3 No.5", "A3-5", dst. dinormalkan menjadi blok A, sub-blok 3, nomor 5
-    const al = normalisasiAlamat({ blok: ambil('blok'), sub: ambil('sub'), no: ambil('no_rumah'), rumah: ambil('rumah') }, blokKode);
-    const { blok, sub, nomor } = al;
-    const no = al.no_rumah;
-    const hp = normalizeHp(ambil('hp'));
-    const nama = ambil('nama');
-    const namaGang = ambil('gang');
-    let g = namaGang ? gangDiBlok(gang, blok).find((x) => x.nama.trim().toLowerCase() === namaGang.toLowerCase()) : null;
-    if (!namaGang && !g && blokKode.includes(blok) && POLA_NOMOR_RUMAH.test(no)) g = gangDariNomor(gang, blok, no);
-    const nikahMentah = ambil('status_pernikahan').toLowerCase();
-    const nikah = nikahMentah ? PETA_NIKAH[nikahMentah] || '?' : '';
-    const anak = ambil('jumlah_anak');
-    const hunianMentah = ambil('status_hunian').toLowerCase();
-    const hunian = hunianMentah ? PETA_HUNIAN[hunianMentah] || '?' : '';
-    let foto = '';
-    let galatFoto = '';
-    try { foto = normalisasiLinkFoto(ambil('foto')); } catch (e) { galatFoto = e.message; }
-    let galat = '';
-    if (nama.length < 2) galat = 'Nama kosong/terlalu pendek';
-    else if (!hp) galat = 'Nomor HP tidak valid';
-    else if (!blokKode.includes(blok)) galat = `Blok "${blok || '-'}" tidak dikenal`;
-    else if (!nomor) galat = 'Nomor rumah kosong';
-    else if (!POLA_NOMOR_RUMAH.test(no)) galat = 'Nomor rumah tidak valid (maks. 10 karakter termasuk sub-blok)';
-    else if (namaGang && !g) galat = `Jalan "${namaGang}" belum ada di Blok ${blok}`;
-    else if (sudah.has(hp)) galat = 'Nomor HP ganda di berkas';
-    else if (nikah === '?') galat = `Status pernikahan "${nikahMentah}" tidak dikenal`;
-    else if (anak && (!/^\d{1,2}$/.test(anak) || Number(anak) > 30)) galat = 'Jumlah anak: angka 0 sampai 30';
-    else if (hunian === '?') galat = `Rumah ditempati "${hunianMentah}" tidak dikenal (isi milik sendiri atau kontrak)`;
-    else if (galatFoto) galat = galatFoto;
-    if (hp) sudah.add(hp);
-    return { baris: n + 2, nama, hp, blok, sub_blok: sub, nomor, no_rumah: no, gang: g?.nama || '', pekerjaan: ambil('pekerjaan'), kepala_keluarga: ambil('kepala_keluarga'), status_pernikahan: nikah === '?' ? '' : nikah, jumlah_anak: pernahMenikah(nikah) ? anak : '', status_hunian: hunian === '?' ? '' : hunian, foto, galat };
-  });
-  return { kurang: [], list };
-}
+import PinAwalHasil from './PinAwalHasil';
 
 export default function ImportWarga({ tertanam = false }) {
   const { blok, gang } = useSettings();
@@ -95,6 +21,15 @@ export default function ImportWarga({ tertanam = false }) {
   const [loading, setLoading] = useState(false);
   const [laporan, setLaporan] = useState(null);
   const blokKode = useMemo(() => blok.map((b) => b.kode), [blok]);
+  const adaPin = !!laporan?.akun?.length;
+
+  // PIN awal hanya ada di layar ini; ingatkan bila halaman hendak ditutup sebelum diunduh
+  useEffect(() => {
+    if (!adaPin) return undefined;
+    const jaga = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', jaga);
+    return () => window.removeEventListener('beforeunload', jaga);
+  }, [adaPin]);
 
   async function pilih(e) {
     const file = e.target.files?.[0];
@@ -122,30 +57,27 @@ export default function ImportWarga({ tertanam = false }) {
 
   async function proses() {
     if (!valid.length) return;
-    if (!(await confirm({ title: `Buat ${valid.length} akun warga?`, text: `Semua akun langsung aktif dengan PIN awal ${PIN_AWAL}. Warga diminta membuat PIN baru saat pertama masuk.`, okLabel: 'Buat Akun' }))) return;
+    if (!(await confirm({ title: `Buat ${valid.length} akun warga?`, text: 'Semua akun langsung aktif dengan PIN awal acak yang berbeda untuk tiap warga. Daftar PIN ditampilkan sekali setelah proses selesai dan bisa diunduh sebagai CSV. Warga diminta membuat PIN baru saat pertama masuk.', okLabel: 'Buat Akun' }))) return;
     setLoading(true);
     const dibuat = [];
     const dilewati = [];
-    let hunianGagal = false;
+    const akun = [];
     try {
       for (let i = 0; i < valid.length; i += 100) {
         const potong = valid.slice(i, i + 100);
-        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga, status_pernikahan, jumlah_anak, foto }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga, status_pernikahan: status_pernikahan || null, jumlah_anak: jumlah_anak || null, foto: foto || null })), PIN_AWAL);
+        const res = await importWarga(potong.map(({ nama: n, hp, blok: b, no_rumah, gang: g, pekerjaan, kepala_keluarga, status_pernikahan, jumlah_anak, status_hunian, foto }) => ({ nama: n, hp, blok: b, no_rumah, gang: g || null, pekerjaan, kepala_keluarga, status_pernikahan: status_pernikahan || null, jumlah_anak: jumlah_anak || null, status_hunian: status_hunian || null, foto: foto || null })));
         dibuat.push(res.dibuat || 0);
+        for (const a of res.akun || []) akun.push({ ...a, baris: potong[a.baris - 1]?.baris ?? a.baris });
         for (const s of res.dilewati || []) dilewati.push({ ...s, baris: potong[s.baris - 1]?.baris ?? s.baris });
-        // Status rumah ditempati: hanya untuk baris yang benar-benar dibuat (bukan yang dilewati server)
-        const lewat = new Set((res.dilewati || []).map((x) => x.baris));
-        const pasangan = potong.map((x, n) => ({ hp: x.hp, status_hunian: x.status_hunian, ok: !lewat.has(n + 1) })).filter((x) => x.ok && x.status_hunian);
-        if (pasangan.length) { try { await isiStatusHunian(pasangan); } catch { hunianGagal = true; } }
       }
       const total = dibuat.reduce((a, b) => a + b, 0);
-      setLaporan({ dibuat: total, dilewati, hunianGagal });
+      setLaporan({ dibuat: total, dilewati, akun });
       setData(null);
       toast.success(`${total} akun warga dibuat`);
     } catch (e) {
       toast.error(pesanError(e));
       const total = dibuat.reduce((a, b) => a + b, 0);
-      if (total) setLaporan({ dibuat: total, dilewati, terhenti: true });
+      if (total) setLaporan({ dibuat: total, dilewati, terhenti: true, akun });
     } finally { setLoading(false); }
   }
 
@@ -176,7 +108,7 @@ export default function ImportWarga({ tertanam = false }) {
           </div></div>
           <div className="step"><span className="n">3</span><div className="body">
             <h3>Buat akun</h3>
-            <Callout tone="info">Semua akun langsung <b>aktif</b> dengan PIN awal <b className="num">{PIN_AWAL}</b>, dan warga wajib membuat PIN baru saat pertama masuk. Bagikan PIN awal hanya lewat pesan pribadi atau grup warga.</Callout>
+            <Callout tone="info">Semua akun langsung <b>aktif</b>. Tiap warga mendapat <b>PIN awal acak yang berbeda</b>. Daftar PIN ditampilkan sekali setelah proses selesai (bisa diunduh sebagai CSV), lalu sampaikan ke warga lewat pesan pribadi. Warga wajib membuat PIN baru saat pertama masuk.</Callout>
           </div></div>
         </div>
       </Card>
@@ -203,8 +135,8 @@ export default function ImportWarga({ tertanam = false }) {
       {laporan && (
         <Card pad className="stack-sm">
           <div className="row"><CircleCheck size={20} className="t-ok" /><h2>{laporan.dibuat} akun berhasil dibuat</h2></div>
-          {laporan.hunianGagal && <Callout tone="warn">Akun sudah dibuat, tetapi sebagian status rumah ditempati belum tersimpan. Pastikan SQL 12-status-hunian sudah dijalankan, lalu isi lewat Ubah anggota.</Callout>}
-          {laporan.terhenti && <Callout tone="bad">Proses terhenti di tengah jalan. Akun yang sudah dibuat tetap tersimpan; impor ulang berkas yang sama akan melewati nomor yang sudah terdaftar.</Callout>}
+          {laporan.terhenti && <Callout tone="bad">Proses terhenti di tengah jalan. Akun yang sudah dibuat tetap tersimpan; impor ulang berkas yang sama akan melewati nomor yang sudah terdaftar. Bila ada akun yang tidak muncul di daftar PIN di bawah, buka Data anggota lalu pakai “Atur ulang PIN” untuk akun itu.</Callout>}
+          <PinAwalHasil akun={laporan.akun} nama="pin-awal-import" />
           {laporan.dilewati.length > 0 && (
             <>
               <p className="text-sm ink-2">{laporan.dilewati.length} baris dilewati server:</p>

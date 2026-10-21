@@ -1,7 +1,26 @@
-UPDATE PAGUYUBAN WARGA - hanya file yang berubah (47 file)
+UPDATE PAGUYUBAN WARGA - Keamanan login, data & SQL, tes, kerapian
+(hanya file yang berubah/baru; struktur folder sama dengan proyek)
 
-1. Salin isi folder ini ke proyek Anda (timpa file dengan nama & lokasi yang sama).
-2. Supabase > SQL Editor: jalankan supabase/07-update-sensus-blok-ipl.sql (sekali, sesudah 01-06). Aman diulang.
-3. npm run build lalu deploy seperti biasa.
-4. Atur pengurus per blok di menu Pengurus > Atur pengurus (kolom "Wilayah blok").
-   Pengurus tanpa wilayah blok tetap berlaku untuk SEMUA blok.
+URUTAN PASANG
+1. Cadangkan database (Supabase > Database > Backups) sebelum mulai.
+2. Supabase > SQL Editor, jalankan BERURUTAN (semua aman diulang, tidak menghapus data):
+   - 13-pin-awal-acak.sql        WAJIB sebelum deploy aplikasi
+   - 15-import-hunian.sql        WAJIB sebelum deploy aplikasi
+     (tanpa 15, status hunian dari CSV hilang diam-diam)
+   - 14-batas-percobaan-login.sql  dianjurkan (penundaan login + peringatan pengurus)
+   - 16-status-tagihan-otomatis.sql dianjurkan (penanda pg_cron)
+   - 17-batasi-bucket-publik.sql   dianjurkan (bucket publik hanya admin & folder lingkungan/qris)
+   Instalasi BARU: cukup jalankan supabase/skema-lengkap.sql satu kali.
+   Daftar centang: supabase/DAFTAR-MIGRASI.md ; cek terpasang: supabase/cek-migrasi.sql
+3. Hapus 2 berkas lama: src/features/beranda/BerandaDesktop.jsx dan BerandaMobile.jsx
+   (tidak dipakai).
+4. npm install (tidak ada dependensi baru), npm run build, deploy seperti biasa.
+5. (Opsional, untuk penegakan penuh) Supabase > Authentication > Hooks >
+   "Password verification" > pilih fungsi public.hook_verifikasi_pin.
+   Ketersediaan tergantung paket Supabase; tanpa ini penundaan login hanya di aplikasi.
+6. Jalankan supabase/cek-bucket-publik.sql untuk melihat berkas di bucket publik
+   yang di luar folder yang diizinkan (tidak dipindah otomatis).
+
+TES
+- npm test            (49 tes unit)
+- bash supabase/tests/jalankan.sh   (Postgres lokal: uji RLS + uji fitur)

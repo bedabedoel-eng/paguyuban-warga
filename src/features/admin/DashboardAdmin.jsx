@@ -14,6 +14,7 @@ import BarChart12 from '../beranda/IplChart';
 import { PERAN_PENGURUS, MATRIKS, labelJabatan } from '../../lib/akses';
 import { useSettings } from '../../context/SettingsContext';
 import { rupiah, periode, angka, tanggal } from '../../lib/format';
+import PenandaTagihanOtomatis from './PenandaTagihanOtomatis';
 
 function Sel({ v }) {
   if (v === true) return <Check size={16} className="yes" aria-label="Ya" />;
@@ -50,6 +51,7 @@ export default function DashboardAdmin() {
   return (
     <div className="page">
       <PageHeader title="Ringkasan pengurus" desc="Pekerjaan yang menunggu dan alat kerja sesuai jabatan Anda." />
+      <PenandaTagihanOtomatis mode="dashboard" />
         <Card pad className="stack-sm">
           <div className="row wrap">
             <span className="ico gold"><ShieldCheck size={20} /></span>

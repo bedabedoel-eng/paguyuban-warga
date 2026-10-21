@@ -1,6 +1,37 @@
 # Catatan Revisi — Paguyuban Warga Digital
 
-Tanggal: 20 Oktober 2026. Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+Tanggal: 20 Oktober 2026 (bagian 0: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+
+## 0. Pembaruan 22 Oktober 2026 (keamanan login, data/SQL, tes, kerapian)
+**Urutan pasang:** jalankan SQL baru (13, 15 wajib sebelum deploy; 14, 16, 17 dianjurkan) di Supabase > SQL Editor secara berurutan, lalu `npm run build` dan deploy. Daftar centang: `supabase/DAFTAR-MIGRASI.md`; periksa yang sudah terpasang dengan `supabase/cek-migrasi.sql`.
+
+| Berkas SQL | Isi |
+|---|---|
+| `13-pin-awal-acak.sql` | PIN awal **acak per warga** untuk Import CSV dan Tambah warga (tidak ada lagi `123456`). PIN hanya dikembalikan sekali ke admin; yang tersimpan hanya hash. |
+| `14-batas-percobaan-login.sql` | Penundaan login bertahap setelah PIN salah (5x: 30 dtk, 6x: 1 mnt, 7x: 5 mnt, 8x: 15 mnt, 9x dst.: 1 jam), peringatan ke pengurus (gagal ke-5 lalu tiap kelipatan 10, maks. sekali per jam per akun), tombol buka kunci untuk admin, hook server opsional. |
+| `15-import-hunian.sql` | `import_warga` mengisi `status_hunian` dalam proses yang sama (satu baris, satu transaksi). Aplikasi tidak lagi memperbarui hunian secara terpisah, **jadi 15 harus dijalankan sebelum deploy**. |
+| `16-status-tagihan-otomatis.sql` | Fungsi baca-saja untuk admin: apakah tagihan otomatis benar-benar bisa terbit (saklar, pg_cron, jadwal, jalan terakhir). |
+| `17-batasi-bucket-publik.sql` | Bucket `publik` hanya menerima folder `lingkungan/` dan `qris/`; bucket `konten` dan `bukti` ditegaskan privat. |
+| `skema-lengkap.sql` | Satu berkas untuk **instalasi baru** (gabungan 01-17). Proyek yang sudah berjalan tetap memakai migrasi bernomor. Dihasilkan oleh `bash supabase/buat-skema-lengkap.sh`. |
+| `cek-migrasi.sql`, `cek-bucket-publik.sql` | Pemeriksaan hanya-baca. |
+
+**Perilaku baru di aplikasi**
+- Import CSV dan Tambah warga: setelah proses tampil daftar **nama, HP, PIN awal** (sekali) dengan tombol **Unduh CSV**; peringatan sebelum menutup halaman. PIN awal dibuat di server, tidak ada PIN yang dipilih di aplikasi. Bila respons terputus di tengah impor, akun yang tidak muncul di daftar bisa diberi PIN lewat Atur ulang PIN.
+- Halaman masuk: hitung mundur saat login ditunda; pesan salah PIN menyebut sisa percobaan. Ubah anggota (admin): status penundaan dan **Buka kunci login**; Atur ulang PIN juga mengakhiri penundaan.
+- Ringkasan pengurus dan Pengaturan (admin): peringatan merah bila **tagihan otomatis menyala tetapi pg_cron tidak aktif**.
+- Data anggota (admin): filter **Foto** dan aksi massal **Salin foto tautan ke sistem**. Foto dari tautan luar juga otomatis disalin saat disimpan lewat Ubah profil/Ubah anggota.
+- `BerandaDesktop.jsx` dan `BerandaMobile.jsx` dihapus (tidak dipakai; `Beranda.jsx` yang dipakai).
+
+**Batasan yang perlu diketahui (jujur)**
+- **Batas login hanya kuat bila hook server aktif.** Tanpa hook, penundaan berlaku lewat halaman masuk aplikasi dan bisa dilewati dengan memanggil API Supabase Auth langsung. Ketersediaan hook "Password verification" menurut paket Supabase tidak dapat kami pastikan; aktifkan bila ada. Konsekuensi yang diterima: orang lain dapat sengaja menunda login akun korban (maks. 1 jam per tunda); admin dapat membuka kunci.
+- **Salin foto tautan berjalan di peramban** dan hanya berhasil bila situs foto mengizinkan pengambilan lintas-situs (CORS). Banyak layanan (sebagian tautan Google Drive, media sosial) tidak mengizinkannya; yang gagal tetap memakai tautan lama dan pengguna diberi petunjuk mengunggah dari perangkat. Cara andal untuk semua situs perlu komponen server (Cloudflare Worker atau Supabase Edge Function) dan belum dibuat.
+- Berkas pribadi lama yang terlanjur ada di bucket `publik` **tidak dipindahkan otomatis**; `cek-bucket-publik.sql` hanya menampilkannya agar dihapus manual. Foto lingkungan dan gambar QRIS di bucket publik memang dapat dibuka siapa pun yang tahu alamatnya.
+- Belum ada pengujian terhadap proyek Supabase sungguhan (Auth/GoTrue, Storage, pg_cron, Auth Hooks), maupun terhadap layanan foto luar. Pengujian database memakai Postgres 16 lokal dengan tiruan Supabase.
+
+**Pengujian**
+- `npm test`: 49 lulus; build Vite lulus; `supabase/tests/jalankan.sh` (migrasi 01-17 + `uji-rls.sql` 93 pemeriksaan + `uji-fitur.sql` 156 pemeriksaan) lulus; `uji-skema-lengkap.sh` membuktikan `skema-lengkap.sql` identik dengan migrasi berurutan.
+
+---
 
 ## 1. Wajib dilakukan di database
 | Berkas | Isi | Catatan |

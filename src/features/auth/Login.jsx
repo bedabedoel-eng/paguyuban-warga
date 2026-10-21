@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import { Button, PhoneInput, PasswordInput, Callout, Modal } from '../../components/ui';
@@ -7,6 +7,7 @@ import GoogleButton from './GoogleButton';
 import { masukDenganHp, keluar } from '../../services/auth';
 import { normalizeHp } from '../../lib/phone';
 import { pesanError } from '../../lib/errors';
+import { jamHitungMundur } from '../../lib/loginBatas';
 import { supabase } from '../../lib/supabase';
 
 /** Halaman masuk warga (default) dan pengurus (mode="admin"). */
@@ -19,9 +20,17 @@ export default function Login({ mode = 'warga' }) {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [lupa, setLupa] = useState(false);
+  const [tunda, setTunda] = useState(0); // sisa detik login ditunda (setelah PIN salah berulang)
+
+  useEffect(() => {
+    if (tunda <= 0) return undefined;
+    const t = setInterval(() => setTunda((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [tunda > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit(e) {
     e.preventDefault();
+    if (tunda > 0) return;
     const er = {};
     if (!normalizeHp(hp)) er.hp = 'Masukkan nomor HP yang valid, contoh 81234567890';
     if (pin.length < 6) er.pin = 'PIN terdiri dari 6 angka';
@@ -39,7 +48,7 @@ export default function Login({ mode = 'warga' }) {
         nav('/admin', { replace: true });
       } else nav('/', { replace: true });
     } catch (e2) {
-      setErr(pesanError(e2));
+      if (e2?.name === 'LoginDitunda') { setTunda(e2.tunggu); setErr(''); } else setErr(pesanError(e2));
     } finally { setLoading(false); }
   }
 
@@ -51,12 +60,17 @@ export default function Login({ mode = 'warga' }) {
       </div>
       <form onSubmit={submit} className="stack" noValidate>
         {err && <Callout tone="bad">{err}</Callout>}
+        {tunda > 0 && (
+          <Callout tone="warn">
+            <span role="status" aria-live="polite">Terlalu banyak percobaan salah. Demi keamanan, login ditunda. Coba lagi dalam <b className="num">{jamHitungMundur(tunda)}</b>. Lupa PIN? Hubungi admin paguyuban.</span>
+          </Callout>
+        )}
         <PhoneInput label="Nomor HP" placeholder="81234567890" value={hp} onChange={(e) => setHp(e.target.value)} error={errors.hp} autoFocus />
         <div className="stack-sm">
           <PasswordInput label="PIN" placeholder="6 angka" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} error={errors.pin} autoComplete="current-password" />
           <button type="button" className="link" style={{ alignSelf: 'flex-end' }} onClick={() => setLupa(true)}>Lupa PIN?</button>
         </div>
-        <Button type="submit" block size="lg" icon={LogIn} loading={loading}>Masuk</Button>
+        <Button type="submit" block size="lg" icon={LogIn} loading={loading} disabled={tunda > 0}>{tunda > 0 ? `Tunggu ${jamHitungMundur(tunda)}` : 'Masuk'}</Button>
         {!admin && <GoogleButton />}
       </form>
       {!admin ? (

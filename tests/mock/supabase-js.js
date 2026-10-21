@@ -151,6 +151,18 @@ function rpc(name, params) {
       return { jumlah: rs.length, pemasukan: sum('pemasukan'), pengeluaran: sum('pengeluaran') };
     },
     pulihkan_transaksi: () => 'pulih-1',
+    cek_batas_login: () => ({ tunggu: 0, sisa: 5 }),
+    // Nomor berakhiran 99999 meniru akun yang sedang ditunda (untuk memeriksa hitung mundur di halaman masuk)
+    catat_login_gagal: () => (String(params.p_hp || '').endsWith('99999') ? { tunggu: 45, sisa: 0 } : { tunggu: 0, sisa: 4 }),
+    catat_login_berhasil: () => null,
+    buka_kunci_login: () => null,
+    status_penegakan_login: () => ({ hook_aktif: false, terakhir: null }),
+    status_tagihan_otomatis: () => ({ saklar: true, cron_ada: false, jadwal_ada: false, jadwal_aktif: false, terakhir_jalan: null, terakhir_status: null, tagihan_bulan_ini: 0, siap: false, masalah: 'pg_cron belum aktif (contoh tampilan mock).', perlu_tindakan: true }),
+    // Tiruan import_warga: PIN acak per akun, hanya untuk tampilan (tidak menyimpan apa pun)
+    import_warga: () => {
+      const baris = Array.isArray(params.p_rows) ? params.p_rows : [];
+      return { dibuat: baris.length, dilewati: [], akun: baris.map((r, i) => ({ baris: i + 1, nama: r.nama, hp: String(r.hp || ''), pin: String(100000 + Math.floor(Math.random() * 900000)) })) };
+    },
   };
   const fn = R[name];
   return delay({ data: fn ? fn() : null, error: null });

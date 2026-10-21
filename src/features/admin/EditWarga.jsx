@@ -8,6 +8,8 @@ import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
 import { ubahWargaAdmin, ubahKontakAdmin, resetSandiWarga, hapusWarga } from '../../services/warga';
 import { daftarPengurus } from '../../services/pengurus';
+import { bukaKunciLogin, statusLoginHp, statusPenegakanLogin } from '../../services/auth';
+import { teksTunggu } from '../../lib/loginBatas';
 import { normalizeHp } from '../../lib/phone';
 import { STATUS_WARGA, STATUS_HUNIAN, pernahMenikah } from '../../lib/constants';
 import { FOTO_AWAL, fotoBerubah, terapkanFoto } from '../../lib/foto';
@@ -26,6 +28,10 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const jab = useAsync(async () => (await daftarPengurus()).filter((p) => p.warga_id === w.id), [w.id]);
+  // Status penghitung login gagal (SQL 14). Galat (mis. SQL belum dijalankan) diabaikan: bagian ini tidak tampil.
+  const kunci = useAsync(async () => (admin ? await statusLoginHp(w.kontak?.nomor_hp) : null), [w.id], { enabled: admin });
+  const penegakan = useAsync(async () => statusPenegakanLogin(), [w.id], { enabled: admin });
+  const sisaTunggu = kunci.data?.terkunci_sampai ? Math.max(0, Math.ceil((new Date(kunci.data.terkunci_sampai) - Date.now()) / 1000)) : 0;
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const diriSendiri = w.id === user.id;
   const terkunci = w.role === 'admin' && !admin;
@@ -45,7 +51,7 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
     try {
       const data = { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, blok: f.blok || null, gang_id: f.gang_id || null, no_rumah: f.no_rumah.trim().toUpperCase() || null, kepala_keluarga: !!f.kepala_keluarga };
       if (!diriSendiri) data.status = f.status;
-      if (admin && fotoBerubah(foto)) data.foto_path = await terapkanFoto(foto, { folder: `avatar/${user.id}`, lama: w.foto_path, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 } });
+      if (admin && fotoBerubah(foto)) data.foto_path = await terapkanFoto(foto, { folder: `avatar/${user.id}`, lama: w.foto_path, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 }, onSalinGagal: (e) => toast.error(`Foto disimpan sebagai tautan luar. ${e.message}`) });
       if (admin && !diriSendiri && w.role !== 'pengurus') data.role = f.role;
       await ubahWargaAdmin(w.id, data);
       const kontakBaru = { ...kolomPernikahan(f.status_pernikahan, f.jumlah_anak), status_hunian: f.status_hunian || null };
@@ -56,7 +62,15 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
   }
   async function reset() {
     if (!/^\d{6}$/.test(pin)) return toast.error('PIN sementara harus 6 angka');
-    try { await resetSandiWarga(w.id, pin); toast.success('PIN diatur ulang. Sampaikan PIN sementara langsung ke warga.'); setPin(''); } catch (e) { toast.error(e); }
+    try {
+      await resetSandiWarga(w.id, pin);
+      // PIN baru dari admin juga mengakhiri penundaan login akun ini (abaikan bila SQL 14 belum dipasang)
+      try { await bukaKunciLogin(w.id); kunci.reload?.(); } catch { /* abaikan */ }
+      toast.success('PIN diatur ulang. Sampaikan PIN sementara langsung ke warga.'); setPin('');
+    } catch (e) { toast.error(e); }
+  }
+  async function bukaKunci() {
+    try { await bukaKunciLogin(w.id); toast.success('Kunci login dibuka. Warga dapat mencoba masuk lagi.'); kunci.reload?.(); } catch (e) { toast.error(e); }
   }
   async function hapus() {
     if (!(await confirm({ title: `Hapus akun ${w.nama}?`, text: 'Akun, profil, dan riwayat pembayaran warga ini dihapus permanen. Tindakan ini tidak bisa dibatalkan.', okLabel: 'Hapus permanen', danger: true }))) return;
@@ -109,6 +123,17 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
         {admin && (
           <div className="form-section">
             <div className="form-section-head"><h3>Atur ulang PIN</h3><p>Warga wajib membuat PIN baru saat masuk berikutnya.</p></div>
+            {kunci.data && (
+              <Callout tone={sisaTunggu > 0 ? 'warn' : 'info'}>
+                {sisaTunggu > 0
+                  ? <>Login akun ini <b>ditunda {teksTunggu(sisaTunggu)} lagi</b> karena PIN salah {kunci.data.gagal_beruntun} kali berturut-turut.</>
+                  : <>Ada {kunci.data.gagal_beruntun} percobaan PIN salah baru-baru ini; login tidak sedang ditunda.</>}
+                <div style={{ marginTop: 8 }}><Button size="sm" variant="secondary" onClick={bukaKunci}>Buka kunci login</Button></div>
+              </Callout>
+            )}
+            {penegakan.data && !penegakan.data.hook_aktif && (
+              <p className="text-xs muted">Batas percobaan login baru berlaku lewat halaman masuk aplikasi. Untuk penegakan penuh di server, aktifkan hook “Password verification” di Supabase (petunjuk di SQL 14).</p>
+            )}
             <div className="row row-top wrap">
               <div className="grow" style={{ minWidth: 180 }}><PinInput placeholder="PIN sementara (6 angka)" value={pin} onChange={(e) => setPin(e.target.value)} /></div>
               <Button variant="secondary" icon={KeyRound} onClick={reset}>Atur ulang PIN</Button>

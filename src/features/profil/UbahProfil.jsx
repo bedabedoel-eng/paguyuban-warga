@@ -31,7 +31,7 @@ export default function UbahProfil() {
     if (Object.keys(er).length) return;
     setLoading(true);
     try {
-      const foto_path = await terapkanFoto(foto, { folder: `avatar/${user.id}`, lama: warga.foto_path, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 } });
+      const foto_path = await terapkanFoto(foto, { folder: `avatar/${user.id}`, lama: warga.foto_path, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 }, onSalinGagal: (e) => toast.error(`Foto disimpan sebagai tautan luar. ${e.message}`) });
       const w = await ubahProfil(user.id, { nama: f.nama.trim(), pekerjaan: f.pekerjaan.trim() || null, hobi: f.hobi.trim() || null, keluarga: f.keluarga.trim() || null, tentang: f.tentang.trim() || null, foto_path });
       setWarga(w);
       setKontak(await ubahKontak(user.id, { email: f.email.trim() || null, ...kolomPernikahan(f.status_pernikahan, f.jumlah_anak), status_hunian: f.status_hunian || null }));

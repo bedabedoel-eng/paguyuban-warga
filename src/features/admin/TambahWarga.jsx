@@ -3,24 +3,25 @@ import { Link2 } from 'lucide-react';
 import { Button, Callout, Checkbox, Input, Modal, NomorRumahFields, PernikahanFields, PhoneInput, Select, galatAnak, kolomPernikahan } from '../../components/ui';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
-import { importWarga, isiStatusHunian } from '../../services/warga';
+import { importWarga } from '../../services/warga';
 import { normalizeHp } from '../../lib/phone';
 import { normalisasiLinkFoto } from '../../lib/image';
 import { pernahMenikah, STATUS_HUNIAN } from '../../lib/constants';
 import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
+import PinAwalHasil from './PinAwalHasil';
 
-const PIN_AWAL = '123456';
 const KOSONG = { nama: '', hp: '', blok: '', no_rumah: '', gang_id: '', pekerjaan: '', kepala_keluarga: false, status_pernikahan: '', jumlah_anak: '', status_hunian: '', foto: '' };
 
 /**
  * Tambah satu warga secara manual (khusus admin). Memakai fungsi database yang sama dengan Import CSV,
- * sehingga akun langsung aktif dengan PIN awal dan wajib diganti saat pertama masuk.
+ * sehingga akun langsung aktif dengan PIN awal ACAK (ditampilkan sekali) dan wajib diganti saat pertama masuk.
  */
 export default function TambahWarga({ onClose, onSaved }) {
   const { blok, gang } = useSettings();
   const toast = useToast();
   const [f, setF] = useState(KOSONG);
   const [loading, setLoading] = useState(false);
+  const [hasil, setHasil] = useState(null); // akun yang baru dibuat beserta PIN awalnya
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
   const opsiGang = gangDiBlok(gang, f.blok).map((g) => ({ value: g.id, label: g.nama }));
   const gantiBlok = (e) => { const b = e.target.value; setF((s) => ({ ...s, blok: b, gang_id: gangDiBlok(gang, b).some((g) => g.id === s.gang_id) ? s.gang_id : '' })); };
@@ -44,15 +45,21 @@ export default function TambahWarga({ onClose, onSaved }) {
     try {
       const res = await importWarga([{
         nama, hp, blok: f.blok, no_rumah: no, gang: jalan?.nama || null, pekerjaan: f.pekerjaan.trim(),
-        kepala_keluarga: f.kepala_keluarga ? 'ya' : '', status_pernikahan: n.status_pernikahan, jumlah_anak: n.jumlah_anak ?? null, foto: foto || null,
-      }], PIN_AWAL);
+        kepala_keluarga: f.kepala_keluarga ? 'ya' : '', status_pernikahan: n.status_pernikahan, jumlah_anak: n.jumlah_anak ?? null, status_hunian: f.status_hunian || null, foto: foto || null,
+      }]);
       if (!res.dibuat) throw new Error(res.dilewati?.[0]?.alasan || 'Warga tidak dapat dibuat');
-      let hunianGagal = false;
-      if (f.status_hunian) { try { await isiStatusHunian([{ hp, status_hunian: f.status_hunian }]); } catch { hunianGagal = true; } }
-      if (hunianGagal) toast.error('Warga dibuat, tetapi status rumah belum tersimpan. Isi lewat Ubah (pastikan SQL 12 sudah dijalankan).');
-      else toast.success(`${nama} ditambahkan. PIN awal ${PIN_AWAL}`);
-      onSaved();
+      toast.success(`${nama} ditambahkan`);
+      setHasil(res.akun || []); // tampilkan PIN awal sekali; daftar dimuat ulang saat modal ditutup
     } catch (e) { toast.error(e); } finally { setLoading(false); }
+  }
+
+  if (hasil) {
+    return (
+      <Modal open onClose={onSaved} title="Warga ditambahkan" desc="Catat atau unduh PIN awal sekarang."
+        footer={<Button onClick={onSaved}>Selesai</Button>}>
+        <PinAwalHasil akun={hasil} nama="pin-awal-warga" />
+      </Modal>
+    );
   }
 
   return (
@@ -82,7 +89,7 @@ export default function TambahWarga({ onClose, onSaved }) {
               hint="Foto dari perangkat bisa diunggah lewat tombol Ubah setelah warga ditambahkan." />
           </div>
         </div>
-        <Callout tone="info">PIN awal <b className="num">{PIN_AWAL}</b>. Warga diminta membuat PIN baru saat pertama masuk.</Callout>
+        <Callout tone="info">Sistem membuat <b>PIN awal acak</b> untuk warga ini dan menampilkannya satu kali setelah disimpan. Warga diminta membuat PIN baru saat pertama masuk.</Callout>
       </div>
     </Modal>
   );

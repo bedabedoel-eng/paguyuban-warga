@@ -1,6 +1,8 @@
-import { UserCheck, UserX, Users } from 'lucide-react';
+import { ImageDown, UserCheck, UserX, Users } from 'lucide-react';
 import { Avatar, Badge } from '../../../components/ui';
-import { semuaWarga, ubahStatusWarga } from '../../../services/warga';
+import { semuaWarga, ubahStatusWarga, ubahWargaAdmin } from '../../../services/warga';
+import { salinFotoTautan } from '../../../lib/foto';
+import { adaUrl } from '../../../lib/image';
 import { formatHp } from '../../../lib/phone';
 import { STATUS_WARGA, STATUS_PERNIKAHAN, STATUS_HUNIAN, labelPernikahan } from '../../../lib/constants';
 import { tanggal } from '../../../lib/format';
@@ -50,6 +52,9 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
       { key: 'nikah', label: 'Filter status pernikahan', placeholder: 'Semua status pernikahan',
         options: [...Object.entries(STATUS_PERNIKAHAN).map(([k, v]) => ({ value: k, label: v.label })), { value: 'kosong', label: 'Belum diisi' }],
         test: (w, v) => (v === 'kosong' ? !w.kontak?.status_pernikahan : w.kontak?.status_pernikahan === v) },
+      ...(hak.admin ? [{ key: 'foto', label: 'Filter foto', placeholder: 'Semua foto',
+        options: [{ value: 'tautan', label: 'Foto dari tautan luar' }, { value: 'sendiri', label: 'Foto tersimpan di sistem' }, { value: 'kosong', label: 'Tanpa foto' }],
+        test: (w, v) => (v === 'tautan' ? adaUrl(w.foto_path) : v === 'sendiri' ? !!w.foto_path && !adaUrl(w.foto_path) : !w.foto_path) }] : []),
       { key: 'hunian', label: 'Filter rumah ditempati', placeholder: 'Semua status rumah',
         options: [...Object.entries(STATUS_HUNIAN).map(([k, v]) => ({ value: k, label: v.label })), { value: 'kosong', label: 'Belum diisi' }],
         test: (w, v) => (v === 'kosong' ? !w.kontak?.status_hunian : w.kontak?.status_hunian === v) },
@@ -84,6 +89,14 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
         jalankan: (w) => ubahStatusWarga(w.id, 'nonaktif'), sukses: (n) => `${n} anggota dinonaktifkan` },
       { kata: 'Aktifkan', tombol: 'Aktifkan kembali', ikon: UserCheck, bisa: (w) => w.status === 'nonaktif' && bolehUbahStatus(w),
         jalankan: (w) => ubahStatusWarga(w.id, 'aktif'), sukses: (n) => `${n} anggota diaktifkan kembali` },
+      // Foto dari tautan luar disalin ke penyimpanan sendiri (berjalan di peramban; hanya berhasil bila situs asal mengizinkan)
+      { kata: 'Salin', judul: (d) => `Salin foto ${d.length} anggota ke sistem?`, tombol: 'Salin foto tautan ke sistem', ikon: ImageDown, bisa: (w) => !!hak.admin && adaUrl(w.foto_path),
+        dampak: 'Foto yang berasal dari tautan luar diunduh lalu disimpan di penyimpanan paguyuban, dan tautan luarnya diganti. Hanya berhasil bila situs asal mengizinkan; yang gagal tetap memakai tautan lama.',
+        jalankan: async (w) => {
+          const path = await salinFotoTautan(w.foto_path, { folder: `avatar/${user.id}`, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 } });
+          await ubahWargaAdmin(w.id, { foto_path: path });
+        },
+        sukses: (n) => `${n} foto disalin ke penyimpanan sistem` },
     ],
 
     ekspor: { fungsi: (rows) => eksporWarga(rows, gang, 'data-anggota') },
