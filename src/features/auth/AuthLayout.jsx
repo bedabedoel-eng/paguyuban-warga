@@ -10,7 +10,7 @@ export default function AuthLayout({ children }) {
     <div className="auth">
       <aside className="auth-aside">
         <div className="brand">
-          <Logo size={44} />
+          <Logo size={64} />
           <div>
             <div className="name">{pengaturan.nama_paguyuban}</div>
             {lingkungan && <div className="sub">{lingkungan}</div>}
@@ -31,7 +31,7 @@ export default function AuthLayout({ children }) {
       <main className="auth-main">
         <div className="auth-card">
           <div className="auth-mbrand">
-            <Logo size={44} tile />
+            <Logo size={56} tile />
             <div>
               <div className="name">{pengaturan.nama_paguyuban}</div>
               {lingkungan && <div className="sub">{lingkungan}</div>}

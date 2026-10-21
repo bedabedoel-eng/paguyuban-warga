@@ -29,9 +29,9 @@ function IkonSalam({ size = 16 }) {
 }
 
 function IkonCuaca({ kode, size = 24 }) {
-  if (kode == null || kode === 0) return <Sun size={size} color="#e6c67a" />;
-  if (kode <= 2) return <CloudSun size={size} color="#e6c67a" />;
-  if (kode <= 48) return <Cloud size={size} color="#cfe0d7" />;
+  if (kode == null || kode === 0) return <Sun size={size} color="#e4f25e" />;
+  if (kode <= 2) return <CloudSun size={size} color="#e4f25e" />;
+  if (kode <= 48) return <Cloud size={size} color="#ddd3f2" />;
   return <CloudRain size={size} color="#9cc3ff" />;
 }
 

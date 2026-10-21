@@ -34,6 +34,7 @@ Centang `[x]` setelah dijalankan di proyek Anda.
 - [ ] **15** `15-import-hunian.sql` – status hunian diisi langsung oleh `import_warga` (satu proses).
 - [ ] **16** `16-status-tagihan-otomatis.sql` – penanda admin bila pg_cron tidak aktif sehingga tagihan otomatis tidak terbit.
 - [ ] **17** `17-batasi-bucket-publik.sql` – bucket publik hanya menerima folder `lingkungan/` dan `qris/`; menegaskan bucket `konten` dan `bukti` privat. Setelahnya jalankan `cek-bucket-publik.sql`.
+- [ ] **18** `18-nama-paguyuban-vgr.sql` – nama paguyuban menjadi "Paguyuban Vila Gading Royal" (hanya bila masih nama bawaan lama; nama buatan sendiri tidak diubah). Opsional, bisa kapan saja.
 
 ## Urutan yang perlu diperhatikan saat pembaruan aplikasi
 

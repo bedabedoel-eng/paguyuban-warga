@@ -1,6 +1,6 @@
 -- =====================================================================
 -- SKEMA LENGKAP TERKINI (instalasi baru) - DIHASILKAN OTOMATIS, JANGAN DIUBAH TANGAN.
--- Gabungan berurutan: 01-skema.sql 02-data-awal.sql 03-pin-angka.sql 04-import-warga.sql 05-struktur-pengurus.sql 06-nama-perumahan.sql 07-update-sensus-blok-ipl.sql 08-perbaikan-prioritas.sql 09-fitur-bendahara.sql 10-polling-dan-rekap-alamat.sql 11-nomor-jalan.sql 12-status-hunian.sql 13-pin-awal-acak.sql 14-batas-percobaan-login.sql 15-import-hunian.sql 16-status-tagihan-otomatis.sql 17-batasi-bucket-publik.sql
+-- Gabungan berurutan: 01-skema.sql 02-data-awal.sql 03-pin-angka.sql 04-import-warga.sql 05-struktur-pengurus.sql 06-nama-perumahan.sql 07-update-sensus-blok-ipl.sql 08-perbaikan-prioritas.sql 09-fitur-bendahara.sql 10-polling-dan-rekap-alamat.sql 11-nomor-jalan.sql 12-status-hunian.sql 13-pin-awal-acak.sql 14-batas-percobaan-login.sql 15-import-hunian.sql 16-status-tagihan-otomatis.sql 17-batasi-bucket-publik.sql 18-nama-paguyuban-vgr.sql
 -- Dibuat oleh supabase/buat-skema-lengkap.sh. Untuk mengubah skema, buat migrasi bernomor baru lalu jalankan ulang skrip itu.
 --
 -- PEMAKAIAN:
@@ -4097,4 +4097,21 @@ create policy "pw publik ubah" on storage.objects for update to authenticated
   with check (bucket_id = 'publik' and public.is_admin() and (storage.foldername(name))[1] in ('lingkungan', 'qris'));
 
 update storage.buckets set public = false where id in ('konten', 'bukti') and public is distinct from false;
+
+-- #####################################################################
+-- ##  BERKAS: 18-nama-paguyuban-vgr.sql
+-- #####################################################################
+-- =====================================================================
+-- 18 — Nama paguyuban: "Paguyuban Vila Gading Royal"
+-- Aman dijalankan ulang. Tidak menghapus data.
+--  - Nama bawaan untuk instalasi baru diganti.
+--  - Nama yang tersimpan hanya diganti bila MASIH nama bawaan lama
+--    ("Paguyuban Warga Digital"); nama yang sudah Anda ubah sendiri tidak disentuh.
+-- =====================================================================
+alter table public.pengaturan
+  alter column nama_paguyuban set default 'Paguyuban Vila Gading Royal';
+
+update public.pengaturan
+   set nama_paguyuban = 'Paguyuban Vila Gading Royal'
+ where nama_paguyuban = 'Paguyuban Warga Digital';
 

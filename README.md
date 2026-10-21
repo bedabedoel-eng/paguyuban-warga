@@ -1,4 +1,4 @@
-# Paguyuban Warga Digital
+# Paguyuban Vila Gading Royal
 
 Aplikasi paguyuban warga (satu lingkungan/RT) berbasis **React + Vite**, **Supabase** (Auth, PostgreSQL, Storage) dan di-hosting di **Cloudflare Pages**. Seluruhnya memakai paket gratis.
 
@@ -87,6 +87,7 @@ paguyuban-warga/
 │  ├─ 15-import-hunian.sql           # status hunian diisi langsung oleh import_warga, satu proses (setelah 14)
 │  ├─ 16-status-tagihan-otomatis.sql # penanda admin bila pg_cron tidak aktif (setelah 15)
 │  ├─ 17-batasi-bucket-publik.sql    # bucket publik hanya untuk foto lingkungan dan QRIS (setelah 16)
+│  ├─ 18-nama-paguyuban-vgr.sql      # nama paguyuban menjadi "Paguyuban Vila Gading Royal" (opsional)
 │  ├─ skema-lengkap.sql              # gabungan 01..terakhir untuk INSTALASI BARU (dihasilkan: bash supabase/buat-skema-lengkap.sh)
 │  ├─ DAFTAR-MIGRASI.md              # daftar centang urutan migrasi
 │  ├─ cek-migrasi.sql                # melihat migrasi mana yang sudah terpasang (hanya membaca)
@@ -131,7 +132,7 @@ Alamat dipecah menjadi tiga kolom agar mudah direkap: **blok** (A), **sub-blok**
    - Di bagian yang sama atur **Minimum password length = 6** (PIN warga terdiri dari 6 angka; nilai 8 akan membuat pendaftaran gagal).
    - **Authentication > URL Configuration**: *Site URL* = `https://domain-anda.id` (isi setelah domain siap; sementara boleh `http://localhost:5173`). Tambahkan di *Redirect URLs*: `http://localhost:5173/**` dan `https://domain-anda.id/**`.
 3. **Jalankan SQL**: buka **SQL Editor > New query**.
-   - **Proyek Supabase baru/kosong:** cukup tempel isi **`supabase/skema-lengkap.sql`** lalu **Run** (satu berkas, memuat 01 sampai terakhir beserta data awal contoh), kemudian lanjut ke langkah 4. Jangan menjalankan berkas 01-17 satu per satu sesudahnya. Sesuaikan nama paguyuban, RT/RW, tarif, rekening, dan blok lewat menu Admin.
+   - **Proyek Supabase baru/kosong:** cukup tempel isi **`supabase/skema-lengkap.sql`** lalu **Run** (satu berkas, memuat 01 sampai terakhir beserta data awal contoh), kemudian lanjut ke langkah 4. Jangan menjalankan berkas 01-18 satu per satu sesudahnya. Sesuaikan nama paguyuban, RT/RW, tarif, rekening, dan blok lewat menu Admin.
    - **Proyek yang sudah berjalan:** jalankan `supabase/cek-migrasi.sql` untuk melihat migrasi mana yang BELUM terpasang, lalu jalankan hanya migrasi itu, berurutan (daftar centang: `supabase/DAFTAR-MIGRASI.md`). Rincian per berkas di bawah.
    - Tempel isi `supabase/01-skema.sql` lalu **Run**. Aman dijalankan ulang.
    - Tempel isi `supabase/03-pin-angka.sql` lalu **Run** (mengubah aturan sandi menjadi PIN 6 angka; **wajib** dijalankan setelah `01`).
@@ -211,7 +212,7 @@ Pendaftar Google diminta melengkapi **nomor HP, blok, gang/jalan, dan nomor ruma
 cd paguyuban-warga
 git init
 git add .
-git commit -m "Paguyuban Warga Digital"
+git commit -m "Paguyuban Vila Gading Royal"
 git branch -M main
 git remote add origin https://github.com/<akun-anda>/paguyuban-warga.git
 git push -u origin main

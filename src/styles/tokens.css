@@ -1,41 +1,43 @@
 /* ==========================================================================
-   Token desain Paguyuban Warga
-   Hijau hutan (struktur), hijau daun (aksi), kunyit (perhatian), abu-hijau (latar)
+   Token desain Paguyuban Vila Gading Royal
+   Warna mengikuti logo: indigo gelap (struktur), ungu (aksi), hijau limau (aksen).
+   Nama token lama (hutan/daun/kunyit) dipertahankan agar seluruh CSS tetap jalan:
+   hutan = indigo, daun = ungu, kunyit = limau.
    ========================================================================== */
 :root {
   /* Warna merek */
-  --hutan-950: #0a2219;
-  --hutan-900: #0e2e23;
-  --hutan-800: #133b2d;
-  --hutan-700: #1b4b3a;
-  --daun-700: #0d5f43;
-  --daun-600: #127a55;
-  --daun-500: #1a9467;
-  --daun-100: #d6ece1;
-  --daun-50: #edf6f1;
-  --kunyit-700: #8a6413;
-  --kunyit-500: #c99a2e;
-  --kunyit-300: #e6c67a;
-  --kunyit-50: #fbf4e2;
+  --hutan-950: #12052e;
+  --hutan-900: #1e074b;
+  --hutan-800: #2b0f66;
+  --hutan-700: #3b1b82;
+  --daun-700: #4a1f94;
+  --daun-600: #5b2aae;
+  --daun-500: #7442c6;
+  --daun-100: #e5dcf6;
+  --daun-50: #f2edfb;
+  --kunyit-700: #5a6700;
+  --kunyit-500: #cfe42a;
+  --kunyit-300: #e4f25e;
+  --kunyit-50: #f7fbd6;
 
-  /* Netral (abu-hijau) */
-  --bg: #f4f6f5;
+  /* Netral (abu keunguan) */
+  --bg: #f5f4f9;
   --surface: #ffffff;
-  --surface-2: #f8faf9;
-  --surface-3: #eef2f0;
-  --line: #e2e7e4;
-  --line-strong: #cbd4cf;
-  --ink: #15201b;
-  --ink-2: #44524b;
-  --ink-3: #66736c;
-  --ink-4: #95a09a;
+  --surface-2: #faf9fc;
+  --surface-3: #efedf5;
+  --line: #e5e2ee;
+  --line-strong: #cfcadc;
+  --ink: #1a1627;
+  --ink-2: #4a455a;
+  --ink-3: #6a657a;
+  --ink-4: #98939f;
 
   /* Status */
   --ok: #157a3c;   --ok-bg: #e7f4ec;
   --warn: #a85808; --warn-bg: #fdf1e1;
   --bad: #b42318;  --bad-bg: #fdecea;
   --info: #1d5fa8; --info-bg: #e8f0fa;
-  --violet: #6a3dbd; --violet-bg: #f1ecfb;
+  --violet: #8a2fa8; --violet-bg: #f6ebfa;
 
   /* Tipografi */
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -56,9 +58,9 @@
   --r-lg: 14px;
   --r-xl: 20px;
   --r-full: 999px;
-  --sh-pop: 0 16px 40px -12px rgba(14, 46, 35, 0.28), 0 2px 6px rgba(14, 46, 35, 0.08);
-  --sh-raise: 0 1px 2px rgba(14, 46, 35, 0.06);
-  --ring: 0 0 0 3px rgba(18, 122, 85, 0.22);
+  --sh-pop: 0 16px 40px -12px rgba(30, 7, 75, 0.28), 0 2px 6px rgba(30, 7, 75, 0.08);
+  --sh-raise: 0 1px 2px rgba(30, 7, 75, 0.06);
+  --ring: 0 0 0 3px rgba(91, 42, 174, 0.25);
 
   /* Tata letak */
   --sidebar-w: 264px;

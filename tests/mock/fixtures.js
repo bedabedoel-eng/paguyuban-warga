@@ -16,7 +16,7 @@ export const GANG = [
 ].map(([id, nama, blok, nomor], i) => ({ id, nama, blok, nomor: nomor || null, urutan: i + 1, created_at: new Date().toISOString() }));
 
 export const PENGATURAN = {
-  id: 1, nama_paguyuban: 'Paguyuban Warga Digital', tagline: 'Rukun, terbuka, dan saling menjaga',
+  id: 1, nama_paguyuban: 'Paguyuban Vila Gading Royal', tagline: 'Rukun, terbuka, dan saling menjaga',
   nama_lingkungan: 'Perumahan Vila Gading Royal', rt: '', rw: '', alamat: 'Desa Pamegarsari, Kec. Parung, Kab. Bogor',
   luas_wilayah: '3,2 Ha', latitude: null, longitude: null, tarif_ipl: 75000, jatuh_tempo_hari: 10,
   bank_nama: 'BSI', bank_norek: '7123 4567 89', bank_atas_nama: 'Paguyuban Vila Gading Royal', foto_lingkungan: null, qris_path: 'qris/contoh.png', tagihan_otomatis: false,

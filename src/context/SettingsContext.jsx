@@ -4,7 +4,7 @@ import { alamatLengkap, alamatRingkas, cariGang } from '../lib/alamat';
 import { isConfigured } from '../lib/supabase';
 
 const DEFAULT = {
-  nama_paguyuban: 'Paguyuban Warga Digital',
+  nama_paguyuban: 'Paguyuban Vila Gading Royal',
   tagline: 'Bersama Membangun Lingkungan yang Lebih Baik',
   nama_lingkungan: 'Perumahan Vila Gading Royal', rt: '', rw: '', alamat: 'Desa Pamegarsari, Kec. Parung, Kab. Bogor', luas_wilayah: '', tarif_ipl: 0,
   bank_nama: '', bank_norek: '', bank_atas_nama: '', jatuh_tempo_hari: 10,

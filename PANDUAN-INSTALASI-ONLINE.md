@@ -1,4 +1,4 @@
-# Panduan Instalasi Online: Paguyuban Warga Digital
+# Panduan Instalasi Online: Paguyuban Vila Gading Royal
 
 Panduan ini memasang aplikasi **dari nol sampai bisa dipakai warga**, seluruhnya lewat **browser**. Tidak perlu memasang Node.js, Git, VS Code, atau program apa pun di laptop.
 
@@ -466,7 +466,7 @@ Bila belum tersambung ke GitHub, lampirkan `paguyuban-warga.zip` di chat sebagai
 ```
 Bertindaklah sebagai Senior Full-Stack Developer dan UI/UX Designer.
 
-Saya melanjutkan proyek "Paguyuban Warga Digital". Kodenya ada di repository GitHub [pemilik/paguyuban-warga] (atau zip terlampir). Mulai dengan membaca README.md dan PANDUAN-INSTALASI-ONLINE.md, lalu jelajahi src/ dan supabase/ sebelum mengubah apa pun.
+Saya melanjutkan proyek "Paguyuban Vila Gading Royal". Kodenya ada di repository GitHub [pemilik/paguyuban-warga] (atau zip terlampir). Mulai dengan membaca README.md dan PANDUAN-INSTALASI-ONLINE.md, lalu jelajahi src/ dan supabase/ sebelum mengubah apa pun.
 
 CARA KERJA SAYA: SEMUA ONLINE
 - Saya TIDAK memakai laptop untuk menjalankan kode (tanpa Node.js, npm, atau git lokal).
@@ -508,7 +508,7 @@ YANG SAYA INGINKAN SEKARANG
 ### Prompt saat melapor galat
 
 ```
-Proyek: Paguyuban Warga Digital (semua online: GitHub + Cloudflare Pages + Supabase, tanpa laptop).
+Proyek: Paguyuban Vila Gading Royal (semua online: GitHub + Cloudflare Pages + Supabase, tanpa laptop).
 Tahap: [mis. Tahap 6 Cloudflare / Tahap 8 admin pertama].
 Yang saya lakukan: [langkah terakhir].
 Yang terjadi: [pesan galat persis / screenshot / potongan log build Cloudflare].

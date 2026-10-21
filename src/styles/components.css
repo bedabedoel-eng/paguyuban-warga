@@ -316,7 +316,7 @@ a.rowi:hover, button.rowi:hover { background: var(--surface-2); }
 .loader { display: grid; place-items: center; padding: 48px; color: var(--daun-600); }
 .skeleton {
   display: block; border-radius: var(--r-sm);
-  background: linear-gradient(90deg, var(--surface-3) 25%, #f6f8f7 37%, var(--surface-3) 63%);
+  background: linear-gradient(90deg, var(--surface-3) 25%, #f7f6fb 37%, var(--surface-3) 63%);
   background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
 }
 .sk-rows { display: flex; flex-direction: column; gap: 14px; padding: 4px 0; }
@@ -334,7 +334,7 @@ a.rowi:hover, button.rowi:hover { background: var(--surface-2); }
 
 /* ---------- Modal (lembar bawah di HP) ---------- */
 .modal-backdrop {
-  position: fixed; inset: 0; z-index: 100; background: rgba(10, 34, 25, .45);
+  position: fixed; inset: 0; z-index: 100; background: rgba(18,5,46, .45);
   display: grid; place-items: center; padding: 24px; animation: fade-in .15s var(--ease);
 }
 .modal {

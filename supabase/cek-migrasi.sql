@@ -25,6 +25,7 @@ from (values
   ('14', '14-batas-percobaan-login.sql',      to_regclass('public.percobaan_login') is not null),
   ('15', '15-import-hunian.sql',              coalesce((select pg_get_functiondef(p.oid) like '%v_hunian%' from pg_proc p where p.oid = to_regprocedure('public.import_warga(jsonb,text,text)')), false)),
   ('16', '16-status-tagihan-otomatis.sql',    to_regprocedure('public.status_tagihan_otomatis()') is not null),
-  ('17', '17-batasi-bucket-publik.sql',      coalesce((select with_check like '%qris%' from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'pw publik tulis'), false))
+  ('17', '17-batasi-bucket-publik.sql',      coalesce((select with_check like '%qris%' from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'pw publik tulis'), false)),
+  ('18', '18-nama-paguyuban-vgr.sql',        coalesce((select column_default like '%Vila Gading Royal%' from information_schema.columns where table_schema = 'public' and table_name = 'pengaturan' and column_name = 'nama_paguyuban'), false))
 ) as m(no, berkas, ada)
 order by m.no;

@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "Paguyuban Warga Digital",
-  "short_name": "Paguyuban",
+  "name": "Paguyuban Vila Gading Royal",
+  "short_name": "Paguyuban VGR",
   "description": "Bersama Membangun Lingkungan yang Lebih Baik",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0e2e23",
-  "theme_color": "#0e2e23",
+  "background_color": "#ffffff",
+  "theme_color": "#1e074b",
   "lang": "id",
   "icons": [
     {
