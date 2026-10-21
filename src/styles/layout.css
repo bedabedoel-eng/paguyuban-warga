@@ -53,7 +53,8 @@
 /* ---------- Topbar ---------- */
 .topbar {
   position: sticky; top: 0; z-index: 40; height: var(--topbar-h); display: flex; align-items: center; gap: 16px;
-  padding: 0 var(--gutter); background: rgba(245,244,249, .86); backdrop-filter: saturate(1.4) blur(10px);
+  /* sisi kiri/kanan sejajar dengan isi halaman (.page), juga di layar sangat lebar */
+  padding: 0 max(var(--gutter), calc((100% - var(--content-max)) / 2 + var(--gutter))); background: rgba(245,244,249, .86); backdrop-filter: saturate(1.4) blur(10px);
   -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--line);
 }
 .topbar .search { position: relative; flex: 0 1 440px; }
@@ -102,9 +103,9 @@
 
 /* ---------- Halaman ---------- */
 .page { width: 100%; max-width: var(--content-max); margin: 0 auto; padding: 24px var(--gutter) 40px; display: flex; flex-direction: column; gap: 20px; animation: fade-in .2s var(--ease); }
-.page.narrow { max-width: 760px; }
-.page.form { max-width: 720px; }
-.page.medium { max-width: 960px; }
+/* Semua halaman memakai lebar isi yang sama (--content-max) agar rapi dan sejajar dengan topbar. */
+/* Halaman formulir: judul mengikuti lebar halaman, kartu isian dibatasi agar baris isian tidak terlalu panjang (rata kiri, sejajar judul). */
+.page.form > :not(.page-head) { max-width: 820px; width: 100%; }
 @media (max-width: 767px) { .page { padding-top: 16px; gap: 16px; } }
 
 .page-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
