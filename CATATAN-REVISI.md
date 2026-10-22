@@ -2,6 +2,14 @@
 
 Tanggal: 20 Oktober 2026 (bagian 0: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
 
+## 000. Ajakan pasang aplikasi (PWA) selalu muncul sampai terpasang (22 Oktober 2026)
+Tanpa SQL baru; cukup timpa berkas lalu `npm run build` dan deploy.
+- Sebelumnya, menutup ajakan menyembunyikannya **3 hari** (disimpan di `localStorage`). Kini hanya **selama sesi itu** (`sessionStorage`): setiap warga membuka tab/aplikasi baru, ajakan muncul lagi sampai aplikasi terpasang.
+- Dianggap terpasang bila dibuka dari ikon (standalone/minimal-ui/fullscreen) atau bila browser memberi sinyal `appinstalled`; diingat di browser itu agar warga yang sudah memasang tidak diganggu saat membuka lewat tab. Bila browser kembali menawarkan pasang (aplikasi sudah dihapus), catatan itu dihapus dan ajakan muncul lagi.
+- Browser di dalam aplikasi lain (Facebook, Instagram, TikTok, WebView Android, dsb.) tidak bisa memasang: ajakan menampilkan tombol **Salin tautan** dan petunjuk membuka di Chrome/Safari.
+- Domain baru = asal (origin) baru: aplikasi yang terpasang dari alamat lama harus dipasang ulang dari alamat baru; ajakan akan muncul untuk mereka.
+- Berkas: `src/lib/pwa.js`, `src/components/layout/AjakPasang.jsx`, `src/styles/layout.css`, `tests/unit/pwa.test.js` (baru). `npm test`: 54 lulus; build lulus.
+
 ## 00. Batas percobaan login DINONAKTIFKAN (22 Oktober 2026)
 Karena banyak warga masih gaptek, penundaan login setelah PIN salah dimatikan. Jalankan `supabase/19-nonaktifkan-batas-login.sql` di Supabase > SQL Editor (satu kali, aman diulang). Efek: PIN salah boleh dicoba berulang tanpa tunda, tidak ada hitungan "sisa percobaan", tidak ada peringatan ke pengurus, dan penundaan yang sedang berjalan dihapus. Tidak ada perubahan wajib pada aplikasi (aplikasi otomatis mengikuti server); `EditWarga.jsx` hanya menyembunyikan catatan tentang hook saat batas mati. Mekanisme 14 tidak dihapus; nyalakan lagi dengan `update public.status_keamanan set batas_login_aktif = true where id = 1;`.
 **Risiko yang perlu diketahui:** PIN 6 angka (1 juta kemungkinan) tanpa batas dari aplikasi lebih mudah ditebak. Pengaman yang tersisa: batas laju bawaan Supabase Auth (Authentication > Rate Limits) dan PIN awal acak. Bila ada hook "Password verification" yang sudah dipasang, boleh dibiarkan (kini tidak berbuat apa-apa).
