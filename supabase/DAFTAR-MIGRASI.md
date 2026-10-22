@@ -38,6 +38,10 @@ Centang `[x]` setelah dijalankan di proyek Anda.
 - [ ] **19** `19-nonaktifkan-batas-login.sql` – **menonaktifkan** penundaan login setelah PIN salah (saklar `status_keamanan.batas_login_aktif`, bawaan mati) dan menghapus penundaan yang sedang berjalan. Salah PIN boleh dicoba lagi tanpa batas. Menyalakan lagi: `update public.status_keamanan set batas_login_aktif = true where id = 1;`
 - [ ] **20** `20-perbaikan-warga-massal.sql` – **perbaikan data warga secara massal** (import CSV yang memperbarui warga lama, Ubah massal di tabel) dan penggantian nomor HP yang ikut memperbarui akun login. *Jalankan sebelum men-deploy aplikasi baru.*
 
+## Alat sekali pakai (bukan migrasi)
+
+- `alat-ganti-domain-akun.sql` – memindahkan akun nomor HP ke domain email internal baru bila `VITE_AUTH_EMAIL_DOMAIN` diganti (mis. `wargakoe.pages.dev` → `wargavgr.pages.dev`). Tanpa ini, semua warga dan admin gagal masuk setelah domain diganti. PIN tidak berubah, akun Google tidak disentuh.
+
 ## Urutan yang perlu diperhatikan saat pembaruan aplikasi
 
 Jalankan **SQL dulu, baru deploy aplikasi** (aplikasi baru memanggil fungsi yang dibuat migrasi). Aplikasi dirancang tetap berjalan bila 14, 16, atau 17 belum dijalankan (pembatasan/penanda tidak tampil), tetapi **13, 15, dan 20 harus sudah dijalankan** sebelum deploy: tanpa 13 PIN awal acak tidak tersedia dan Import/Tambah warga tidak menampilkan daftar PIN; tanpa 20 perbaikan data lewat Import CSV, Ubah massal, dan penggantian nomor HP gagal.

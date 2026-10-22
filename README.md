@@ -178,7 +178,7 @@ Isi `.env.local`:
 |---|---|
 | `VITE_SUPABASE_URL` | Project URL dari langkah 3.4 |
 | `VITE_SUPABASE_ANON_KEY` | anon / publishable key |
-| `VITE_AUTH_EMAIL_DOMAIN` | domain email internal, mis. `akun.paguyubananda.id`. Pakai subdomain dari domain Anda sendiri. **Jangan diubah setelah ada warga mendaftar.** |
+| `VITE_AUTH_EMAIL_DOMAIN` | domain email internal, mis. `akun.paguyubananda.id`. Pakai subdomain dari domain Anda sendiri. **Jangan diubah setelah ada warga mendaftar.** Bila terlanjur diganti, jalankan `supabase/alat-ganti-domain-akun.sql`. Domain ini hanya label internal, tidak harus sama dengan alamat aplikasi. |
 | `VITE_GOOGLE_LOGIN` | `true` bila login Google sudah diaktifkan (bagian 6), selain itu `false` |
 
 Perintah lain: `npm run build` (hasil di `dist/`), `npm run preview` (uji hasil build), `npm run dev:mock` (menjalankan tampilan dengan data contoh tanpa Supabase; buka `http://127.0.0.1:5174/?as=ketua`, ganti `ketua` dengan `warga`, `wakil`, `sekretaris`, `bendahara`, `humas`, atau `admin`).
