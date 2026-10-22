@@ -35,6 +35,7 @@ Centang `[x]` setelah dijalankan di proyek Anda.
 - [ ] **16** `16-status-tagihan-otomatis.sql` – penanda admin bila pg_cron tidak aktif sehingga tagihan otomatis tidak terbit.
 - [ ] **17** `17-batasi-bucket-publik.sql` – bucket publik hanya menerima folder `lingkungan/` dan `qris/`; menegaskan bucket `konten` dan `bukti` privat. Setelahnya jalankan `cek-bucket-publik.sql`.
 - [ ] **18** `18-nama-paguyuban-vgr.sql` – nama paguyuban menjadi "Paguyuban Vila Gading Royal" (hanya bila masih nama bawaan lama; nama buatan sendiri tidak diubah). Opsional, bisa kapan saja.
+- [ ] **19** `19-nonaktifkan-batas-login.sql` – **menonaktifkan** penundaan login setelah PIN salah (saklar `status_keamanan.batas_login_aktif`, bawaan mati) dan menghapus penundaan yang sedang berjalan. Salah PIN boleh dicoba lagi tanpa batas. Menyalakan lagi: `update public.status_keamanan set batas_login_aktif = true where id = 1;`
 
 ## Urutan yang perlu diperhatikan saat pembaruan aplikasi
 

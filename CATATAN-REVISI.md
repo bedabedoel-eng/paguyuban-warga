@@ -2,6 +2,10 @@
 
 Tanggal: 20 Oktober 2026 (bagian 0: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
 
+## 00. Batas percobaan login DINONAKTIFKAN (22 Oktober 2026)
+Karena banyak warga masih gaptek, penundaan login setelah PIN salah dimatikan. Jalankan `supabase/19-nonaktifkan-batas-login.sql` di Supabase > SQL Editor (satu kali, aman diulang). Efek: PIN salah boleh dicoba berulang tanpa tunda, tidak ada hitungan "sisa percobaan", tidak ada peringatan ke pengurus, dan penundaan yang sedang berjalan dihapus. Tidak ada perubahan wajib pada aplikasi (aplikasi otomatis mengikuti server); `EditWarga.jsx` hanya menyembunyikan catatan tentang hook saat batas mati. Mekanisme 14 tidak dihapus; nyalakan lagi dengan `update public.status_keamanan set batas_login_aktif = true where id = 1;`.
+**Risiko yang perlu diketahui:** PIN 6 angka (1 juta kemungkinan) tanpa batas dari aplikasi lebih mudah ditebak. Pengaman yang tersisa: batas laju bawaan Supabase Auth (Authentication > Rate Limits) dan PIN awal acak. Bila ada hook "Password verification" yang sudah dipasang, boleh dibiarkan (kini tidak berbuat apa-apa).
+
 ## 0. Pembaruan 22 Oktober 2026 (keamanan login, data/SQL, tes, kerapian)
 **Urutan pasang:** jalankan SQL baru (13, 15 wajib sebelum deploy; 14, 16, 17 dianjurkan) di Supabase > SQL Editor secara berurutan, lalu `npm run build` dan deploy. Daftar centang: `supabase/DAFTAR-MIGRASI.md`; periksa yang sudah terpasang dengan `supabase/cek-migrasi.sql`.
 

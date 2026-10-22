@@ -340,7 +340,10 @@ select uji.kembali();
 
 -- =====================================================================
 -- E. BATAS PERCOBAAN LOGIN
+-- (bawaan migrasi 19: MATI; di sini dinyalakan dulu untuk menguji mekanismenya, lalu diuji saat mati)
 -- =====================================================================
+select uji.cek(not public._batas_login_aktif(), 'login: bawaan saklar batas login MATI');
+update public.status_keamanan set batas_login_aktif = true where id = 1;
 select uji.anon();
 select uji.cek((public.cek_batas_login('081200000010') ->> 'tunggu')::int = 0, 'login: awalnya tidak ditunda');
 select public.catat_login_gagal('081200000010') from generate_series(1, 4);
@@ -422,6 +425,24 @@ select uji.sebagai('f0000000-0000-0000-0000-0000000000d2');
 select public.catat_login_berhasil();
 select uji.kembali();
 select uji.cek((select count(*) from public.percobaan_login where nomor_hp = '6281200000020') = 0, 'login: masuk berhasil menghapus penghitung milik sendiri');
+
+-- Saklar dimatikan: tidak ada penundaan, pencatatan, atau penolakan hook
+update public.status_keamanan set batas_login_aktif = false where id = 1;
+update public.percobaan_login set terkunci_sampai = now() + interval '1 hour', gagal_beruntun = 9 where nomor_hp = '6281200000010';
+select uji.anon();
+select uji.cek((public.cek_batas_login('081200000010') ->> 'tunggu')::int = 0 and (public.cek_batas_login('081200000010') ->> 'sisa')::int = 5, 'login mati: tidak ditunda walau ada catatan lama');
+select public.catat_login_gagal('081200000030') from generate_series(1, 12);
+select uji.cek((public.catat_login_gagal('081200000030') ->> 'tunggu')::int = 0, 'login mati: 13x salah tetap tanpa tunda');
+select uji.kembali();
+select uji.cek((select count(*) from public.percobaan_login where nomor_hp = '6281200000030') = 0, 'login mati: percobaan salah tidak dicatat');
+select uji.cek((public.hook_verifikasi_pin('{"user_id":"f0000000-0000-0000-0000-0000000000d3","valid":false}') ->> 'decision') = 'continue', 'login mati: hook salah PIN dibiarkan lewat');
+select uji.cek((public.hook_verifikasi_pin('{"user_id":"f0000000-0000-0000-0000-0000000000d3","valid":true}') ->> 'decision') = 'continue', 'login mati: hook PIN benar lewat');
+select uji.sebagai('f0000000-0000-0000-0000-0000000000a1');
+select uji.cek(not (public.status_penegakan_login() ->> 'batas_aktif')::boolean, 'login mati: admin melihat batas nonaktif');
+select uji.kembali();
+-- migrasi 19 dijalankan ulang menghapus penundaan sisa saat mati
+\i 19-nonaktifkan-batas-login.sql
+select uji.cek((select count(*) from public.percobaan_login) = 0, 'login mati: migrasi 19 menghapus semua penundaan lama');
 
 -- =====================================================================
 -- F. PENANDA PG_CRON (tagihan otomatis)

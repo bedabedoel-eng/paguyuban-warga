@@ -131,7 +131,7 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
                 <div style={{ marginTop: 8 }}><Button size="sm" variant="secondary" onClick={bukaKunci}>Buka kunci login</Button></div>
               </Callout>
             )}
-            {penegakan.data && !penegakan.data.hook_aktif && (
+            {penegakan.data && penegakan.data.batas_aktif !== false && !penegakan.data.hook_aktif && (
               <p className="text-xs muted">Batas percobaan login baru berlaku lewat halaman masuk aplikasi. Untuk penegakan penuh di server, aktifkan hook “Password verification” di Supabase (petunjuk di SQL 14).</p>
             )}
             <div className="row row-top wrap">
