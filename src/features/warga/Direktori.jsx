@@ -24,7 +24,8 @@ const URUTAN = [
   { value: 'lama', label: 'Terlama bergabung' },
 ];
 
-function Kartu({ w, alamatPendek }) {
+/** Kartu foto warga; dipakai juga oleh tampilan Foto di halaman Warga pengelola. ket = keterangan tambahan (mis. status). */
+export function Kartu({ w, alamatPendek, ket }) {
   const peran = w.role === 'admin' ? 'Admin' : w.role !== 'warga' ? 'Pengurus' : null;
   return (
     <Link to={`/warga/${w.id}`} className="dir-card" aria-label={`${w.nama}, ${alamatPendek(w)}`}>
@@ -34,6 +35,7 @@ function Kartu({ w, alamatPendek }) {
         <span className="nm">{w.nama}</span>
         <span className="al">{alamatPendek(w) || 'Alamat belum diisi'}</span>
         {w.pekerjaan && <span className="kj">{w.pekerjaan}</span>}
+        {ket && <span className="kj ket">{ket}</span>}
       </span>
     </Link>
   );

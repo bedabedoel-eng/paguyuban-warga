@@ -163,6 +163,31 @@ function rpc(name, params) {
       const baris = Array.isArray(params.p_rows) ? params.p_rows : [];
       return { dibuat: baris.length, dilewati: [], akun: baris.map((r, i) => ({ baris: i + 1, nama: r.nama, hp: String(r.hp || ''), pin: String(100000 + Math.floor(Math.random() * 900000)) })) };
     },
+    // Tiruan perbarui_warga_massal (SQL 20): menerapkan patch ke data contoh di memori agar tampilan ikut berubah
+    perbarui_warga_massal: () => {
+      const baris = Array.isArray(params.p_rows) ? params.p_rows : [];
+      const dilewati = [];
+      let diubah = 0;
+      baris.forEach((r, i) => {
+        const w = F.WARGA.find((x) => x.id === r.id);
+        const k = F.KONTAK.find((x) => x.warga_id === r.id);
+        if (!w) { dilewati.push({ baris: i + 1, nama: r.nama || '', alasan: 'Warga tidak ditemukan (id mungkin sudah dihapus)' }); return; }
+        if (!h.admin && w.role === 'admin') { dilewati.push({ baris: i + 1, nama: w.nama, alasan: 'Data admin hanya dapat diubah admin' }); return; }
+        for (const kol of ['nama', 'blok', 'no_rumah', 'pekerjaan', 'status']) if (kol in r) w[kol] = r[kol] || null;
+        if ('gang' in r) w.gang_id = F.GANG.find((g) => g.nama === r.gang)?.id || null;
+        if ('kepala_keluarga' in r) w.kepala_keluarga = r.kepala_keluarga === 'ya';
+        if ('foto' in r && r.foto) w.foto_path = r.foto;
+        if (k) {
+          for (const kol of ['status_pernikahan', 'status_hunian']) if (kol in r) k[kol] = r[kol] || null;
+          if ('jumlah_anak' in r) k.jumlah_anak = r.jumlah_anak === '' ? null : Number(r.jumlah_anak);
+          if (!k.status_pernikahan || k.status_pernikahan === 'belum_menikah') k.jumlah_anak = null;
+          if (r.hp) k.nomor_hp = String(r.hp).replace(/\D/g, '').replace(/^0/, '62');
+        }
+        diubah += 1;
+      });
+      return { diubah, dilewati };
+    },
+    ubah_hp_warga: () => null,
   };
   const fn = R[name];
   return delay({ data: fn ? fn() : null, error: null });

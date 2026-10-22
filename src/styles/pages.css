@@ -491,3 +491,15 @@
 @media (max-width: 420px) { .quick-item { padding-left: 2px; padding-right: 2px; } .qi-label { font-size: 11.5px; } }
 
 .home-grid > .h-tugas { grid-column: 1 / -1; }
+
+/* ---------- Warga: import & perbaiki CSV, tampilan foto ---------- */
+.stack-xs { display: flex; flex-direction: column; gap: 4px; }
+.list-plain { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.imp-diff { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; line-height: 1.35; }
+.imp-diff b { font-weight: 600; color: var(--ink-2); }
+.imp-diff .lama { color: var(--ink-3); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.imp-diff .baru { color: var(--ink); font-weight: 600; background: color-mix(in srgb, var(--ok) 14%, transparent); border-radius: 4px; padding: 0 4px; }
+.imp-diff svg { color: var(--ink-3); flex: none; }
+.dir-card .kj.ket { color: var(--kunyit-500); font-weight: 600; }
+.dir-cell { min-width: 0; }
+@media (max-width: 767px) { .toolbar .f-ops { display: none; } .toolbar.lebih .f-ops { display: block; } }

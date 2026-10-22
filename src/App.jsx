@@ -53,7 +53,7 @@ const KelolaIpl = lazy(() => import('./features/admin/KelolaIpl'));
 const KelolaLaporan = lazy(() => import('./features/admin/KelolaLaporan'));
 const PengaturanPaguyuban = lazy(() => import('./features/admin/PengaturanPaguyuban'));
 
-/** Tautan lama (/admin/warga, /admin/import) dialihkan ke tab yang sesuai di menu Warga, filter di URL tetap dibawa. */
+/** Tautan lama (/admin/warga, /admin/import) dialihkan ke halaman Warga; filter di URL tetap dibawa, ?tab=import membuka Import. */
 function KeWarga({ tab }) {
   const { search } = useLocation();
   const q = new URLSearchParams(search);

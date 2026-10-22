@@ -1,4 +1,5 @@
-import { Download, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Download, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Button, Chips, SearchInput, Select } from '../ui';
 import { hitungPilihan } from '../../lib/daftar';
 
@@ -15,16 +16,25 @@ export default function BarAlat({ d, rows, satuan, cari, filters = [], onEkspor,
   const chipsFilters = filters.filter((f) => f.chips);
   const selectFilters = filters.filter((f) => !f.chips);
   const ada = !!rows?.length;
+  // Di HP hanya 2 filter pertama yang tampil; sisanya lewat tombol "Filter lainnya" (desktop tetap tampil semua)
+  const [lebih, setLebih] = useState(false);
+  const ringkas = selectFilters.length > 3;
+  const aktifLain = selectFilters.slice(2).filter((f) => d.filter[f.key]).length;
   const hitung = (f, nilai) => (f.tanpaHitung ? undefined : hitungPilihan(rows || [], filters, d.filter, f.key, nilai, { cari: d.cari, ambilCari: cari?.ambil }));
   return (
     <>
       {(cari || selectFilters.length > 0 || onEkspor || toolbarEnd || urutan) && (
-        <div className="toolbar">
+        <div className={`toolbar${lebih ? ' lebih' : ''}`}>
           {cari && <SearchInput value={d.q} onChange={d.setQ} placeholder={cari.placeholder} label={`Cari ${satuan}`} />}
-          {selectFilters.map((f) => (
-            <Select key={f.key} className="sm" value={d.filter[f.key]} onChange={(e) => d.setFilter(f.key, e.target.value)}
+          {selectFilters.map((f, i) => (
+            <Select key={f.key} className={`sm${ringkas && i >= 2 ? ' f-ops' : ''}`} value={d.filter[f.key]} onChange={(e) => d.setFilter(f.key, e.target.value)}
               placeholder={f.placeholder} options={f.options} aria-label={f.label} />
           ))}
+          {ringkas && (
+            <Button size="sm" variant="secondary" icon={SlidersHorizontal} className="only-mobile" aria-expanded={lebih} onClick={() => setLebih((v) => !v)}>
+              {lebih ? 'Sembunyikan filter' : `Filter lainnya${aktifLain ? ` (${aktifLain} aktif)` : ''}`}
+            </Button>
+          )}
           {d.adaFilter && <Button size="sm" variant="ghost" icon={RotateCcw} onClick={d.reset}>Reset filter</Button>}
           <span className="grow" />
           {urutan}

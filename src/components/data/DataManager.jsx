@@ -24,6 +24,10 @@ const PRATINJAU_HAPUS = 5;
  *   hapus: { kata?, bisa?(row), dampak, jalankan(row), sukses?(n) }     hapus permanen; dampak boleh fungsi (rows) => teks; kata mis. 'Cabut'; judul?(rows) mengganti judul konfirmasi
  *   aksiMassal: [{ kata, tombol?, ikon?, ikonBaris?, danger?, bisa?(row), dampak?, jalankan(row), sukses?(n) }]
  *                                aksi lain untuk baris terpilih (mis. Nonaktifkan); ikonBaris = tombol ikon di tiap baris
+ *                                atau { kata, tombol, ikon, bisa?, buka(rows, selesai) }: membuka form sendiri (mis. Ubah massal);
+ *                                panggil selesai() setelah berhasil agar pilihan dikosongkan dan data dimuat ulang
+ *   kartu(row)                   bila diisi, baris tampil sebagai kartu (mis. tampilan foto) menggantikan tabel
+ *   filterBawaan                 filter yang aktif saat URL belum memuatnya (lihat useDaftar)
  *   bisaUbah(row)                menyembunyikan tombol Ubah pada baris tertentu
  *   ekspor: { nama, kolom }      kolom format toCsv; yang diekspor = semua hasil filter (bukan hanya halaman ini)
  *   aksiBaris(row)               tombol tambahan per baris
@@ -34,12 +38,12 @@ export default function DataManager({
   rows, rowKey = 'id', columns, caption, satuan = 'data', label = () => 'baris',
   cari, filters = [], defaultSort, defaultPer,
   loading, error, onRetry, kosong,
-  onUbah, bisaUbah, hapus, aksiMassal = [], aksiBaris, ekspor, ringkasan, toolbarEnd, onSelesai,
+  onUbah, bisaUbah, hapus, aksiMassal = [], aksiBaris, ekspor, ringkasan, toolbarEnd, onSelesai, kartu, filterBawaan,
 }) {
   const confirm = useConfirm();
   const toast = useToast();
   const kunci = (r) => (typeof rowKey === 'function' ? rowKey(r) : r[rowKey]);
-  const d = useDaftar({ rows, kolom: columns, ambilCari: cari?.ambil, filterDef: filters, defaultSort, defaultPer });
+  const d = useDaftar({ rows, kolom: columns, ambilCari: cari?.ambil, filterDef: filters, defaultSort, defaultPer, filterBawaan });
   const { tampil, hasil } = d;
 
   /* ---------- aksi untuk baris (hapus + aksi massal) ---------- */
@@ -63,6 +67,14 @@ export default function DataManager({
   /** Jalankan satu aksi untuk daftar baris: konfirmasi (menyebut jumlah) -> proses satu per satu -> ringkasan hasil. */
   async function jalankanAksi(a, daftar) {
     if (!daftar.length || sibuk) return;
+    if (a.buka) {
+      a.buka(daftar, () => {
+        const ids = new Set(daftar.map(kunci));
+        setPilih((s) => new Set([...s].filter((x) => !ids.has(x))));
+        onSelesai?.();
+      });
+      return;
+    }
     const n = daftar.length;
     const kerja = a.kata.toLowerCase();
     const contoh = daftar.slice(0, PRATINJAU_HAPUS).map(label).join(', ');
@@ -156,8 +168,11 @@ export default function DataManager({
                 })}
               </div>
             )}
-            <DataTable columns={kolomFinal} rows={tampil} rowKey={rowKey} caption={caption} sort={d.sort} onSort={d.setSort}
-              empty={adaData ? kosongFilter : <EmptyState icon={kosong?.icon} title={kosong?.title || `Belum ada ${satuan}`} text={kosong?.text} action={kosong?.action} />} />
+            {kartu ? (tampil.length
+              ? <div className="card-body"><div className="dir-grid">{tampil.map((r) => <div key={kunci(r)} className="dir-cell">{kartu(r)}</div>)}</div></div>
+              : (adaData ? kosongFilter : <EmptyState icon={kosong?.icon} title={kosong?.title || `Belum ada ${satuan}`} text={kosong?.text} action={kosong?.action} />))
+            : <DataTable columns={kolomFinal} rows={tampil} rowKey={rowKey} caption={caption} sort={d.sort} onSort={d.setSort}
+              empty={adaData ? kosongFilter : <EmptyState icon={kosong?.icon} title={kosong?.title || `Belum ada ${satuan}`} text={kosong?.text} action={kosong?.action} />} />}
           </>
         )}
         {adaData && <Pager d={d} satuan={satuan} ringkasan={ringkasan ? ringkasan(hasil) : undefined} />}

@@ -1,6 +1,46 @@
 # Catatan Revisi — Paguyuban Warga Digital
 
-Tanggal: 20 Oktober 2026 (bagian 0: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+Tanggal: 20 Oktober 2026 (bagian 0, 00, 000, dan 0000: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+
+## 0000. Halaman Warga satu pintu: import, ekspor, dan perbaikan data massal (22 Oktober 2026)
+**Urutan pasang:** jalankan `supabase/20-perbaikan-warga-massal.sql` di Supabase > SQL Editor (sekali, aman diulang), lalu timpa berkas, `npm run build`, dan deploy. Tanpa SQL 20, Import & perbaiki CSV, Ubah massal, dan penggantian nomor HP gagal.
+
+**Yang berubah di aplikasi**
+- Menu **Warga** untuk pengelola (pimpinan, sekretaris, humas, admin) kini **satu halaman tanpa tab**. Tab Direktori, Data anggota, dan Import CSV digabung:
+  - Tabel semua warga dengan pilihan tampilan **Tabel** atau **Foto** (diingat per perangkat).
+  - Filter baru **Kelengkapan data** (sensus belum lengkap, nomor HP belum ada, pekerjaan belum diisi, belum ada foto) dan jalan **Belum ada jalan**.
+  - Di HP hanya dua filter pertama yang tampil; sisanya lewat tombol **Filter lainnya**.
+  - Humas melihat semua warga (seperti direktori), dengan filter bawaan **Wilayah saya**; ubah data tetap hanya untuk jalannya.
+  - Warga biasa tidak berubah: tetap melihat Direktori.
+- **Import & perbaiki CSV** (tombol di kepala halaman), satu berkas untuk dua keperluan:
+  1. Ekspor data, perbaiki di Excel/Google Sheets, simpan sebagai CSV, lalu pilih berkasnya.
+  2. Baris dicocokkan lewat kolom `id` (ada di setiap Ekspor CSV) atau nomor HP. Warga lama **diperbarui**; nomor HP yang belum terdaftar menjadi **akun baru** (admin, PIN awal acak seperti sebelumnya).
+  3. **Pratinjau** sebelum disimpan: Diubah / Akun baru / Bermasalah / Tidak berubah, dengan perubahan per kolom (mis. *Jalan: Jl. Mawar -> Jl. Melati*). Baris bermasalah bisa diunduh lengkap dengan alasannya untuk diperbaiki.
+  4. Aturan isi: kolom yang dihapus dari berkas tidak diubah; sel kosong mengosongkan jalan, pekerjaan, pernikahan, jumlah anak, dan rumah ditempati; sel kosong pada nomor HP, kepala keluarga, foto, dan keanggotaan tidak mengubah apa pun. Keanggotaan hanya bisa aktif/nonaktif (pendaftar tetap lewat Verifikasi anggota).
+  5. Selain admin: tidak bisa membuat akun, mengubah nomor HP, atau foto (perubahan itu diabaikan dengan catatan di pratinjau).
+- **Ubah massal**: pilih warga di tabel (atau "Pilih semua hasil"), lalu isi satu kolom sekaligus: jalan, rumah ditempati, status pernikahan, kepala keluarga, atau pekerjaan. Jalan hanya diterapkan pada warga di blok jalan itu.
+- **Ekspor CSV** menambah kolom `keanggotaan` (sebelumnya `status`) dan `id` di akhir. Berkas ekspor lama tetap bisa diimpor.
+- **Perbaikan bug:** mengganti nomor HP di form Ubah anggota kini ikut memindahkan akun login ke nomor baru. Sebelumnya hanya data kontak yang berubah, sehingga warga gagal masuk dengan nomor barunya. Warga yang nomornya pernah diganti sebelum pembaruan ini: ganti sekali lagi lewat form Ubah (isi nomor lama, simpan, lalu isi nomor baru), atau minta Claude membuatkan SQL perbaikannya.
+- Tautan lama tetap berfungsi: `/admin/warga`, `/warga?tab=anggota` membuka halaman Warga (filter di tautan tetap terbawa), `/admin/import` dan `?tab=import` langsung membuka Import.
+
+**Database (SQL 20)**
+- `perbarui_warga_massal(rows, domain)`: tiap baris berisi `id` dan hanya kolom yang diubah; validasi sama dengan import; satu baris gagal tidak membatalkan baris lain.
+  - Kewenangan sama dengan form Ubah anggota: admin semua; pimpinan & sekretaris semua kecuali akun admin, tanpa HP dan foto; humas hanya jalannya.
+  - Pemicu pengaman `_warga_guard` dan `_kontak_guard` tetap memeriksa ulang. Pindah blok mengosongkan jalan blok lama dan menghubungkan rumah baru (dasar tagihan IPL).
+- `ubah_hp_warga(id, hp, domain)`: khusus admin; mengganti nomor HP beserta email login `hp@domain`. Akun yang masuk dengan Google tidak diubah emailnya.
+
+**Berkas**
+- Baru: `src/features/warga/ImporWarga.jsx`, `src/features/warga/UbahMassal.jsx`, `src/lib/perbaikanWarga.js`, `supabase/20-perbaikan-warga-massal.sql`, `supabase/tests/uji-perbaikan-massal.sql`, `tests/unit/perbaikanWarga.test.js`.
+- Diubah: `src/features/warga/Warga.jsx`, `src/features/warga/Direktori.jsx`, `src/features/admin/config/warga.jsx`, `src/features/admin/EditWarga.jsx`, `src/components/data/DataManager.jsx`, `src/components/data/HalamanData.jsx`, `src/components/data/BarAlat.jsx`, `src/services/warga.js`, `src/lib/eksporWarga.js`, `src/components/layout/navConfig.js`, `src/App.jsx`, `src/features/admin/config/wilayah.js`, `src/features/admin/DashboardAdmin.jsx`, `src/features/beranda/widgets.jsx`, `src/styles/pages.css`, `tests/mock/supabase-js.js`, `supabase/skema-lengkap.sql`, `supabase/cek-migrasi.sql`, `supabase/DAFTAR-MIGRASI.md`, `supabase/tests/jalankan.sh`, `README.md`.
+- **Dihapus** (tidak dipakai lagi): `src/features/admin/DataWarga.jsx`, `src/features/admin/ImportWarga.jsx`. Bila menimpa berkas, hapus juga keduanya dari folder proyek (bila tertinggal pun tidak ikut ter-build).
+
+**Pengujian**
+- `npm test`: 70 lulus (16 baru, termasuk: hasil Ekspor yang diimpor ulang tanpa diubah = semua "Tidak berubah").
+- `vite build` lulus.
+- `supabase/tests/jalankan.sh`: migrasi 01-20, uji RLS, uji fitur, dan uji perbaikan massal (43 pemeriksaan baru per peran: admin, humas, warga biasa) lulus.
+- `uji-skema-lengkap.sh`: `skema-lengkap.sql` identik dengan migrasi berurutan.
+- Uji tampilan dengan data contoh (`npm run dev:mock`), di desktop 1366 px dan HP 390 px, tanpa galat konsol: ekspor → ubah di berkas → pratinjau → terapkan, Ubah massal, tautan lama, peringatan PIN saat menutup.
+- Belum diuji terhadap proyek Supabase sungguhan.
 
 ## 000. Ajakan pasang aplikasi (PWA) selalu muncul sampai terpasang (22 Oktober 2026)
 Tanpa SQL baru; cukup timpa berkas lalu `npm run build` dan deploy.

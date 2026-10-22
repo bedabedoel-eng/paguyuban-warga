@@ -1,7 +1,10 @@
-import { toCsv, unduhBerkas, stempelTanggal } from './csv';
-import { cariGang, pecahNomor } from './alamat';
+import { toCsv, unduhBerkas, stempelTanggal } from './csv.js';
+import { cariGang, pecahNomor } from './alamat.js';
 
-/** Kolom ekspor warga. Urutan awal sama dengan berkas import sehingga hasil ekspor bisa diimpor ulang. Alamat dipisah: blok, sub_blok, no_rumah (untuk rekap). */
+/**
+ * Kolom ekspor warga. Urutan awal sama dengan berkas import, dan kolom `id` di akhir dipakai untuk mencocokkan
+ * warga saat berkas yang sudah diperbaiki diimpor ulang (Import CSV satu pintu). Alamat dipisah: blok, sub_blok, no_rumah.
+ */
 /** 6281234567890 -> 0812-3456-7890 (tanpa "+", aman dari penanda rumus Excel dan terbaca saat diimpor ulang) */
 const hpLokal = (hp) => {
   const d = String(hp || '').replace(/\D/g, '');
@@ -22,8 +25,10 @@ export const KOLOM_EKSPOR_WARGA = (gang) => [
   { key: 'jumlah_anak', label: 'jumlah_anak', nilai: (w) => (w.kontak || w).jumlah_anak ?? '' },
   { key: 'status_hunian', label: 'status_hunian', nilai: (w) => (w.kontak || w).status_hunian || '' },
   { key: 'foto', label: 'foto', nilai: (w) => (/^https:/i.test(w.foto_path || '') ? w.foto_path : '') },
-  { key: 'status', label: 'status' },
+  { key: 'status', label: 'keanggotaan' },
   { key: 'bergabung', label: 'bergabung', nilai: (w) => (w.bergabung_at ? String(w.bergabung_at).slice(0, 10) : '') },
+  // Kunci pencocokan saat berkas diimpor ulang untuk perbaikan data. Jangan diubah di Excel.
+  { key: 'id', label: 'id' },
 ];
 
 /** Unduh daftar warga sebagai CSV. Mengembalikan jumlah baris. */

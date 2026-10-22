@@ -90,6 +90,16 @@ export const resetSandiWarga = async (id, baru) => unwrap(await supabase.rpc('re
 export const importWarga = async (rows) =>
   unwrap(await supabase.rpc('import_warga', { p_rows: rows, p_domain: AUTH_EMAIL_DOMAIN }));
 export const hapusWarga = async (id) => unwrap(await supabase.rpc('hapus_warga', { p_id: id }));
+/**
+ * Perbaikan data massal (SQL 20). rows: [{ id, ...hanya kolom yang diubah }] dengan kunci
+ * nama, hp, blok, no_rumah, gang (nama jalan, '' = kosongkan), pekerjaan, kepala_keluarga ('ya'/'tidak'),
+ * status_pernikahan, jumlah_anak, status_hunian, foto, status ('aktif'/'nonaktif').
+ * Kolom yang tidak dikirim tidak diubah. Hasil: { diubah, dilewati: [{ baris, nama, alasan }] } (baris = urutan di rows, mulai 1).
+ */
+export const perbaruiWargaMassal = async (rows) =>
+  unwrap(await supabase.rpc('perbarui_warga_massal', { p_rows: rows, p_domain: AUTH_EMAIL_DOMAIN }));
+/** Admin mengganti nomor HP warga; akun login ikut pindah ke nomor baru (SQL 20). */
+export const ubahHpWarga = async (id, hp) => unwrap(await supabase.rpc('ubah_hp_warga', { p_id: id, p_hp: hp, p_domain: AUTH_EMAIL_DOMAIN }));
 
 /** Jumlah warga aktif per blok & jalan (untuk halaman Blok & jalan). */
 export async function sebaranWarga() {

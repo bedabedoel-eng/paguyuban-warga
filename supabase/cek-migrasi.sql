@@ -27,6 +27,7 @@ from (values
   ('16', '16-status-tagihan-otomatis.sql',    to_regprocedure('public.status_tagihan_otomatis()') is not null),
   ('17', '17-batasi-bucket-publik.sql',      coalesce((select with_check like '%qris%' from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'pw publik tulis'), false)),
   ('18', '18-nama-paguyuban-vgr.sql',        coalesce((select column_default like '%Vila Gading Royal%' from information_schema.columns where table_schema = 'public' and table_name = 'pengaturan' and column_name = 'nama_paguyuban'), false)),
-  ('19', '19-nonaktifkan-batas-login.sql',   exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'status_keamanan' and column_name = 'batas_login_aktif'))
+  ('19', '19-nonaktifkan-batas-login.sql',   exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'status_keamanan' and column_name = 'batas_login_aktif')),
+  ('20', '20-perbaikan-warga-massal.sql',   to_regprocedure('public.perbarui_warga_massal(jsonb,text)') is not null)
 ) as m(no, berkas, ada)
 order by m.no;

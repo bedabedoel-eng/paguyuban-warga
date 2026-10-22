@@ -44,7 +44,7 @@ export default function DashboardAdmin() {
     label: b.nama,
     sub: [`${gang.filter((g) => g.blok === b.kode).length} jalan`, sebar.data?.tanpaGang[b.kode] ? `${sebar.data.tanpaGang[b.kode]} belum pilih jalan` : null].filter(Boolean).join(' · '),
     value: sebar.data?.blok[b.kode] || 0,
-    to: bisaLihatWarga ? `/admin/warga?blok=${b.kode}` : undefined,
+    to: bisaLihatWarga ? `/warga?blok=${b.kode}` : undefined,
   }));
   const perans = [...new Set(jabatan.map((j) => j.peran).filter(Boolean))];
 

@@ -159,7 +159,7 @@ export function WilayahCards({ wilayah = [] }) {
         const tot = (w.ipl_lunas || 0) + (w.ipl_belum || 0);
         return (
           <div className="card" key={w.gang}>
-            <div className="head"><span className="ico"><Signpost size={18} /></span><span className="grow" style={{ minWidth: 0 }}><b className="ellipsis" style={{ display: 'block' }}>{w.nama}</b>{w.blok && <span className="text-xs muted">Blok {w.blok}</span>}</span><Link className="link" to={`/admin/warga?gang=${w.gang}`}>Data warga</Link></div>
+            <div className="head"><span className="ico"><Signpost size={18} /></span><span className="grow" style={{ minWidth: 0 }}><b className="ellipsis" style={{ display: 'block' }}>{w.nama}</b>{w.blok && <span className="text-xs muted">Blok {w.blok}</span>}</span><Link className="link" to={`/warga?gang=${w.gang}`}>Data warga</Link></div>
             <div className="nums">
               <div><b>{w.warga}</b><span>Warga aktif</span></div>
               <div><b>{w.menunggu}</b><span>Pendaftar</span></div>

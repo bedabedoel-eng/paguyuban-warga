@@ -62,7 +62,7 @@ export function konfigWilayah({ blok, gang, layanan, aksiHeader }) {
         return n ? `${n} warga di jalan ini akan menjadi "belum memilih jalan", dan humas jalan ini kehilangan wilayahnya.` : 'Jalan ini belum memiliki warga.';
       },
     },
-    aksiBaris: (g) => createElement(Button, { size: 'xs', variant: 'ghost', icon: Users, to: `/warga?tab=anggota&gang=${g.id}` }, 'Warga'),
+    aksiBaris: (g) => createElement(Button, { size: 'xs', variant: 'ghost', icon: Users, to: `/warga?gang=${g.id}` }, 'Warga'),
 
     form: {
       judul: (g) => (g ? `Ubah ${g.nama}` : 'Tambah jalan'),

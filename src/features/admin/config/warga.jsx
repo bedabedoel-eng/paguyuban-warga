@@ -1,10 +1,10 @@
-import { ImageDown, UserCheck, UserX, Users } from 'lucide-react';
+import { ImageDown, PencilLine, UserCheck, UserX, Users } from 'lucide-react';
 import { Avatar, Badge } from '../../../components/ui';
 import { semuaWarga, ubahStatusWarga, ubahWargaAdmin } from '../../../services/warga';
 import { salinFotoTautan } from '../../../lib/foto';
 import { adaUrl } from '../../../lib/image';
 import { formatHp } from '../../../lib/phone';
-import { STATUS_WARGA, STATUS_PERNIKAHAN, STATUS_HUNIAN, labelPernikahan } from '../../../lib/constants';
+import { STATUS_WARGA, STATUS_PERNIKAHAN, STATUS_HUNIAN, labelPernikahan, pernahMenikah } from '../../../lib/constants';
 import { tanggal } from '../../../lib/format';
 import { kelolaWilayah, namaWilayah } from '../../../lib/akses';
 import { pecahNomor } from '../../../lib/alamat';
@@ -15,49 +15,69 @@ import TambahWarga from '../TambahWarga';
 /** Tanpa baris = tambah warga baru (admin), dengan baris = ubah data. */
 function FormWarga(props) { return props.baris ? <EditWarga {...props} /> : <TambahWarga {...props} />; }
 
+/** Data sensus yang dianggap perlu dilengkapi. */
+const sensusKurang = (w) => !w.kontak?.status_pernikahan || !w.kontak?.status_hunian
+  || (pernahMenikah(w.kontak?.status_pernikahan) && w.kontak?.jumlah_anak == null);
+
 /**
- * Konfigurasi menu "Data anggota".
- * Hak akses mengikuti RLS tabel `warga` (pengelola wilayah / admin). Anggota tidak dihapus dari tabel ini:
- * "Nonaktifkan" menyimpan datanya dan riwayat IPL/kas yang melekat. Hapus permanen tetap ada di form ubah (khusus admin).
+ * Konfigurasi tabel di halaman Warga (satu halaman untuk pengelola: lihat, ubah, import, ekspor, perbaikan massal).
+ * Hak akses mengikuti RLS tabel `warga`. Anggota tidak dihapus dari tabel ini: "Nonaktifkan" menyimpan datanya dan
+ * riwayat IPL/kas yang melekat. Hapus permanen tetap ada di form ubah (khusus admin).
+ *
+ * onImpor()                  membuka Import & perbaiki CSV
+ * onUbahMassal(rows, selesai) membuka Ubah massal untuk baris terpilih
  */
-export function konfigWarga({ hak, user, blok, gang, namaGang }) {
+export function konfigWarga({ hak, user, blok, gang, namaGang, onImpor, onUbahMassal }) {
   const bolehKelola = (w) => kelolaWilayah(hak, w.gang_id) || hak.admin;
   // Aksi status: tidak untuk akun sendiri, dan akun admin hanya oleh admin (database tetap penjaga utama).
   const bolehUbahStatus = (w) => bolehKelola(w) && w.id !== user.id && !(w.role === 'admin' && !hak.admin);
-  const gangBoleh = gang.filter((g) => hak.kelola_anggota || hak.wilayah.includes(g.id));
+  // Ubah massal = aturan yang sama dengan fungsi perbarui_warga_massal
+  const bolehUbahData = (w) => bolehKelola(w) && (hak.admin || (w.id !== user.id && w.role !== 'admin'));
+  const penuh = !!(hak.kelola_anggota || hak.admin);
 
   return {
     kelas: 'page',
-    judul: 'Data anggota',
-    desc: hak.kelola_anggota ? 'Seluruh anggota paguyuban. Ubah data rumah, status, dan kepala keluarga.' : `Anggota di ${namaWilayah(hak, gang)}.`,
-    satuan: 'anggota',
-    caption: 'Daftar anggota',
+    judul: 'Warga',
+    back: false,
+    desc: penuh ? 'Semua warga paguyuban: lihat, ubah, import, ekspor, dan perbaiki data sekaligus.' : `Semua warga. Anda mengelola ${namaWilayah(hak, gang)}.`,
+    satuan: 'warga',
+    caption: 'Daftar warga',
     layanan: {
-      // Pengelola penuh melihat semua; humas hanya jalan yang dipegangnya.
-      daftar: async () => {
-        const rows = await semuaWarga();
-        return hak.kelola_anggota ? rows : rows.filter((w) => hak.wilayah.includes(w.gang_id));
-      },
+      // Pengelola penuh & humas melihat semua warga yang terlihat oleh RLS; humas hanya bisa mengubah jalannya.
+      daftar: () => semuaWarga(),
     },
     label: (w) => w.nama,
+    bolehUbahData,
 
-    cari: { placeholder: 'Cari nama, rumah, atau nomor HP', ambil: (w) => `${w.nama} ${w.pekerjaan || ''} ${w.blok || ''} ${w.no_rumah || ''} ${w.kontak?.nomor_hp || ''}` },
+    cari: { placeholder: 'Cari nama, rumah, pekerjaan, atau nomor HP', ambil: (w) => `${w.nama} ${w.pekerjaan || ''} ${w.blok || ''} ${w.no_rumah || ''} ${w.blok || ''}-${w.no_rumah || ''} ${w.kontak?.nomor_hp || ''}` },
+    // Humas langsung melihat jalan yang dipegangnya; "Semua warga" menampilkan direktori lengkap.
+    filterBawaan: penuh ? {} : { cakupan: 'saya' },
     filter: [
-      ...(hak.kelola_anggota ? [{ key: 'blok', label: 'Filter blok', placeholder: 'Semua blok', options: blok.map((b) => ({ value: b.kode, label: b.nama })), test: (w, v) => w.blok === v }] : []),
-      { key: 'gang', label: 'Filter jalan', placeholder: hak.kelola_anggota ? 'Semua jalan' : 'Semua jalan saya',
-        options: gangBoleh.map((g) => ({ value: g.id, label: g.blok ? `${g.nama} (Blok ${g.blok})` : g.nama })), test: (w, v) => w.gang_id === v },
-      { key: 'status', label: 'Filter status', placeholder: 'Semua status',
+      ...(!penuh ? [{ key: 'cakupan', label: 'Cakupan', placeholder: 'Semua warga', options: [{ value: 'saya', label: `Wilayah saya (${namaWilayah(hak, gang)})` }], test: (w, v) => (v === 'saya' ? hak.wilayah.includes(w.gang_id) : true) }] : []),
+      { key: 'blok', label: 'Filter blok', placeholder: 'Semua blok', options: blok.map((b) => ({ value: b.kode, label: b.nama })), test: (w, v) => w.blok === v },
+      { key: 'gang', label: 'Filter jalan', placeholder: 'Semua jalan',
+        options: [...gang.map((g) => ({ value: g.id, label: g.blok ? `${g.nama} (Blok ${g.blok})` : g.nama })), { value: 'kosong', label: 'Belum ada jalan' }],
+        test: (w, v) => (v === 'kosong' ? !w.gang_id : w.gang_id === v) },
+      { key: 'status', label: 'Filter keanggotaan', placeholder: 'Semua keanggotaan',
         options: [...Object.entries(STATUS_WARGA).map(([k, v]) => ({ value: k, label: v.label })), { value: 'belum_pin', label: 'Belum ganti PIN' }],
         test: (w, v) => (v === 'belum_pin' ? !!w.wajib_ganti_pin : w.status === v) },
+      { key: 'lengkap', label: 'Filter kelengkapan data', placeholder: 'Semua kelengkapan',
+        options: [
+          { value: 'sensus', label: 'Data sensus belum lengkap' },
+          { value: 'hp', label: 'Nomor HP belum ada' },
+          { value: 'kerja', label: 'Pekerjaan belum diisi' },
+          ...(hak.admin ? [{ value: 'foto', label: 'Belum ada foto' }] : []),
+        ],
+        test: (w, v) => (v === 'sensus' ? sensusKurang(w) : v === 'hp' ? !w.kontak?.nomor_hp : v === 'kerja' ? !w.pekerjaan : v === 'foto' ? !w.foto_path : true) },
       { key: 'nikah', label: 'Filter status pernikahan', placeholder: 'Semua status pernikahan',
         options: [...Object.entries(STATUS_PERNIKAHAN).map(([k, v]) => ({ value: k, label: v.label })), { value: 'kosong', label: 'Belum diisi' }],
         test: (w, v) => (v === 'kosong' ? !w.kontak?.status_pernikahan : w.kontak?.status_pernikahan === v) },
-      ...(hak.admin ? [{ key: 'foto', label: 'Filter foto', placeholder: 'Semua foto',
-        options: [{ value: 'tautan', label: 'Foto dari tautan luar' }, { value: 'sendiri', label: 'Foto tersimpan di sistem' }, { value: 'kosong', label: 'Tanpa foto' }],
-        test: (w, v) => (v === 'tautan' ? adaUrl(w.foto_path) : v === 'sendiri' ? !!w.foto_path && !adaUrl(w.foto_path) : !w.foto_path) }] : []),
       { key: 'hunian', label: 'Filter rumah ditempati', placeholder: 'Semua status rumah',
         options: [...Object.entries(STATUS_HUNIAN).map(([k, v]) => ({ value: k, label: v.label })), { value: 'kosong', label: 'Belum diisi' }],
         test: (w, v) => (v === 'kosong' ? !w.kontak?.status_hunian : w.kontak?.status_hunian === v) },
+      ...(hak.admin ? [{ key: 'foto', label: 'Filter foto', placeholder: 'Semua foto',
+        options: [{ value: 'tautan', label: 'Foto dari tautan luar' }, { value: 'sendiri', label: 'Foto tersimpan di sistem' }, { value: 'kosong', label: 'Tanpa foto' }],
+        test: (w, v) => (v === 'tautan' ? adaUrl(w.foto_path) : v === 'sendiri' ? !!w.foto_path && !adaUrl(w.foto_path) : !w.foto_path) }] : []),
     ],
     kolom: [
       { key: 'nama', label: 'Nama', mobileLabel: '', sort: (w) => w.nama, render: (w) => (
@@ -84,13 +104,15 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
     FormKustom: FormWarga,
     tambah: { label: 'Tambah warga', bisa: !!hak.admin },
     aksiMassal: [
+      // Isi satu kolom sekaligus untuk warga terpilih (jalan, rumah ditempati, pernikahan, kepala keluarga, pekerjaan)
+      { kata: 'Ubah', tombol: 'Ubah massal', ikon: PencilLine, bisa: bolehUbahData, buka: onUbahMassal },
       { kata: 'Nonaktifkan', tombol: 'Nonaktifkan', ikon: UserX, ikonBaris: true, bisa: (w) => w.status === 'aktif' && bolehUbahStatus(w),
         dampak: 'Anggota tidak lagi tampil di direktori dan tidak dapat mengakses data paguyuban. Data dan riwayat pembayarannya tetap tersimpan, dan bisa diaktifkan kembali kapan saja.',
-        jalankan: (w) => ubahStatusWarga(w.id, 'nonaktif'), sukses: (n) => `${n} anggota dinonaktifkan` },
+        jalankan: (w) => ubahStatusWarga(w.id, 'nonaktif'), sukses: (n) => `${n} warga dinonaktifkan` },
       { kata: 'Aktifkan', tombol: 'Aktifkan kembali', ikon: UserCheck, bisa: (w) => w.status === 'nonaktif' && bolehUbahStatus(w),
-        jalankan: (w) => ubahStatusWarga(w.id, 'aktif'), sukses: (n) => `${n} anggota diaktifkan kembali` },
+        jalankan: (w) => ubahStatusWarga(w.id, 'aktif'), sukses: (n) => `${n} warga diaktifkan kembali` },
       // Foto dari tautan luar disalin ke penyimpanan sendiri (berjalan di peramban; hanya berhasil bila situs asal mengizinkan)
-      { kata: 'Salin', judul: (d) => `Salin foto ${d.length} anggota ke sistem?`, tombol: 'Salin foto tautan ke sistem', ikon: ImageDown, bisa: (w) => !!hak.admin && adaUrl(w.foto_path),
+      { kata: 'Salin', judul: (d) => `Salin foto ${d.length} warga ke sistem?`, tombol: 'Salin foto tautan ke sistem', ikon: ImageDown, bisa: (w) => !!hak.admin && adaUrl(w.foto_path),
         dampak: 'Foto yang berasal dari tautan luar diunduh lalu disimpan di penyimpanan paguyuban, dan tautan luarnya diganti. Hanya berhasil bila situs asal mengizinkan; yang gagal tetap memakai tautan lama.',
         jalankan: async (w) => {
           const path = await salinFotoTautan(w.foto_path, { folder: `avatar/${user.id}`, opsi: { maxSize: 960, quality: 0.82, aspect: 3 / 4 } });
@@ -99,13 +121,14 @@ export function konfigWarga({ hak, user, blok, gang, namaGang }) {
         sukses: (n) => `${n} foto disalin ke penyimpanan sistem` },
     ],
 
-    ekspor: { fungsi: (rows) => eksporWarga(rows, gang, 'data-anggota') },
+    ekspor: { fungsi: (rows) => eksporWarga(rows, gang, 'data-warga') },
     ringkasan: (rows) => {
       const menikah = rows.filter((w) => w.kontak?.status_pernikahan === 'menikah').length;
       const anak = rows.reduce((a, w) => a + (w.kontak?.jumlah_anak || 0), 0);
       const kontrak = rows.filter((w) => w.kontak?.status_hunian === 'kontrak').length;
-      return `${rows.length} anggota · ${kontrak} kontrak · ${menikah} menikah · ${anak} anak tercatat (data sensus)`;
+      const kurang = rows.filter(sensusKurang).length;
+      return `${rows.length} warga · ${kontrak} kontrak · ${menikah} menikah · ${anak} anak · ${kurang} data sensus belum lengkap`;
     },
-    kosong: { icon: Users, title: 'Belum ada anggota', text: 'Anggota muncul setelah mendaftar dan disetujui, atau ditambahkan admin.' },
+    kosong: { icon: Users, title: 'Belum ada warga', text: onImpor ? 'Warga muncul setelah mendaftar dan disetujui, ditambahkan admin, atau diimpor dari CSV.' : 'Warga muncul setelah mendaftar dan disetujui.' },
   };
 }

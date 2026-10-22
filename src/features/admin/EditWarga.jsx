@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import { useAsync } from '../../hooks/useAsync';
-import { ubahWargaAdmin, ubahKontakAdmin, resetSandiWarga, hapusWarga } from '../../services/warga';
+import { ubahWargaAdmin, ubahKontakAdmin, ubahHpWarga, resetSandiWarga, hapusWarga } from '../../services/warga';
 import { daftarPengurus } from '../../services/pengurus';
 import { bukaKunciLogin, statusLoginHp, statusPenegakanLogin } from '../../services/auth';
 import { teksTunggu } from '../../lib/loginBatas';
@@ -16,7 +16,7 @@ import { FOTO_AWAL, fotoBerubah, terapkanFoto } from '../../lib/foto';
 import { labelJabatan } from '../../lib/akses';
 import { POLA_NOMOR_RUMAH, gangDiBlok } from '../../lib/alamat';
 
-/** Form lengkap ubah data anggota (dipindah apa adanya dari DataWarga.jsx). Dipakai sebagai FormKustom di config/warga.js. */
+/** Form lengkap ubah data anggota. Dipakai sebagai FormKustom di config/warga.jsx (halaman Warga). */
 export default function EditWarga({ baris: w, onClose, onSaved }) {
   const { hak, user } = useAuth();
   const { blok, gang, namaGang } = useSettings();
@@ -55,8 +55,9 @@ export default function EditWarga({ baris: w, onClose, onSaved }) {
       if (admin && !diriSendiri && w.role !== 'pengurus') data.role = f.role;
       await ubahWargaAdmin(w.id, data);
       const kontakBaru = { ...kolomPernikahan(f.status_pernikahan, f.jumlah_anak), status_hunian: f.status_hunian || null };
-      if (admin && hp && hp !== w.kontak?.nomor_hp) kontakBaru.nomor_hp = hp;
       await ubahKontakAdmin(w.id, kontakBaru);
+      // Nomor HP dipakai untuk masuk: ganti lewat fungsi server agar akun login ikut pindah ke nomor baru
+      if (admin && hp && hp !== w.kontak?.nomor_hp) await ubahHpWarga(w.id, hp);
       toast.success('Data anggota disimpan'); onSaved();
     } catch (e) { toast.error(e); } finally { setLoading(false); }
   }

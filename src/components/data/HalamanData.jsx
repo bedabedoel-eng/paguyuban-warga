@@ -23,10 +23,13 @@ import FormModal from './FormModal';
  *   aksiHeader, aksiHeaderMobile,             // tombol tambahan di kepala halaman
  *   aksiBaris(row), bawah                     // tombol tambahan per baris; konten di bawah tabel
  *   form: { judul(row), fields, awal(urlParams), dari(row), ke(nilai, row), sukses(row), wide },
- *   ekspor, ringkasan, kosong,
+ *   ekspor, ringkasan, kosong, filterBawaan,
  * }
+ * Props tambahan (di luar konfig agar tidak memuat ulang data saat berubah):
+ *   kartu(row), toolbarEnd   tampilan kartu dan tombol di ujung bilah alat (lihat DataManager)
+ *   children({ rows, reload }) konten tambahan yang butuh data atau muat ulang (mis. modal import)
  */
-export default function HalamanData({ konfig: k, tertanam = false }) {
+export default function HalamanData({ konfig: k, tertanam = false, kartu, toolbarEnd, children }) {
   const [url] = useSearchParams();
   const s = useAsync(k.layanan.daftar, [k.layanan]);
   const [form, setForm] = useState(null); // { baris: row | null, nilai }
@@ -57,8 +60,9 @@ export default function HalamanData({ konfig: k, tertanam = false }) {
         kosong={k.kosong} ekspor={k.ekspor} ringkasan={k.ringkasan}
         onUbah={adaForm ? bukaUbah : undefined} bisaUbah={k.ubah?.bisa}
         hapus={k.hapus ? { ...k.hapus, jalankan: (r) => k.layanan.hapus(r[kunci]) } : undefined}
-        aksiMassal={k.aksiMassal} aksiBaris={k.aksiBaris} />
+        aksiMassal={k.aksiMassal} aksiBaris={k.aksiBaris} filterBawaan={k.filterBawaan} kartu={kartu} toolbarEnd={toolbarEnd} />
       {k.bawah}
+      {typeof children === 'function' ? children({ rows: s.data, reload: s.reload }) : children}
       {form && k.FormKustom && <k.FormKustom baris={form.baris} onClose={() => setForm(null)} onSaved={() => { setForm(null); s.reload(); }} />}
       {form && k.form && (
         <FormModal key={form.baris ? form.baris[kunci] : 'baru'} open onClose={() => setForm(null)} wide={k.form.wide}

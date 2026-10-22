@@ -9,7 +9,7 @@ import {
  * badge: kunci di statistik_dashboard untuk lencana jumlah.
  */
 export function navGroups(hak) {
-  const kelolaWarga = !!(hak.kelola_anggota || hak.humas);
+  const kelolaWarga = !!(hak.kelola_anggota || hak.humas || hak.admin);
   const warga = {
     label: null,
     items: [
@@ -19,7 +19,7 @@ export function navGroups(hak) {
       { to: '/kegiatan', label: 'Kegiatan', desc: 'Agenda lingkungan', icon: CalendarDays, tone: 'violet' },
       { to: '/polling', label: 'Polling', desc: 'Suara warga', icon: Vote, tone: 'info' },
       { to: '/aspirasi', label: 'Aspirasi saya', desc: 'Laporan & usulan', icon: MessageSquareText, tone: 'warn' },
-      { to: '/warga', label: kelolaWarga ? 'Warga' : 'Direktori warga', desc: kelolaWarga ? 'Direktori, data & import' : 'Kenali tetangga', icon: Users, tone: '' },
+      { to: '/warga', label: kelolaWarga ? 'Warga' : 'Direktori warga', desc: kelolaWarga ? 'Data, import & perbaikan' : 'Kenali tetangga', icon: Users, tone: '' },
       { to: '/keuangan', label: 'Kas paguyuban', desc: 'Laporan terbuka', icon: Wallet, tone: 'gold' },
       { to: '/pengurus', label: 'Pengurus', desc: 'Susunan pengurus', icon: UsersRound, tone: 'violet', end: true },
     ],
