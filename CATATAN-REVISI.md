@@ -1,6 +1,14 @@
 # Catatan Revisi — Paguyuban Warga Digital
 
-Tanggal: 20 Oktober 2026 (bagian 0, 00, 000, dan 0000: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+Tanggal: 20 Oktober 2026 (bagian 0 sampai 00000: pembaruan 22 Oktober 2026). Cara pasang: timpa file di zip ke folder proyek (struktur folder sudah sama), jalankan SQL baru di Supabase, lalu `npm run build`.
+
+## 00000. Pop-up Tetapkan pengurus lebih mudah (22 Oktober 2026)
+Tanpa SQL baru; cukup timpa berkas lalu `npm run build`.
+- **Pilih warga**: kotak cari (nama, rumah seperti `C-3/5`, pekerjaan, atau nama jalan), saringan blok (chip) dan jalan, serta daftar berfoto berisi alamat dan pekerjaan. Sebelumnya hanya dropdown panjang tanpa filter.
+  - Jabatan yang sudah dipegang tampil sebagai lencana di daftar. Bila warga terpilih sudah punya jabatan, muncul keterangan bahwa jabatan baru ditambahkan.
+  - Setelah memilih, tampil kartu ringkas warga dengan tombol **Ganti**.
+- **Peran** dipilih lewat kartu ber-ikon beserta penjelasan singkat tiap peran: Ketua, Wakil, Sekretaris, Bendahara, Humas, dan Seksi.
+- Berkas: `src/features/pengurus/PilihWarga.jsx` (baru), `src/features/pengurus/FormJabatan.jsx`, `src/styles/pages.css`.
 
 ## 0000. Halaman Warga satu pintu: import, ekspor, dan perbaikan data massal (22 Oktober 2026)
 **Urutan pasang:** jalankan `supabase/20-perbaikan-warga-massal.sql` di Supabase > SQL Editor (sekali, aman diulang), lalu timpa berkas, `npm run build`, dan deploy. Tanpa SQL 20, Import & perbaiki CSV, Ubah massal, dan penggantian nomor HP gagal.
